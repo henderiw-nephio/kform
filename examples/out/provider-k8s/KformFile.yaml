@@ -1,0 +1,7 @@
+apiVersion: meta.pkg.kform.io/v1alpha1
+kind: KformFile
+metadata:
+  name: provider-k8s
+spec:
+  kind: provider
+  info: {}

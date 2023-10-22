@@ -1,0 +1,30 @@
+apiVersion: workload.nephio.org/v1alpha1
+kind: NFFDeployment
+metadata:
+  name: smf-regional
+  namespace: free5gc-cp
+spec:
+  capacity:
+    maxDownlinkThroughput: "0"
+    maxNFConnections: 5
+    maxSessions: 500
+    maxUplinkThroughput: "0"
+  parametersRefs:
+  - apiVersion: ref.nephio.org/v1alpha1
+    kind: Config
+    name: smf-regional-upf-edge01
+    namespace: free5gc-cp
+  - apiVersion: ref.nephio.org/v1alpha1
+    kind: Config
+    name: smf-regional-upf-edge02
+    namespace: free5gc-cp
+  interfaces:
+  - ipv4:
+      address: 172.1.0.254/24
+      gateway: 172.1.0.1
+    name: n4
+    vlanID: 2
+  networkInstances:
+  - interfaces:
+    - n4
+    name: vpc-internal

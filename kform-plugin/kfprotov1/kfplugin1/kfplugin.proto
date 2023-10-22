@@ -1,0 +1,170 @@
+syntax = "proto3";
+package kfplugin1;
+option go_package = "github.com/henderiw-nephio/k8sform/kform-plugin/pkg/proto/kfplugin1";
+
+service Provider {
+    rpc Capabilities(Capabilities.Request) returns (Capabilities.Response);
+    rpc Configure(Configure.Request) returns (Configure.Response);
+
+    rpc ReadDataSource(ReadDataSource.Request) returns (ReadDataSource.Response);
+    rpc ListDataSource(ListDataSource.Request) returns (ListDataSource.Response);
+
+    rpc ReadResource(ReadResource.Request) returns (ReadResource.Response);
+    rpc CreateResource(CreateResource.Request) returns (CreateResource.Response);
+
+    // rpc ApplyResource -> 
+
+    rpc StopProvider(StopProvider.Request) returns (StopProvider.Response);
+}
+
+message Capabilities {
+    message Request {
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        ServerCapabilities serverCapabilities = 2;
+        repeated string readDataSources = 3;
+        repeated string listDataSources = 4;
+        repeated string resources = 5;
+    }
+}
+
+message Configure {
+    message Request {
+        bytes config = 1;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+    }
+}
+
+message ReadDataSource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        bytes data = 2;
+    }
+}
+
+message ListDataSource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+        LabelSelector labelSelector = 4;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        bytes data = 2;
+    }
+}
+
+message ReadResource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        bytes data = 2;
+    }
+}
+
+message CreateResource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        bytes data = 2;
+    }
+}
+
+message StopProvider {
+    message Request {
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+    }
+}
+
+// ServerCapabilities allows providers to communicate additional
+// capabilities
+message ServerCapabilities {
+}
+
+message Diagnostic {
+    enum Severity {
+        INVALID = 0;
+        ERROR = 1;
+        WARNING = 2;
+    }
+    Severity severity = 1;
+    string detail = 2;
+    string context = 3;
+}
+
+message GVK {
+    string group = 1;
+    string version = 2;
+    string kind = 3; 
+}
+  
+message NSN {
+    string namespace = 1;
+    string name = 2;
+}
+
+enum Scope {
+    INVALID = 0;
+    NAMESPACE = 1;
+    CLUSTER = 2;
+}
+
+// A label selector is a label query over a set of resources. The result of matchLabels and
+// matchExpressions are ANDed. An empty label selector matches all objects. A null
+// label selector matches no objects.
+// +structType=atomic
+message LabelSelector {
+    // matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+    // map is equivalent to an element of matchExpressions, whose key field is "key", the
+    // operator is "In", and the values array contains only "value". The requirements are ANDed.
+    // +optional
+    map<string, string> matchLabels = 1;
+  
+    // matchExpressions is a list of label selector requirements. The requirements are ANDed.
+    // +optional
+    repeated LabelSelectorRequirement matchExpressions = 2;
+  }
+
+  // A label selector requirement is a selector that contains values, a key, and an operator that
+// relates the key and values.
+message LabelSelectorRequirement {
+    // key is the label key that the selector applies to.
+    optional string key = 1;
+  
+    // operator represents a key's relationship to a set of values.
+    // Valid operators are In, NotIn, Exists and DoesNotExist.
+    optional string operator = 2;
+  
+    // values is an array of string values. If the operator is In or NotIn,
+    // the values array must be non-empty. If the operator is Exists or DoesNotExist,
+    // the values array must be empty. This array is replaced during a strategic
+    // merge patch.
+    // +optional
+    repeated string values = 3;
+  }

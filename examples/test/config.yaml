@@ -1,0 +1,14 @@
+apiVersion: ref.nephio.org/v1alpha1
+kind: Config
+metadata:
+  name: smf-regional-upf-edge01
+  namespace: free5gc-cp
+spec:
+  config:
+    apiVersion: workload.nephio.org/v1alpha1
+    kind: UPFDeployment
+    metadata:
+      name: upf-edge01
+      namespace: free5gc-upf
+    spec:
+      ...
