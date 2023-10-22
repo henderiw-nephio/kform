@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	//"sigs.k8s.io/yaml"
 )
 
 var templ1 string = `
@@ -47,14 +46,14 @@ spec:
 
 func TestRender(t *testing.T) {
 	cases := map[string]struct {
-		vars           map[string]kformtypes.Variable
+		vars           map[string]blockv1alpha1.Variable
 		initVars       map[string]any
 		templateIn     string
 		templateWanted string
 	}{
 		"Normal": {
 
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"t1.id1": {
 					RenderedObject: map[string]any{
 						"spec": map[string]any{
@@ -78,7 +77,7 @@ func TestRender(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// init vars in the var store
 			ctx := context.Background()
-			varStore := dag.New[kformtypes.Variable]()
+			varStore := dag.New[blockv1alpha1.Variable]()
 			for varName, v := range tc.vars {
 				if err := varStore.AddVertex(ctx, varName, v); err != nil {
 					assert.NoError(t, err)

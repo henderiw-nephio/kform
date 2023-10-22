@@ -8,21 +8,21 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRun(t *testing.T) {
 	cases := map[string]struct {
 		blockName   string
-		vars        map[string]kformtypes.Variable // initializes the dag
+		vars        map[string]blockv1alpha1.Variable // initializes the dag
 		want        any
 		expectedErr bool
 	}{
 		"NoLoopAttr": {
 			blockName: "a.b",
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {
 					Object: "x",
 					Attributes: map[string]any{
@@ -36,7 +36,7 @@ func TestRun(t *testing.T) {
 		},
 		"Count": {
 			blockName: "a.b",
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {
 					Object: "x",
 					Attributes: map[string]any{
@@ -50,7 +50,7 @@ func TestRun(t *testing.T) {
 		},
 		"CountVariable": {
 			blockName: "a.b",
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {
 					Object: "$count.index",
 					Attributes: map[string]any{
@@ -64,7 +64,7 @@ func TestRun(t *testing.T) {
 		},
 		"ForEach": {
 			blockName: "a.b",
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {
 					Object: "x",
 					Attributes: map[string]any{
@@ -82,7 +82,7 @@ func TestRun(t *testing.T) {
 		},
 		"ForEachVariable": {
 			blockName: "a.b",
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {
 					Object: map[string]any{
 						"key": "$each.value",
@@ -110,7 +110,7 @@ func TestRun(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			varStore := dag.New[kformtypes.Variable]()
+			varStore := dag.New[blockv1alpha1.Variable]()
 			for varName, v := range tc.vars {
 				if err := varStore.AddVertex(ctx, varName, v); err != nil {
 					assert.NoError(t, err)
@@ -142,7 +142,7 @@ func TestRun(t *testing.T) {
 
 func TestEvalAttr(t *testing.T) {
 	cases := map[string]struct {
-		vars        map[string]kformtypes.Variable // initializes the dag
+		vars        map[string]blockv1alpha1.Variable // initializes the dag
 		attrs       Attrs
 		want        evalAttrCtx
 		expectedErr bool
@@ -228,7 +228,7 @@ func TestEvalAttr(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			varStore := dag.New[kformtypes.Variable]()
+			varStore := dag.New[blockv1alpha1.Variable]()
 			for varName, v := range tc.vars {
 				if err := varStore.AddVertex(ctx, varName, v); err != nil {
 					assert.NoError(t, err)

@@ -44,12 +44,12 @@ type pkgPushReadWriter struct {
 	writer *pkgPushWriter
 }
 
-func (r *pkgPushReadWriter) Read(result *result) (*result, error) {
-	return r.reader.Read(result)
+func (r *pkgPushReadWriter) Read(data *Data) (*Data, error) {
+	return r.reader.Read(data)
 }
 
-func (r *pkgPushReadWriter) Write(result *result) error {
-	return r.writer.Write(result)
+func (r *pkgPushReadWriter) Write(data *Data) error {
+	return r.writer.Write(data)
 }
 
 type pkgPushWriter struct {
@@ -59,7 +59,7 @@ type pkgPushWriter struct {
 	tag      string
 }
 
-func (r *pkgPushWriter) Write(result *result) error {
+func (r *pkgPushWriter) Write(data *Data) error {
 	tag, err := name.NewTag(r.tag)
 	if err != nil {
 		return err

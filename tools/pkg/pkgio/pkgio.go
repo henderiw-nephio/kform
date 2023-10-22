@@ -3,7 +3,6 @@ package pkgio
 import (
 	"fmt"
 	"io/fs"
-	"sync"
 )
 
 const kformOciPkgExt = "kformpkg"
@@ -17,11 +16,11 @@ var JSONMatch = []string{"*.json"}
 var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
 type Reader interface {
-	Read(*result) (*result, error)
+	Read(*Data) (*Data, error)
 }
 
 type Writer interface {
-	Write(*result) error
+	Write(*Data) error
 }
 
 type FilterFn func(path string, d fs.DirEntry) (bool, error)
@@ -32,12 +31,12 @@ type Pipeline struct {
 }
 
 func (r Pipeline) Execute() error {
-	result := newResult()
+	data := NewData()
 
 	// read from the inputs
 	for _, i := range r.Inputs {
 		var err error
-		result, err = i.Read(result)
+		data, err = i.Read(data)
 		if err != nil {
 			return err
 		}
@@ -45,47 +44,9 @@ func (r Pipeline) Execute() error {
 	// TODO filter/processor
 	// write to the outputs
 	for _, o := range r.Outputs {
-		if err := o.Write(result); err != nil {
+		if err := o.Write(data); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-
-type result struct {
-	d map[string][]byte
-	m sync.RWMutex
-}
-
-func newResult() *result {
-	return &result{
-		d: map[string][]byte{},
-	}
-}
-
-func (r *result) add(name string, b []byte) {
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.d[name] = b
-}
-
-func (r *result) get() map[string]string {
-	r.m.RLock()
-	defer r.m.RUnlock()
-	f := make(map[string]string, len(r.d))
-	for n, b := range r.d {
-		f[n] = string(b)
-	}
-	return f
-}
-
-/*
-func (r *result) print() {
-	r.m.RLock()
-	defer r.m.RUnlock()
-	for path, data := range r.d {
-		fmt.Printf("## file: %s ##\n", path)
-		fmt.Println(string(data))
-	}
-}
-*/

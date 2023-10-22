@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metallbConfig
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - data:
+      kubernetes_manifest:
+        defaultNetworkInstance:
+          object:
+            apiVersion: infra.nephio.org/v1alpha1
+            kind: NetworkInstance
+            metadata:
+              name: "default"
+              namespace: "default"
+  - resource:
+      resource-backend_ipclaim:
+        pool:
+          object:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: IPClaim
+            metadata:
+              name: pool
+              annotations:
+                config.kubernetes.io/local-config: "true"
+            spec:
+              networkInstance:
+                name: $kubernetes_manifest.defaultNetworkInstance.metadata.name
+              prefixType: pool
+  - resource:
+      kubernetes_manifest:
+        metallb-pool:
+          object:
+            apiVersion: metallb.io/v1beta1
+            kind: IPAddressPool
+            metadata:
+              name: nephio
+              namespace: metallb-system
+            spec:
+              addresses:
+              - $resource-backend_ipclaim.pool.status.prefix

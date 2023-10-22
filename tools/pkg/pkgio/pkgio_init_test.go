@@ -34,7 +34,7 @@ func TestPkgReadInitRead(t *testing.T) {
 		fsys          fsys.FS
 		reader        Reader
 		writer        Writer
-		expectedData map[string]string
+		expectedData  map[string]string
 		expectedFiles []string
 	}{
 		"Empty": {
@@ -80,7 +80,7 @@ func TestPkgReadInitRead(t *testing.T) {
 				pkgName:       filepath.Base(pkgPath),
 				pkgKind:       kformpkgmetav1alpha1.PkgKindModule,
 			},
-			expectedData: fulldata,
+			expectedData:  fulldata,
 			expectedFiles: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
 		},
 	}

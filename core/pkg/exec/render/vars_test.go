@@ -5,32 +5,32 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetVarsFromExpression(t *testing.T) {
 	cases := map[string]struct {
-		vars        map[string]kformtypes.Variable
+		vars        map[string]blockv1alpha1.Variable
 		initVars    map[string]any
 		expr        string
 		want        map[string]any
 		expectedErr bool
 	}{
 		"NoAttr": {
-			vars:        map[string]kformtypes.Variable{},
+			vars:        map[string]blockv1alpha1.Variable{},
 			expr:        "a",
 			want:        map[string]any{},
 			expectedErr: false,
 		},
 		"VarNotFound": {
-			vars:        map[string]kformtypes.Variable{},
+			vars:        map[string]blockv1alpha1.Variable{},
 			expr:        "$a.b.c",
 			expectedErr: true,
 		},
 		"SingleVar": {
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {RenderedObject: "v1"},
 			},
 			expr: "$a.b.c",
@@ -40,7 +40,7 @@ func TestGetVarsFromExpression(t *testing.T) {
 			expectedErr: true,
 		},
 		"MultipleVar": {
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {RenderedObject: "render"},
 				"v.w": {RenderedObject: nil},
 			},
@@ -52,7 +52,7 @@ func TestGetVarsFromExpression(t *testing.T) {
 			expectedErr: true,
 		},
 		"OverlappingVar": {
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {RenderedObject: "render"},
 				"v.w": {RenderedObject: nil},
 			},
@@ -63,7 +63,7 @@ func TestGetVarsFromExpression(t *testing.T) {
 			expectedErr: true,
 		},
 		"InitVars": {
-			vars: map[string]kformtypes.Variable{
+			vars: map[string]blockv1alpha1.Variable{
 				"a.b": {RenderedObject: "render"},
 				"v.w": {RenderedObject: nil},
 			},
@@ -83,7 +83,7 @@ func TestGetVarsFromExpression(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			// init vars in the var store
 			ctx := context.Background()
-			varStore := dag.New[kformtypes.Variable]()
+			varStore := dag.New[blockv1alpha1.Variable]()
 			for varName, v := range tc.vars {
 				if err := varStore.AddVertex(ctx, varName, v); err != nil {
 					assert.NoError(t, err)

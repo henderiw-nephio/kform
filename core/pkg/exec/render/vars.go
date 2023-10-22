@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 )
 
 type Vars interface {
@@ -16,7 +16,7 @@ type Vars interface {
 	GetVarsFromExpression(expr string) (map[string]any, error)
 }
 
-func newVars(varStore dag.DAG[kformtypes.Variable], initVars map[string]any) (Vars, error) {
+func newVars(varStore dag.DAG[blockv1alpha1.Variable], initVars map[string]any) (Vars, error) {
 	if varStore == nil {
 		return nil, errors.New("cannot initialize vars w/o varStore")
 	}
@@ -31,7 +31,7 @@ func newVars(varStore dag.DAG[kformtypes.Variable], initVars map[string]any) (Va
 }
 
 type vars struct {
-	varStore dag.DAG[kformtypes.Variable]
+	varStore dag.DAG[blockv1alpha1.Variable]
 	initVars map[string]any
 }
 

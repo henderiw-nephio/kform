@@ -46,12 +46,12 @@ type pkgInitReadWriter struct {
 	writer *pkgInitWriter
 }
 
-func (r *pkgInitReadWriter) Read(result *result) (*result, error) {
-	return r.reader.Read(result)
+func (r *pkgInitReadWriter) Read(data *Data) (*Data, error) {
+	return r.reader.Read(data)
 }
 
-func (r *pkgInitReadWriter) Write(result *result) error {
-	return r.writer.Write(result)
+func (r *pkgInitReadWriter) Write(data *Data) error {
+	return r.writer.Write(data)
 }
 
 type pkgInitWriter struct {
@@ -62,14 +62,14 @@ type pkgInitWriter struct {
 	pkgKind       kformpkgmetav1alpha1.PkgKind
 }
 
-func (r *pkgInitWriter) Write(result *result) error {
+func (r *pkgInitWriter) Write(data *Data) error {
 	filesToWrite := map[string]func() error{
 		ReadmeFileMatch[0]: r.WriteReadmeFile,
 		PkgFileMatch[0]:    r.WriteKformFile,
 		IgnoreFileMatch[0]: r.WriteIgnoreFile,
 	}
 	// if the file already exists we dont need to write it
-	for fileName := range result.get() {
+	for fileName := range data.Get() {
 		delete(filesToWrite, fileName)
 	}
 	// write files that dont exist

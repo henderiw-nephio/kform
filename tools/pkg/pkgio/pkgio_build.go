@@ -48,12 +48,12 @@ type pkgBuildReadWriter struct {
 	writer *pkgBuildWriter
 }
 
-func (r *pkgBuildReadWriter) Read(result *result) (*result, error) {
-	return r.reader.Read(result)
+func (r *pkgBuildReadWriter) Read(data *Data) (*Data, error) {
+	return r.reader.Read(data)
 }
 
-func (r *pkgBuildReadWriter) Write(result *result) error {
-	return r.writer.Write(result)
+func (r *pkgBuildReadWriter) Write(data *Data) error {
+	return r.writer.Write(data)
 }
 
 type pkgBuildWriter struct {
@@ -62,8 +62,8 @@ type pkgBuildWriter struct {
 	pkgName  string
 }
 
-func (r *pkgBuildWriter) Write(result *result) error {
-	img, err := oci.Build(result.get())
+func (r *pkgBuildWriter) Write(data *Data) error {
+	img, err := oci.Build(data.Get())
 	if err != nil {
 		fmt.Println(err)
 		return err

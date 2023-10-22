@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vxlanIndex
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - variable:
+      clusterName:
+        attributes:
+          default: clusterName
+  - resource:
+      resource-backend_vxlanclaim:
+        vxlanrange:
+          object:
+            apiVersion: nephio.org/v1alpha1
+            kind: VXLANClaim
+            metadata:
+              name: $var.clusterName
+              annotations:
+                config.kubernetes.io/local-config: "true"
+            spec:
+              vxlanindex: global
+              range: block:65536
+  - resource:
+      kubernetes_manifest:
+        wirer:
+          attributes:
+            provider: kubernetes.local
+          object:
+            apiVersion: vxlan.resource.nephio.org/v1alpha1
+            kind: VXLANIndex
+            metadata:
+              namespace: network-system
+            spec:
+              maxEntryID: 65536 + $resource-backend_vxlanclaim.vxlanrange.status.offset
+              offset: $resource-backend_vxlanclaim.vxlanrange.status.offset

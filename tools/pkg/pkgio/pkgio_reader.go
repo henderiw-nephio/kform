@@ -18,14 +18,15 @@ type pkgReader struct {
 	pkgKind        kformpkgmetav1alpha1.PkgKind
 	matchFilesGlob []string
 	ignoreRules    *ignore.Rules
+	skipDir        bool
 }
 
-func (r *pkgReader) Read(result *result) (*result, error) {
+func (r *pkgReader) Read(data *Data) (*Data, error) {
 	paths, err := r.getPaths()
 	if err != nil {
-		return result, err
+		return data, err
 	}
-	return r.readFileContent(paths, result)
+	return r.readFileContent(paths, data)
 }
 
 func (r *pkgReader) getPaths() ([]string, error) {
@@ -39,6 +40,9 @@ func (r *pkgReader) getPaths() ([]string, error) {
 			// Directory-based ignore rules involve skipping the entire
 			// contents of that directory.
 			if r.ignoreRules.Ignore(path, d) {
+				return filepath.SkipDir
+			}
+			if r.skipDir && d.Name() != "." {
 				return filepath.SkipDir
 			}
 			return nil
@@ -61,7 +65,7 @@ func (r *pkgReader) getPaths() ([]string, error) {
 	return paths, nil
 }
 
-func (r *pkgReader) readFileContent(paths []string, result *result) (*result, error) {
+func (r *pkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 	var wg sync.WaitGroup
 	for _, path := range paths {
 		path := path
@@ -74,7 +78,7 @@ func (r *pkgReader) readFileContent(paths []string, result *result) (*result, er
 			if err != nil {
 				return
 			}
-			result.add(path, d)
+			data.Add(path, d)
 		}()
 		if err != nil {
 			return nil, err
@@ -82,10 +86,10 @@ func (r *pkgReader) readFileContent(paths []string, result *result) (*result, er
 	}
 	wg.Wait()
 
-	return result, nil
+	return data, nil
 }
 
-func (r *pkgReader) Write(*result) error {
+func (r *pkgReader) Write(*Data) error {
 	return nil
 }
 

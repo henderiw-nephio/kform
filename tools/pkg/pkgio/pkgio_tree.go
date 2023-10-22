@@ -52,12 +52,12 @@ type pkgTreeReadWriter struct {
 	writer *pkgTreeWriter
 }
 
-func (r *pkgTreeReadWriter) Read(result *result) (*result, error) {
-	return r.reader.Read(result)
+func (r *pkgTreeReadWriter) Read(data *Data) (*Data, error) {
+	return r.reader.Read(data)
 }
 
-func (r *pkgTreeReadWriter) Write(result *result) error {
-	return r.writer.Write(result)
+func (r *pkgTreeReadWriter) Write(data *Data) error {
+	return r.writer.Write(data)
 }
 
 const (
@@ -74,8 +74,8 @@ type pkgTreeWriter struct {
 	rootPath string
 }
 
-func (r *pkgTreeWriter) Write(result *result) error {
-	indexByPkgDir := r.index(result)
+func (r *pkgTreeWriter) Write(data *Data) error {
+	indexByPkgDir := r.index(data)
 
 	// create the new tree
 	tree := treeprint.New()
@@ -140,9 +140,9 @@ func branchName(fs fsys.FS, dirRelPath string) string {
 }
 
 // index indexes the Resources by their package
-func (p pkgTreeWriter) index(result *result) map[string][]*fn.KubeObject {
+func (p pkgTreeWriter) index(data *Data) map[string][]*fn.KubeObject {
 	indexByPkgDir := map[string][]*fn.KubeObject{}
-	for path, data := range result.get() {
+	for path, data := range data.Get() {
 		ko, err := fn.ParseKubeObject([]byte(data))
 		if err != nil {
 			continue

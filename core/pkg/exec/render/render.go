@@ -5,16 +5,16 @@ import (
 	"strings"
 
 	"github.com/google/cel-go/cel"
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/henderiw/logger/log"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
 )
 
 type Renderer interface {
 	Render(context.Context, any) (any, error)
 }
 
-func New(varStore dag.DAG[kformtypes.Variable], initVars map[string]any) (Renderer, error) {
+func New(varStore dag.DAG[blockv1alpha1.Variable], initVars map[string]any) (Renderer, error) {
 	vars, err := newVars(varStore, initVars)
 	if err != nil {
 		return nil, err

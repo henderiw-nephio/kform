@@ -9,14 +9,15 @@ import (
 
 	"github.com/henderiw-nephio/kform/core/pkg/exec/render"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
-	"github.com/henderiw-nephio/kform/syntax/pkg/dag"
-	kformtypes "github.com/henderiw-nephio/kform/syntax/pkg/dag/types"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
+	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
+
 )
 
 type Block interface {
 }
 
-func New(varStore dag.DAG[kformtypes.Variable]) Block {
+func New(varStore dag.DAG[blockv1alpha1.Variable]) Block {
 	return &block{
 		recorder: diag.NewRecorder(),
 		varStore: varStore,
@@ -25,7 +26,7 @@ func New(varStore dag.DAG[kformtypes.Variable]) Block {
 
 type block struct {
 	recorder diag.Recorder
-	varStore dag.DAG[kformtypes.Variable]
+	varStore dag.DAG[blockv1alpha1.Variable]
 }
 
 func (r *block) Run(ctx context.Context, blockName string) diag.Diagnostics {
