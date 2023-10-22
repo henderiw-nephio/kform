@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
-	"github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
 	blockv1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/sctx"
 )
@@ -39,7 +38,7 @@ type Block interface {
 	WithRecorder(diag.Recorder)
 	GetName() string
 	GetLevel() int
-	ProcessBlock(context.Context, *v1alpha1.Block) context.Context
+	ProcessBlock(context.Context, *blockv1alpha1.Block) context.Context
 	AddData(context.Context)
 }
 

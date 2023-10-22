@@ -40,4 +40,4 @@ data:
               namespace: metallb-system
             spec:
               addresses:
-              - $resource-backend_ipclaim.pool.status.prefix
+              - $resource-backend2_ipclaim.pool.status.prefix

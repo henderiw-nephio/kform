@@ -11,8 +11,8 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/exttypes"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/sctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
-	"sigs.k8s.io/yaml"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/yaml"
 )
 
 func newData(n string) Block {

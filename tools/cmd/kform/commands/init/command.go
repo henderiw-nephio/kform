@@ -11,10 +11,10 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax"
+	"github.com/henderiw/logger/log"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	"github.com/henderiw/logger/log"
 )
 
 // NewRunner returns a command runner.
@@ -105,6 +105,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	if diags.Error() != nil {
 		return err
 	}
+	fmt.Println(diags.Error())
 
 	log.Debug("diags...")
 	for _, diag := range diags {

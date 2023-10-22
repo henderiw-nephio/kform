@@ -12,7 +12,6 @@ type Diagnostics []*kfplugin1.Diagnostic
 func (r Diagnostics) HasError() bool {
 	for _, d := range r {
 		d := d
-		fmt.Println(d)
 		if d.Severity == kfplugin1.Diagnostic_ERROR {
 			return true
 		}
@@ -23,8 +22,9 @@ func (r Diagnostics) HasError() bool {
 func (r Diagnostics) Error() error {
 	var err error
 	for _, d := range r {
+		d := d
 		if d.Severity == kfplugin1.Diagnostic_ERROR {
-			errors.Join(fmt.Errorf("ctx: %s, detail: %s", d.Context, d.Detail))
+			err = errors.Join(err, fmt.Errorf("ctx: %s, detail: %s", d.Context, d.Detail))
 		}
 	}
 	return err
