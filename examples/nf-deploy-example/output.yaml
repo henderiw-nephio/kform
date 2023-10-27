@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: outputs
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - output:
+      upfdeploy:
+        attributes:
+          schema:
+            apiVersion: workload.nephio.org/v1alpha1
+            kind: NFDeployment
+        instances:
+        - metadata:
+            name: $input.upfdeploy.metadata.name + "-" +  $input.context.data.clusterName
+            namespace: $input.upfdeploy.metadata.namespace
+          spec:
+            provider: $input.upfdeploy.spec.provider
+  - output:
+      nads:
+        attributes:
+          schema:
+            apiVersion: k8s.cni.cncf.io/v1
+            kind: NetworkAttachmentDefinition
+          forEach: $module.interface.nad
+        instances: [$each.value]
+          

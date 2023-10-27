@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: main
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - data:
+      kubernetes_manifest:
+        networkInstance:
+          schema:
+            apiVersion: ipam.resource.nephio.org/v1alpha1
+            kind: NetworkInstance
+          instances:
+          - metadata:
+              name: $var.context.data.networkInstance
+              namespace: default
+  - resource:
+      resourcebackend_ipclaim: # allocate a pool for metallb
+        pool:
+          schema:
+            apiVersion: ipam.resource.nephio.org/v1alpha1
+            kind: IPClaim
+          instances:
+          - metadata:
+              name: pool
+            spec:
+              networkInstance:
+                name: $var.context.data.networkInstance
+              prefixType: pool
+              createPrefix: true
+  - resource:
+      kubernetes_manifest:
+        metallbPool:
+          schema:
+            apiVersion: metallb.io/v1beta1
+            kind: IPAddressPool
+          instances:
+          - metadata:
+              name: nephio
+              namespace: metallb-system
+            spec:
+              addresses:
+              - $resourcebackend_ipclaim.pool.status.prefix
+

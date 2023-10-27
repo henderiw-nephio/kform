@@ -24,10 +24,10 @@ func TestPkgReadInitRead(t *testing.T) {
 	for path, data := range fulldata {
 		fullFiles[path] = &fstest.MapFile{Data: []byte(data)}
 	}
-	fullFS := fsys.NewMemFS(fullFiles)
+	fullFS := fsys.NewMemFS("", fullFiles)
 
 	emptyFiles := fstest.MapFS{}
-	emptyFS := fsys.NewMemFS(emptyFiles)
+	emptyFS := fsys.NewMemFS("", emptyFiles)
 
 	pkgPath := "example/module"
 	cases := map[string]struct {
@@ -39,21 +39,16 @@ func TestPkgReadInitRead(t *testing.T) {
 	}{
 		"Empty": {
 			fsys: emptyFS,
-			reader: &pkgReader{
-				fsys:           emptyFS,
-				rootPath:       pkgPath,
-				parentPkgPath:  filepath.Dir(pkgPath),
-				pkgName:        filepath.Base(pkgPath),
-				pkgKind:        kformpkgmetav1alpha1.PkgKindModule,
-				matchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
-				ignoreRules:    ignore.Empty(""),
+			reader: &PkgReader{
+				Fsys:           emptyFS,
+				MatchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
+				IgnoreRules:    ignore.Empty(""),
 			},
 			writer: &pkgInitWriter{
 				fsys:          emptyFS,
 				rootPath:      pkgPath,
 				parentPkgPath: filepath.Dir(pkgPath),
 				pkgName:       filepath.Base(pkgPath),
-				pkgKind:       kformpkgmetav1alpha1.PkgKindModule,
 			},
 			expectedData: map[string]string{
 				"README.md":      (""),
@@ -64,14 +59,10 @@ func TestPkgReadInitRead(t *testing.T) {
 		},
 		"Full": {
 			fsys: fullFS,
-			reader: &pkgReader{
-				fsys:           fullFS,
-				rootPath:       pkgPath,
-				parentPkgPath:  filepath.Dir(pkgPath),
-				pkgName:        filepath.Base(pkgPath),
-				pkgKind:        kformpkgmetav1alpha1.PkgKindModule,
-				matchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
-				ignoreRules:    ignore.Empty(""),
+			reader: &PkgReader{
+				Fsys:           fullFS,
+				MatchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
+				IgnoreRules:    ignore.Empty(""),
 			},
 			writer: &pkgInitWriter{
 				fsys:          emptyFS,

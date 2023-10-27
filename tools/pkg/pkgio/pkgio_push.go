@@ -25,10 +25,10 @@ func NewPkgPushReadWriter(path, tag string) PkgPushReadWriter {
 	ignoreRules := ignore.Empty(IgnoreFileMatch[0])
 
 	return &pkgPushReadWriter{
-		reader: &pkgReader{
-			fsys:           fsys.NewDiskFS(path),
-			matchFilesGlob: PkgMatch,
-			ignoreRules:    ignoreRules,
+		reader: &PkgReader{
+			Fsys:           fsys.NewDiskFS(path),
+			MatchFilesGlob: PkgMatch,
+			IgnoreRules:    ignoreRules,
 		},
 		writer: &pkgPushWriter{
 			fsys:     fs,
@@ -40,7 +40,7 @@ func NewPkgPushReadWriter(path, tag string) PkgPushReadWriter {
 }
 
 type pkgPushReadWriter struct {
-	reader *pkgReader
+	reader *PkgReader
 	writer *pkgPushWriter
 }
 

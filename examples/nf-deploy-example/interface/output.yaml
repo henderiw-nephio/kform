@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: outputs
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - output:
+      nad:
+        attributes:
+          schema:
+            apiVersion: k8s.cni.cncf.io/v1
+            kind: NetworkAttachmentDefinition
+        instances:
+        - 
+      interface:
+        attributes:
+          for_each: $resourcebackend_ipclaim.ipv4
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: Interface
+        instances:
+        - metadata: $var.interface[0]
+          spec: $var.interface[0]
+          status:
+            vlanClaimStatus: 
+            ipClaimStatus: concat($resourcebackend_ipclaim.ipv4, $resourcebackend_ipclaim.ipv6)
+          

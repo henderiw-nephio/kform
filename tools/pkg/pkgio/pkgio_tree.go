@@ -34,10 +34,10 @@ func NewPkgTreeReadWriter(path string) PkgTreeReadWriter {
 	}
 
 	return &pkgTreeReadWriter{
-		reader: &pkgReader{
-			fsys:           fsys.NewDiskFS(path),
-			matchFilesGlob: YAMLMatch,
-			ignoreRules:    ignoreRules,
+		reader: &PkgReader{
+			Fsys:           fsys.NewDiskFS(path),
+			MatchFilesGlob: YAMLMatch,
+			IgnoreRules:    ignoreRules,
 		},
 		writer: &pkgTreeWriter{
 			fsys:     fs,
@@ -48,7 +48,7 @@ func NewPkgTreeReadWriter(path string) PkgTreeReadWriter {
 }
 
 type pkgTreeReadWriter struct {
-	reader *pkgReader
+	reader *PkgReader
 	writer *pkgTreeWriter
 }
 

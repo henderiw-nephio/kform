@@ -27,13 +27,11 @@ func NewPkgBuildReadWriter(path string) PkgBuildReadWriter {
 		ignoreRules, _ = ignore.Parse(f)
 	}
 
-	fmt.Println(path)
-
 	return &pkgBuildReadWriter{
-		reader: &pkgReader{
-			fsys: fsys.NewDiskFS(path),
+		reader: &PkgReader{
+			Fsys: fsys.NewDiskFS(path),
 			//matchFilesGlob: YAMLMatch,
-			ignoreRules: ignoreRules,
+			IgnoreRules: ignoreRules,
 		},
 		writer: &pkgBuildWriter{
 			fsys:     fs,
@@ -44,7 +42,7 @@ func NewPkgBuildReadWriter(path string) PkgBuildReadWriter {
 }
 
 type pkgBuildReadWriter struct {
-	reader *pkgReader
+	reader *PkgReader
 	writer *pkgBuildWriter
 }
 

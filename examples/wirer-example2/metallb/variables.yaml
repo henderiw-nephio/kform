@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: variables
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - variable:
+      context:
+        attributes:
+          schema:
+            apiVersion: v1
+            kind: ConfigMap
+        default:
+        - metadata:
+            name: context
+          data:
+            clusterName: dummy
+            networkInstance: default
+            metallbNamespace: metallb-system

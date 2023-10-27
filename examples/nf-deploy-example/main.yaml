@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: main
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - data: # this should validate if the resource exists, if not an error will be thrown
+      kubernetes_manifest:
+        network:
+          attributes:
+            schema:
+              apiVersion: infra.nephio.org/v1alpha1
+              kind: Network
+            forEach: $input.interface[*].spec.networkInstnace.name
+          instances:
+          - metadata:
+              name: $each.value
+              namespace: default
+  - module:
+      interface:
+        attributes:
+          source: ./interface
+          count: size($input.interface)
+        inputParams:
+          interface: $input.interface[$count.index]
+          context: $input.context
+  - module:
+      dnn:
+        attributes:
+          source: ./dnn
+          count: size($input.dnn)
+        inputParams:
+          dnn: $input.dnn[$count.index]
+          context: $input.context[0]
+  - module:
+      nad:
+        attributes:
+          source: local or remote
+          count: len($module.interface.nad)
+        inputParams:
+          nad: $module.interface.nad[$count.index]
+          ipclaim: $module.interface.ipclaim[$count.index]
+          vlanclaim: $module.interface.vlanclaim[$count.index]
+          context: $input.context

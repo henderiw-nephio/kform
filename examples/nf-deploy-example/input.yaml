@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - input:
+      context:
+        attributes:
+          schema:
+            apiVersion: v1
+            kind: ConfigMap
+        default:
+        - metadata:
+            name: context
+          data:
+            clusterName: dummy
+  - input:
+      upfdeploy:
+        attributes:
+          schema:
+            apiVersion: workload.nephio.org/v1alpha1
+            kind: NFDeployment
+        default:
+        - metadata:
+            name: upf
+            namespace: dummy
+  - input:
+      interface:
+        attributes:
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: Interface
+        default:
+        - metadata:
+            name: n3
+          spec:
+            networkInstance:
+              name: vpc-ran
+            cniType: sriov
+            attachmentType: vlan
+        - metadata:
+            name: n4
+          spec:
+            networkInstance:
+              name: vpc-internal
+            cniType: sriov
+            attachmentType: vlan
+        - metadata:
+            name: n6
+          spec:
+            networkInstance:
+              name: vpc-ran
+            cniType: sriov
+            attachmentType: vlan
+  - input:
+      dnn:
+        attributes:
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: DataNetwork
+        default:
+        - metadata:
+            name: internet
+          spec:
+            networkInstance:
+              name: vpc-internet
+            pools:
+            - name: pool1
+              prefixLength: 8
+  - input:
+      capacity:
+        attributes:
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: Capacity
+        default:
+        - metadata:
+            name: dataplane
+          spec:
+            maxUplinkThroughput: 10G
+            maxDownlinkThroughput: 10G
+            provider: upf.free5gc.io

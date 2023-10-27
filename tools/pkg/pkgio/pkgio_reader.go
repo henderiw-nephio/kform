@@ -5,23 +5,18 @@ import (
 	"path/filepath"
 	"sync"
 
-	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 )
 
-type pkgReader struct {
-	fsys           fsys.FS
-	rootPath       string
-	parentPkgPath  string
-	pkgName        string
-	pkgKind        kformpkgmetav1alpha1.PkgKind
-	matchFilesGlob []string
-	ignoreRules    *ignore.Rules
-	skipDir        bool
+type PkgReader struct {
+	Fsys           fsys.FS
+	MatchFilesGlob []string
+	IgnoreRules    *ignore.Rules
+	SkipDir        bool
 }
 
-func (r *pkgReader) Read(data *Data) (*Data, error) {
+func (r *PkgReader) Read(data *Data) (*Data, error) {
 	paths, err := r.getPaths()
 	if err != nil {
 		return data, err
@@ -29,25 +24,25 @@ func (r *pkgReader) Read(data *Data) (*Data, error) {
 	return r.readFileContent(paths, data)
 }
 
-func (r *pkgReader) getPaths() ([]string, error) {
+func (r *PkgReader) getPaths() ([]string, error) {
 	// collect the paths
 	paths := []string{}
-	if err := r.fsys.Walk(".", func(path string, d fs.DirEntry, err error) error {
+	if err := r.Fsys.Walk(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			// Directory-based ignore rules involve skipping the entire
 			// contents of that directory.
-			if r.ignoreRules.Ignore(path, d) {
+			if r.IgnoreRules.Ignore(path, d) {
 				return filepath.SkipDir
 			}
-			if r.skipDir && d.Name() != "." {
+			if r.SkipDir && d.Name() != "." {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if r.ignoreRules.Ignore(path, d) {
+		if r.IgnoreRules.Ignore(path, d) {
 			return nil
 		}
 		// process glob
@@ -65,7 +60,7 @@ func (r *pkgReader) getPaths() ([]string, error) {
 	return paths, nil
 }
 
-func (r *pkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
+func (r *PkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 	var wg sync.WaitGroup
 	for _, path := range paths {
 		path := path
@@ -74,7 +69,7 @@ func (r *pkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 		go func() {
 			defer wg.Done()
 			var d []byte
-			d, err = r.fsys.ReadFile(path)
+			d, err = r.Fsys.ReadFile(path)
 			if err != nil {
 				return
 			}
@@ -89,12 +84,12 @@ func (r *pkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 	return data, nil
 }
 
-func (r *pkgReader) Write(*Data) error {
+func (r *PkgReader) Write(*Data) error {
 	return nil
 }
 
-func (r *pkgReader) shouldSkipFile(path string) (bool, error) {
-	for _, g := range r.matchFilesGlob {
+func (r *PkgReader) shouldSkipFile(path string) (bool, error) {
+	for _, g := range r.MatchFilesGlob {
 		if match, err := filepath.Match(g, filepath.Base(path)); err != nil {
 			// if err we should skip the file
 			return true, err

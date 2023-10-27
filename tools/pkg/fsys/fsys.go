@@ -46,13 +46,13 @@ type FS interface {
 	RemoveAll(path string) error
 }
 
-func NewMemFS(fs fstest.MapFS) FS {
+func NewMemFS(rootpath string, fs fstest.MapFS) FS {
 	if fs == nil {
 		fs = fstest.MapFS{}
 	}
 	return &fsys{
 		kind:     "mem",
-		rootPath: "",
+		rootPath: rootpath,
 		fsys:     fs,
 	}
 }

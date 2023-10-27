@@ -1,0 +1,16 @@
+apiVersion: meta.pkg.kform.io/v1alpha1
+kind: KformFile
+metadata:
+  name: nf-deploy-example
+spec:
+  kind: module
+  requiredProviders:
+    aws:
+      source: .terraform/providers/aws
+    gke:
+      source: .terraform/providers/gke
+    kubernetes:
+      source: .terraform/providers/kubernetes
+    fetch:
+      source: .terraform/providers/fetch
+  info: {}

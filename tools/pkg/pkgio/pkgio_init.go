@@ -25,11 +25,11 @@ func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind) Pkg
 	fs := fsys.NewDiskFS(path)
 	ignoreRules := ignore.Empty("")
 	return &pkgInitReadWriter{
-		reader: &pkgReader{
-			fsys:           fs,
-			matchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
+		reader: &PkgReader{
+			Fsys:           fs,
+			MatchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
 			// no ignore rules are required for init
-			ignoreRules: ignoreRules,
+			IgnoreRules: ignoreRules,
 		},
 		writer: &pkgInitWriter{
 			fsys:          fs,
@@ -42,7 +42,7 @@ func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind) Pkg
 }
 
 type pkgInitReadWriter struct {
-	reader *pkgReader
+	reader *PkgReader
 	writer *pkgInitWriter
 }
 

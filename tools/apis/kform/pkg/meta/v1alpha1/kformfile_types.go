@@ -15,8 +15,13 @@ type KformFile struct {
 
 type KformFileSpec struct {
 	// +kubebuilder:validation:Enum=provider;module
-	Kind PkgKind `json:"kind" yaml:"kind"`
-	Info Info    `json:"info,omitempty" yaml:"info,omitempty"`
+	Kind              PkgKind             `json:"kind" yaml:"kind"`
+	RequiredProviders map[string]Provider `json:"requiredProviders" yaml:"requiredProviders"`
+	Info              Info                `json:"info,omitempty" yaml:"info,omitempty"`
+}
+
+type Provider struct {
+	Source string `json:"source" yaml:"source"`
 }
 
 type Info struct {

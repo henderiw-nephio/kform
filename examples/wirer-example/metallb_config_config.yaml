@@ -19,7 +19,7 @@ data:
       resource-backend_ipclaim:
         pool:
           object:
-            apiVersion: req.nephio.org/v1alpha1
+            apiVersion: ipam.resource.nephio.org/v1alpha1
             kind: IPClaim
             metadata:
               name: pool
@@ -40,4 +40,4 @@ data:
               namespace: metallb-system
             spec:
               addresses:
-              - $resource-backend2_ipclaim.pool.status.prefix
+              - $resource-backend_ipclaim.pool.status.prefix

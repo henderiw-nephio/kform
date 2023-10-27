@@ -26,7 +26,7 @@ func makeEmptyDiskFs() FS {
 
 // makeEmptyFsOnDisk makes an instance of NewDiskFS.
 func makeEmptyMemFs() FS {
-	return NewMemFS(nil)
+	return NewMemFS("", nil)
 }
 
 var filesysInitialBuilders = map[string]func(fstest.MapFS) FS{
@@ -48,7 +48,7 @@ func makeInitialDiskFs(td fstest.MapFS) FS {
 
 // makeEmptyFsOnDisk makes an instance of NewDiskFS.
 func makeInitialMemFs(td fstest.MapFS) FS {
-	return NewMemFS(td)
+	return NewMemFS("", td)
 }
 
 func TestNotExistErr(t *testing.T) {

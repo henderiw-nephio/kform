@@ -19,18 +19,19 @@ func NewPkgKformInitReadWriter(path string) PkgKformInitReader {
 		// if an error is return the rules is empty, so we dont have to worry about the error
 		ignoreRules, _ = ignore.Parse(f)
 	}
+	defer f.Close()
 	return &pkgKformInitReader{
-		reader: &pkgReader{
-			fsys:           fs,
-			matchFilesGlob: YAMLMatch,
-			ignoreRules:    ignoreRules,
-			skipDir:        true,
+		reader: &PkgReader{
+			Fsys:           fs,
+			MatchFilesGlob: YAMLMatch,
+			IgnoreRules:    ignoreRules,
+			SkipDir:        true,
 		},
 	}
 }
 
 type pkgKformInitReader struct {
-	reader *pkgReader
+	reader *PkgReader
 }
 
 func (r *pkgKformInitReader) Read(data *Data) (*Data, error) {

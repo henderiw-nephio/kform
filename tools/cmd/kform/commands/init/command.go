@@ -3,18 +3,14 @@ package init
 import (
 	"context"
 	"fmt"
-	"reflect"
+	"os"
 
-	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/initdocs"
-	"github.com/henderiw-nephio/kform/tools/apis/kform/block/v1alpha1"
+	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
-	"github.com/henderiw-nephio/kform/tools/pkg/syntax"
-	"github.com/henderiw/logger/log"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // NewRunner returns a command runner.
@@ -47,95 +43,37 @@ type Runner struct {
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
-	log := log.FromContext(c.Context())
+	ctx := c.Context()
+	//log := log.FromContext(ctx)
 	r.rootPath = args[0]
 	if err := fsys.ValidateDirPath(r.rootPath); err != nil {
 		return err
 	}
-	fs := fsys.NewDiskFS(".")
-	f, err := fs.Stat(r.rootPath)
+	// does the path exist ?
+	_, err := os.Stat(r.rootPath)
 	if err != nil {
-		fs.MkdirAll(r.rootPath)
-	} else if !f.IsDir() {
-		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", r.rootPath)
+		return fmt.Errorf("cannot init kform, path does not exist: %s", r.rootPath)
 	}
 
-	reader := pkgio.NewPkgKformInitReadWriter(r.rootPath)
-	d, err := reader.Read(pkgio.NewData())
+	recorder := diag.NewRecorder()
+	ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
+
+	p, err := parser.NewModuleParser(ctx, r.rootPath)
 	if err != nil {
 		return err
 	}
 
-	// extracts kforms from the configmaps
-	kforms := map[string]*v1alpha1.K8sForm{}
-	for path, data := range d.Get() {
-		ko, err := fn.ParseKubeObject([]byte(data))
-		if err != nil {
-			continue
-		}
-		if ko.GetKind() == reflect.TypeOf(corev1.ConfigMap{}).Name() {
-			kform, _, err := ko.NestedSubObject("data")
-			if err != nil {
-				continue
-			}
-			//fmt.Println(kform.String())
-			kf := v1alpha1.K8sForm{}
-			if err := yaml.Unmarshal([]byte(kform.String()), &kf); err != nil {
-				continue
-			}
-			kforms[path] = &kf
-		}
+	m := p.Parse(ctx)
+	for _, d := range recorder.Get() {
+		fmt.Println(d)
 	}
-
-	for path, kf := range kforms {
-		fmt.Println("------------------")
-		fmt.Println("filePath:", path)
-		for _, b := range kf.Blocks {
-			for blockType, b := range b.NestedBlock {
-				for blockidentifier := range b.NestedBlock {
-					fmt.Printf("blockType: %s, blockIdentifier: %s\n", blockType, blockidentifier)
-				}
-			}
+	if !recorder.Get().HasError() {
+		fmt.Println("provider req", m.ProviderRequirements.List())
+		for name, provider := range m.ProviderConfigs.List() {
+			fmt.Printf("provider: %s, data: %v\n", name.Name, *provider)
 		}
-		//fmt.Println(kf)
-	}
-	ctx := c.Context()
-	p := syntax.NewParser(ctx, kforms)
-	execCfg, diags := p.Parse(ctx)
-	if diags.Error() != nil {
-		return err
-	}
-	fmt.Println(diags.Error())
-
-	log.Debug("diags...")
-	for _, diag := range diags {
-		fmt.Printf("  %v\n", diag)
-	}
-	log.Debug("providers...")
-	for name, provider := range execCfg.GetProviders().GetVertices() {
-		fmt.Printf("  name: %v, provider: %v\n", name, provider)
-	}
-	log.Debug("vars...")
-	for name, v := range execCfg.GetVars().GetVertices() {
-		fmt.Printf("  name: %v\n", name)
-		if len(v.Attributes) != 0 {
-			fmt.Printf("    attributes: %v\n", v.Attributes)
-		}
-		if v.Provider != "" {
-			fmt.Printf("    provider: %v\n", v.Provider)
-			fmt.Printf("    gvk: %s\n", v.GVK.String())
-		}
-		if len(v.Dependencies) > 0 {
-			fmt.Printf("    dep: %v\n", v.Dependencies)
-		}
-
-		down := execCfg.GetVars().GetDownVertexes(name)
-		if len(down) != 0 {
-			fmt.Printf("    down: %v\n", down)
-		}
-		up := execCfg.GetVars().GetUpVertexes(name)
-		if len(up) != 0 {
-			fmt.Printf("    up: %v\n", up)
+		for name, module := range m.ModuleCalls.List() {
+			fmt.Printf("module: %s, source: %v, input: %v\n", name.Name, *module.GetAttributes().Source, module.GetParams())
 		}
 	}
 
