@@ -1,10 +1,14 @@
 package diag
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type Recorder interface {
 	Record(d Diagnostic)
 	Get() Diagnostics
+	Print()
 }
 
 type recorder struct {
@@ -36,4 +40,10 @@ func (r *recorder) Get() Diagnostics {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return r.diags
+}
+
+func (r *recorder) Print() {
+	for _, d := range r.Get() {
+		fmt.Println(d)
+	}
 }

@@ -11,37 +11,44 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
 
-type Parser interface {
+type ModuleParser interface {
 	Parse(ctx context.Context) *types.Module
 }
 
-func NewModuleParser(ctx context.Context, path string) (Parser, error) {
+// TODO moduleName
+func NewModuleParser(ctx context.Context, path string) (ModuleParser, error) {
 	recorder := cctx.GetContextValue[diag.Recorder](ctx, types.CtxKeyRecorder)
 	if recorder == nil {
 		return nil, fmt.Errorf("cannot parse without a recorder")
 	}
-	return &parser{
+	return &moduleparser{
+		nsn:      cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName),
 		path:     path,
 		fsys:     fsys.NewDiskFS(path),
 		recorder: recorder,
 	}, nil
 }
 
-type parser struct {
+type moduleparser struct {
+	nsn      cache.NSN
 	path     string
 	fsys     fsys.FS
 	recorder diag.Recorder
 }
 
 // Parse
-func (r *parser) Parse(ctx context.Context) *types.Module {
+func (r *moduleparser) Parse(ctx context.Context) *types.Module {
 
 	kf, kforms, err := r.getKforms(ctx)
 	if err != nil {
 		r.recorder.Record(diag.DiagErrorf("cannot get kfile and/or kforms for this path: %s, err: %s", r.path, err.Error()))
 		return nil
 	}
-	m := types.NewModule(r.recorder)
+	if kf == nil {
+		r.recorder.Record(diag.DiagErrorf("cannot parse module with a kform file"))
+		return nil
+	}
+	m := types.NewModule(cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName), r.recorder)
 	// add the required providers in the module
 	for providerName, provider := range kf.Spec.RequiredProviders {
 		if err := m.ProviderRequirements.Add(

@@ -9,20 +9,27 @@ import (
 type Renderer interface {
 	GatherDependencies(x any) error
 	GetDependencies() []string
+	GetModuleOutputDependencies() []string
 }
 
 func NewRenderer() Renderer {
 	return &renderer{
-		deps: []string{},
+		deps:    []string{},
+		modDeps: []string{},
 	}
 }
 
 type renderer struct {
-	deps []string
+	deps    []string
+	modDeps []string
 }
 
 func (r *renderer) GetDependencies() []string {
 	return r.deps
+}
+
+func (r *renderer) GetModuleOutputDependencies() []string {
+	return r.modDeps
 }
 
 func (r *renderer) GatherDependencies(x any) error {
@@ -59,6 +66,13 @@ func (r *renderer) getExprDependencies(expr string) error {
 		}
 
 		r.deps = append(r.deps, parsedependencyString(strings.Join(depSplit[:2], ".")))
+
+		if depSplit[0] == "module" {
+			if len(depSplit) < 3 {
+				return fmt.Errorf("a module dependency always need <namespace>.<name>.<output>, got: %s", dep)
+			}
+			r.modDeps = append(r.modDeps, parsedependencyString(strings.Join(depSplit[:3], ".")))
+		}
 	}
 	return nil
 }
@@ -77,12 +91,16 @@ func parsedependencyString(inputString string) string {
 		//fmt.Println("No special characters found.")
 		return inputString
 	} else {
-		/*
-			for _, match := range matches {
-				start, end := match[0], match[1]
-				fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
+		for matchIdx, match := range matches {
+			start, end := match[0], match[1]
+			//fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
+			// if the special char is a lowercase/upercase letter or - or _ we continue
+			re := regexp.MustCompile(`^[a-zA-Z]+[a-zA-Z0-9_-]*$`)
+			if re.Match([]byte(inputString[start:end])) {
+				continue
 			}
-		*/
-		return inputString[0:matches[0][0]]
+			return inputString[0:matches[matchIdx][0]]
+		}
+		return inputString
 	}
 }

@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - input:
+      context:
+        attributes:
+          schema:
+            apiVersion: v1
+            kind: ConfigMap
+        default:
+        - metadata:
+            name: context
+          data:
+            clusterName: dummy
+  - input:
+      nad:
+        attributes:
+          schema:
+            apiVersion: k8s.cni.cncf.io/v1
+            kind: NetworkAttachmentDefinition
+  - input:
+      ipClaimIPv4:
+        attributes:
+          schema:
+            apiVersion: ipam.resource.nephio.org/v1alpha1
+            kind: IPClaim
+  - input:
+      ipClaimIPv6:
+        attributes:
+          schema:
+            apiVersion: ipam.resource.nephio.org/v1alpha1
+            kind: IPClaim
+  - input:
+      vlanClaim:
+        attributes:
+          schema:
+            apiVersion: vlan.resource.nephio.org/v1alpha1
+            kind: VLANClaim
+
+    

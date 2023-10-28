@@ -18,11 +18,12 @@ data:
           data:
             clusterName: dummy
   - input:
-      interface:
+      dnn:
         attributes:
           schema:
             apiVersion: req.nephio.org/v1alpha1
-            kind: Interface
+            kind: DataNetwork
         default:
         - metadata:
             name: dummy
+    

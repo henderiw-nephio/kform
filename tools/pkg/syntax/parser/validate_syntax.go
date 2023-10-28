@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"path/filepath"
 	"sync"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
@@ -9,7 +10,7 @@ import (
 	"github.com/henderiw/logger/log"
 )
 
-func (r *parser) validate(ctx context.Context, kforms map[string]*types.Kform) {
+func (r *moduleparser) validate(ctx context.Context, kforms map[string]*types.Kform) {
 	var wg sync.WaitGroup
 	for path, kform := range kforms {
 		path := path
@@ -19,7 +20,7 @@ func (r *parser) validate(ctx context.Context, kforms map[string]*types.Kform) {
 			wg.Add(1)
 			go func(block *types.KformBlock) {
 				defer wg.Done()
-				ctx = context.WithValue(ctx, types.CtxKeyFileName, path)
+				ctx = context.WithValue(ctx, types.CtxKeyFileName, filepath.Join(r.path, path))
 				ctx = context.WithValue(ctx, types.CtxKeyLevel, 0)
 				r.processBlock(ctx, block)
 			}(&block)
@@ -29,7 +30,7 @@ func (r *parser) validate(ctx context.Context, kforms map[string]*types.Kform) {
 }
 
 // walkTopBlock identifies the blockType
-func (r *parser) processBlock(ctx context.Context, block *types.KformBlock) {
+func (r *moduleparser) processBlock(ctx context.Context, block *types.KformBlock) {
 	blockType, block, err := types.GetNextBlock(ctx, block)
 	if err != nil {
 		r.recorder.Record(diag.DiagFromErr(err))

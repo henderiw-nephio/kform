@@ -30,6 +30,7 @@ type config struct {
 	gvk      schema.GroupVersionKind
 	KformBlockContext
 	dependencies []string
+	modDependencies []string
 }
 
 var mandatory = true
@@ -69,6 +70,7 @@ func (r *config) getDependencies(ctx context.Context) {
 		}
 	}
 	r.dependencies = rn.GetDependencies()
+	r.modDependencies = rn.GetModuleOutputDependencies()
 }
 
 func (r *config) getAttributeDependencies(ctx context.Context, rn Renderer) {
@@ -117,9 +119,9 @@ func (r *config) ProcessBlock(ctx context.Context, block *KformBlock) context.Co
 
 	log := log.FromContext(ctx)
 	log.Debug("processed:",
-		cctx.GetContextValue[string](ctx, CtxKeyBlockType),
-		cctx.GetContextValue[string](ctx, CtxKeyVarType),
-		cctx.GetContextValue[string](ctx, CtxKeyVarName),
+		"blockType", cctx.GetContextValue[string](ctx, CtxKeyBlockType),
+		"type", cctx.GetContextValue[string](ctx, CtxKeyVarType),
+		"name", cctx.GetContextValue[string](ctx, CtxKeyVarName),
 	)
 
 	return ctx
@@ -225,6 +227,10 @@ func (r *config) GetConfig() any {
 
 func (r *config) GetDependencies() []string {
 	return r.dependencies
+}
+
+func (r *config) GetModDependencies() []string {
+	return r.modDependencies
 }
 
 func (r *config) GetContext(n string) string {

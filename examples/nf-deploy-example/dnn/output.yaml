@@ -9,12 +9,13 @@ data:
   - output:
       dnn:
         attributes:
-          for_each: $resource-backend_ipclaim.this
-        data:
-        - apiVersion: req.nephio.org/v1alpha1
-          kind: DataNetwork
-          metadata: $var.dnn[0]
-          spec: $var.dnn[0]
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: DataNetwork
+          forEach: $resourcebackend_ipclaim.this
+        instances:
+        - metadata: "$input.dnn[0]"
+          spec: "$input.dnn[0]"
           status: 
             pools: 
             - name: $each.value.metadata.name

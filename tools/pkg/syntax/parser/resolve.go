@@ -6,7 +6,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 )
 
-func (r *parser) resolve(ctx context.Context, m *types.Module) {
+func (r *moduleparser) resolve(ctx context.Context, m *types.Module) {
 	m.ResolveDAGDependencies(ctx)
 	m.ResolveResource2ProviderConfig(ctx)
 	m.ResolveProviderConfig2ProviderRequirements(ctx)

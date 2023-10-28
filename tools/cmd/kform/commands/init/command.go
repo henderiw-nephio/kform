@@ -49,33 +49,34 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	if err := fsys.ValidateDirPath(r.rootPath); err != nil {
 		return err
 	}
-	// does the path exist ?
+	// check if the root path exists
 	_, err := os.Stat(r.rootPath)
 	if err != nil {
 		return fmt.Errorf("cannot init kform, path does not exist: %s", r.rootPath)
 	}
 
+	// initialize the recorder
 	recorder := diag.NewRecorder()
 	ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
 
-	p, err := parser.NewModuleParser(ctx, r.rootPath)
+	p, err := parser.NewKformParser(ctx, r.rootPath)
 	if err != nil {
 		return err
 	}
-
-	m := p.Parse(ctx)
-	for _, d := range recorder.Get() {
-		fmt.Println(d)
+	p.Parse(ctx)
+	if !recorder.Get().HasError() {
+		recorder.Print()
+		return recorder.Get().Error()
+	}
+	// validate inter module calls
+	if err := parser.ValidateModuleCalls(ctx, p.GetModules()); err != nil {
+		return err
 	}
 	if !recorder.Get().HasError() {
-		fmt.Println("provider req", m.ProviderRequirements.List())
-		for name, provider := range m.ProviderConfigs.List() {
-			fmt.Printf("provider: %s, data: %v\n", name.Name, *provider)
-		}
-		for name, module := range m.ModuleCalls.List() {
-			fmt.Printf("module: %s, source: %v, input: %v\n", name.Name, *module.GetAttributes().Source, module.GetParams())
-		}
+		recorder.Print()
+		return recorder.Get().Error()
 	}
+	recorder.Print()
 
 	// init and/or restore backend
 	// syntax check config -> build the dag but dont use it

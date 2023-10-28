@@ -6,79 +6,83 @@ metadata:
     kform/config: true
 data:
   spec:
-  - variable:
-      interface:
-        data:
-        - apiVersion: req.nephio.org/v1alpha1
-          kind: Interface
-          metadata:
-            name: n3
-          spec:
-            networkInstance:
-              name: vpc-ran
-            cniType: sriov
-            attachmentType: vlan
-            ipFamilyPolicy: dualstack
   - resource:
       resourcebackend_ipclaim:
         ipv4:
           attributes:
-            count: $var.interface[0].spec.networkInstance.name != "default" && (($var.interface[0].spec.ipFamilyPolicy == "ipv4Only") || ($var.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
-          data:
-          - apiVersion: ipam.resource.nephio.org/v1alpha1
-            kind: IPClaim
-            metadata:
-              name: [$var.upf, $var.context.data.clusterName, $var.interface[0].metadata.name, "ipv4"].concat("-")
+            schema:
+              apiVersion: ipam.resource.nephio.org/v1alpha1
+              kind: IPClaim
+            count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv4Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
+          instances:
+          - metadata:
+              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name, "ipv4"].concat("-")'
             spec:
-              kind: $var.interface[0].spec.cniType == "" ? "loopback" | "network"
+              kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
               selector:
                 matchLabels:
                   nephio.org/address-family: ipv4
                   nephio.org/cluster-name: cluster01
-                  nephio.org/network-name: $var.interface[0].metadata.name
+                  nephio.org/network-name: $input.interface[0].metadata.name
               networkInstance:
-                name: $var.interface[0].spec.networkInstance.name
+                name: $input.interface[0].spec.networkInstance.name
   - resource:
       resourcebackend_ipclaim:
         ipv6:
           attributes:
-            count: $var.interface[0].spec.networkInstance.name != "default" && (($var.interface[0].spec.ipFamilyPolicy == "ipv6Only") || ($var.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
-          data:
-          - apiVersion: ipam.resource.nephio.org/v1alpha1
-            kind: IPClaim
-            metadata:
-              name: [$var.upf, $var.context.data.clusterName, $var.interface[0].metadata.name, "ipv6"].concat("-")
+            schema:
+              apiVersion: ipam.resource.nephio.org/v1alpha1
+              kind: IPClaim
+            count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv6Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
+          instances:
+          - metadata:
+              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name, "ipv6"].concat("-")'
             spec:
-              kind: $var.interface[0].spec.cniType == "" ? "loopback" | "network"
+              kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
               selector:
                 matchLabels:
                   nephio.org/address-family: ipv6
                   nephio.org/cluster-name: cluster01
-                  nephio.org/network-name: $var.interface[0].metadata.name
+                  nephio.org/network-name: $input.interface[0].metadata.name
               networkInstance:
-                name: $var.interface[0].spec.networkInstance.name
+                name: $input.interface[0].spec.networkInstance.name
   - resource:
       resourcebackend_vlanclaim:
         vlan:
           attributes:
-            count: $var.interface[0].spec.networkInstance.name != "default" && (($var.interface[0].spec.attachmentType == "vlan") ? 1 | 0
-          data:
-          - apiVersion: ipam.resource.nephio.org/v1alpha1
-            kind: VLANClaim
-            metadata:
-              name: [$var.upf, $var.context.data.clusterName, $var.interface[0].metadata.name].concat("-")
+            schema:
+              apiVersion: vlan.resource.nephio.org/v1alpha1
+              kind: VLANClaim
+            count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.attachmentType == "vlan") ? 1 | 0
+          instances:
+          - metadata:
+              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
             spec:
               vlanIndex:
-                name: $var.context.data.clusterName
+                name: $input.context.data.clusterName
   - resource:
       kubernetes_manifest:
         nad:
           attributes:
-            count: $var.interface[0].spec.networkInstance.name != "default" && (($var.interface[0].spec.cniType != "") ? 1 | 0
-          data:
-          - apiVersion: k8s.cni.cncf.io/v1
-            kind: NetworkAttachmentDefinition
-            
+            schema:
+              apiVersion: k8s.cni.cncf.io/v1
+              kind: NetworkAttachmentDefinition
+            count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.cniType != "") ? 1 | 0
+          instances:
+          - metadata:
+              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
+  - module:
+      nad:
+        attributes:
+          source: ./nad
+          count: len($kubernetes_manifest.nad)
+        inputParams:
+          context: $input.context
+          nad: $kubernetes_manifest.nad
+          ipClaimIPv4: $resourcebackend_ipclaim.ipv4
+          ipClaimIPv6: $resourcebackend_ipclaim.ipv6
+          vlanClaim: $resourcebackend_vlanclaim.vlan
+          
 
 # if networkInstance is not default
 # if CNI is set -> claim ipv4/ipv6/vlan/nad

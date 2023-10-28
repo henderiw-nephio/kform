@@ -132,7 +132,7 @@ func TestGetKforms(t *testing.T) {
 			ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
 
 			log.IntoContext(ctx, logger)
-			p := parser{
+			p := moduleparser{
 				path:     tc.path,
 				fsys:     buildFs(tc.path, tc.files),
 				recorder: recorder,

@@ -34,13 +34,3 @@ data:
         inputParams:
           dnn: $input.dnn[$count.index]
           context: $input.context[0]
-  - module:
-      nad:
-        attributes:
-          source: local or remote
-          count: len($module.interface.nad)
-        inputParams:
-          nad: $module.interface.nad[$count.index]
-          ipclaim: $module.interface.ipclaim[$count.index]
-          vlanclaim: $module.interface.vlanclaim[$count.index]
-          context: $input.context

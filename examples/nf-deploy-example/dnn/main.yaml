@@ -7,30 +7,27 @@ metadata:
 data:
   spec:
   - resource:
-      resource-backend_ipclaim:
+      resourcebackend_ipclaim:
         this:
           attributes:
-            for_each: $var.dnn[0].spec.pools
-          data: 
-          - apiVersion: ipam.resource.nephio.org/v1alpha1
-            kind: IPClaim
-            metadata:
-              name: $var.dnn[0].metadata.name + "-" + $each.value.spec.pool[0]
+            schema:
+              apiVersion: ipam.resource.nephio.org/v1alpha1
+              kind: IPClaim
+            forEach: $input.dnn[0].spec.pools
+          instances: 
+          - metadata:
+              name: $input.dnn[0].metadata.name + "-" + $each.value.spec.pool[0]
             spec:
               kind: pool
               selector:
                 matchLabels:
-                  nephio.org/address-family: $var.dnn[0].spec.ipFamily
-                  nephio.org/cluster-name: $var.context.data.clusterName
+                  nephio.org/address-family: $input.dnn[0].spec.ipFamily
+                  nephio.org/cluster-name: $input.context.data.clusterName
               createPrefix: true
               networkInstance:  
-                name: $var.dnn[0].spec.networkInstance.name
+                name: $input.dnn[0].spec.networkInstance.name
               prefixLength: $each.value.prefixLength
-  - local:
-      pools:
-        attributes:
-          for_each: $resource.resource-backend_ipclaim
-        data:
+
           
           
         

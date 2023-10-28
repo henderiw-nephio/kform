@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
 
@@ -17,6 +18,7 @@ const (
 	//CtxExecConfig      CtxKey = "execConfig"
 	CtxKeyRecorder     CtxKey = "recorder"
 	CtxKeyModule       CtxKey = "module"
+	CtxKeyModuleName   CtxKey = "moduleName"
 	CtxKeyFileName     CtxKey = "fileName"
 	CtxKeyLevel        CtxKey = "level"
 	CtxKeyBlockType    CtxKey = "blockType"
@@ -31,6 +33,7 @@ const (
 
 type Context struct {
 	FileName  string  `json:"fileName"`
+	Module    string  `json:"module"`
 	BlockType *string `json:"blockType,omitempty"`
 	Level     int     `json:"level"`
 	VarName   *string `json:"varName,omitempty"`
@@ -53,6 +56,8 @@ func GetContext(ctx context.Context) string {
 	if varName != "" {
 		c.VarType = &varType
 	}
+	moduleName := cctx.GetContextValue[cache.NSN](ctx, CtxKeyModuleName)
+	c.Module = moduleName.Name
 	c.FileName = cctx.GetContextValue[string](ctx, CtxKeyFileName)
 	c.Level = cctx.GetContextValue[int](ctx, CtxKeyLevel)
 

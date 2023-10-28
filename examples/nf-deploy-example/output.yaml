@@ -18,6 +18,8 @@ data:
             namespace: $input.upfdeploy.metadata.namespace
           spec:
             provider: $input.upfdeploy.spec.provider
+            dnn: $module.dnn.dnn
+            itfce: $module.interface.interface
   - output:
       nads:
         attributes:

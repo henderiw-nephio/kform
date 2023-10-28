@@ -1,0 +1,8 @@
+apiVersion: meta.pkg.kform.io/v1alpha1
+kind: KformFile
+metadata:
+  name: dnn
+spec:
+  kind: nad
+  requiredProviders: {}
+  info: {}

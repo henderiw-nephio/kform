@@ -3,6 +3,7 @@ package parser
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"reflect"
 
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
@@ -17,7 +18,7 @@ import (
 )
 
 // TODO need to enhance this to differentiate running incluster versus out of cluster
-func (r *parser) getKforms(ctx context.Context) (*kformpkgmetav1alpha1.KformFile, map[string]*types.Kform, error) {
+func (r *moduleparser) getKforms(ctx context.Context) (*kformpkgmetav1alpha1.KformFile, map[string]*types.Kform, error) {
 	log := log.FromContext(ctx)
 	var kfile *kformpkgmetav1alpha1.KformFile
 	kforms := map[string]*types.Kform{}
@@ -52,7 +53,7 @@ func (r *parser) getKforms(ctx context.Context) (*kformpkgmetav1alpha1.KformFile
 	for path, data := range d.Get() {
 		ko, err := fn.ParseKubeObject([]byte(data))
 		if err != nil {
-			log.Error("kubeObject parsing failed", "err", err.Error())
+			log.Error("kubeObject parsing failed", "path", filepath.Join(r.path, path), "err", err.Error())
 			continue
 		}
 		if ko.GetKind() == reflect.TypeOf(corev1.ConfigMap{}).Name() {
