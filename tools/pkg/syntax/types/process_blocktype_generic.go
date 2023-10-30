@@ -26,11 +26,12 @@ type config struct {
 	recorder           diag.Recorder
 
 	// dynamic config
-	fileName string
-	gvk      schema.GroupVersionKind
+	fileName   string
+	moduleName string
+	gvk        schema.GroupVersionKind
 	KformBlockContext
-	dependencies []string
-	modDependencies []string
+	dependencies    map[string]string
+	modDependencies map[string]string
 }
 
 var mandatory = true
@@ -45,27 +46,27 @@ func (r *config) getDependencies(ctx context.Context) {
 
 	r.getAttributeDependencies(ctx, rn)
 	if r.KformBlockContext.Attributes != nil {
-		if err := rn.GatherDependencies(r.KformBlockContext.Attributes); err != nil {
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Attributes); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
 	if r.KformBlockContext.Instances != nil {
-		if err := rn.GatherDependencies(r.KformBlockContext.Instances); err != nil {
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Instances); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
 	if r.KformBlockContext.Default != nil {
-		if err := rn.GatherDependencies(r.KformBlockContext.Default); err != nil {
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Default); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
 	if r.KformBlockContext.InputParams != nil {
-		if err := rn.GatherDependencies(r.KformBlockContext.InputParams); err != nil {
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.InputParams); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
 	if r.KformBlockContext.Config != nil {
-		if err := rn.GatherDependencies(r.KformBlockContext.Config); err != nil {
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Config); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
@@ -85,7 +86,7 @@ func (r *config) getAttributeDependencies(ctx context.Context, rn Renderer) {
 			r.recorder.Record(diag.DiagErrorfWithContext(GetContext(ctx), "err unmarshaling kform block context, err: %s", err.Error()))
 			return
 		}
-		if err := rn.GatherDependencies(attributes); err != nil {
+		if err := rn.GatherDependencies(ctx, attributes); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
@@ -205,6 +206,10 @@ func (r *config) GetFileName() string {
 	return r.fileName
 }
 
+func (r *config) GetModuleName() string {
+	return r.moduleName
+}
+
 func (r *config) GetAttributes() *KformBlockAttributes {
 	return r.Attributes
 }
@@ -213,7 +218,7 @@ func (r *config) GetInstances() []any {
 	return r.Instances
 }
 
-func (r *config) GetParams() map[string]any {
+func (r *config) GetInputParams() map[string]any {
 	return r.InputParams
 }
 
@@ -225,24 +230,24 @@ func (r *config) GetConfig() any {
 	return r.Config
 }
 
-func (r *config) GetDependencies() []string {
+func (r *config) GetDependencies() map[string]string {
 	return r.dependencies
 }
 
-func (r *config) GetModDependencies() []string {
+func (r *config) GetModDependencies() map[string]string {
 	return r.modDependencies
 }
 
 func (r *config) GetContext(n string) string {
-	return getContext(r.fileName, n, r.blockType)
+	return getContext(r.GetFileName(), r.GetModuleName(), n, BlockType(r.GetBlockType()))
 }
 
-func getContext(fileName, name string, blockType BlockType) string {
-	return fmt.Sprintf("fileName=%s, name=%s, blockType=%s", fileName, name, string(blockType))
+func getContext(fileName, moduleName, name string, blockType BlockType) string {
+	return fmt.Sprintf("fileName=%s, moduleName=%s name=%s, blockType=%s", fileName, moduleName, name, string(blockType))
 }
 
 func (r *config) getSchema(ctx context.Context, kfctx KformBlockContext) {
-	var gvk schema.GroupVersionKind
+	//var gvk schema.GroupVersionKind
 	if kfctx.Attributes != nil {
 		if kfctx.Attributes.Schema != nil {
 			if kfctx.Attributes.Schema.ApiVersion == "" {
@@ -251,10 +256,10 @@ func (r *config) getSchema(ctx context.Context, kfctx KformBlockContext) {
 				split := strings.Split(kfctx.Attributes.Schema.ApiVersion, "/")
 				switch len(split) {
 				case 1:
-					gvk.Version = split[0]
+					r.gvk.Version = split[0]
 				case 2:
-					gvk.Version = split[1]
-					gvk.Group = split[0]
+					r.gvk.Version = split[1]
+					r.gvk.Group = split[0]
 				default:
 					r.recorder.Record(diag.DiagErrorfWithContext(GetContext(ctx), "schema apiVersion expected syntax is <group>/<version>, got: %s", kfctx.Attributes.Schema.ApiVersion))
 				}
@@ -262,12 +267,12 @@ func (r *config) getSchema(ctx context.Context, kfctx KformBlockContext) {
 			if kfctx.Attributes.Schema.Kind == "" {
 				r.recorder.Record(diag.DiagErrorfWithContext(GetContext(ctx), "schema requires kind but not present in schema attribute"))
 			} else {
-				gvk.Kind = kfctx.Attributes.Schema.Kind
+				r.gvk.Kind = kfctx.Attributes.Schema.Kind
 			}
 		}
 		// validation of schema presence was already done
 	}
-	r.gvk = gvk
+	//r.gvk = gvk
 }
 
 func (r *config) validateKeyWords(ctx context.Context, kfctx KformBlockContext) {
@@ -360,14 +365,13 @@ func (r *config) validateAttributes(ctx context.Context, kfctx KformBlockContext
 }
 
 func (r *config) initAndValidateBlockConfig(ctx context.Context) {
-	r.getFileName(ctx)
+	r.fileName = cctx.GetContextValue[string](ctx, CtxKeyFileName)
+	r.moduleName = cctx.GetContextValue[string](ctx, CtxKeyModuleName)
+	//r.getFileName(ctx)
+	//r.getModuleName(ctx)
 	r.validateKeyWordsAndAttributes(ctx)
 	r.getDependencies(ctx)
 	r.getSchema(ctx, r.KformBlockContext)
-}
-
-func (r *config) getFileName(ctx context.Context) {
-	r.fileName = cctx.GetContextValue[string](ctx, CtxKeyFileName)
 }
 
 func (r *config) validateKeyWordsAndAttributes(ctx context.Context) {

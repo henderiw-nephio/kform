@@ -10,6 +10,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
+	"github.com/henderiw/logger/log"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,7 @@ type Runner struct {
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
 	ctx := c.Context()
+	log := log.FromContext(ctx)
 	//log := log.FromContext(ctx)
 	r.rootPath = args[0]
 	if err := fsys.ValidateDirPath(r.rootPath); err != nil {
@@ -59,27 +61,26 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	recorder := diag.NewRecorder()
 	ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
 
+	log.Info("parsing modules")
 	p, err := parser.NewKformParser(ctx, r.rootPath)
 	if err != nil {
 		return err
 	}
 	p.Parse(ctx)
-	if !recorder.Get().HasError() {
+	if recorder.Get().HasError() {
 		recorder.Print()
-		return recorder.Get().Error()
-	}
-	// validate inter module calls
-	if err := parser.ValidateModuleCalls(ctx, p.GetModules()); err != nil {
-		return err
-	}
-	if !recorder.Get().HasError() {
-		recorder.Print()
+		log.Error("failed parsing modules", "error", recorder.Get().Error())
 		return recorder.Get().Error()
 	}
 	recorder.Print()
 
+	provReqs := p.GetProviderRequirements(ctx)
+	for nsn, reqs := range provReqs {
+		fmt.Printf("provider: %s res: %v\n", nsn.Name, reqs)
+	}
+
 	// init and/or restore backend
-	// syntax check config -> build the dag but dont use it
+	// syntax check config -> build the dag but dont use it (done)
 	// download module
 	// download providers
 	// -> lock files

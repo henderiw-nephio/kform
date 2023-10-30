@@ -20,7 +20,6 @@ type BlockInitializer func(ctx context.Context, n string) Block
 
 type Block interface {
 	// implemented generically
-	//WithRecorder(diag.Recorder)
 	GetBlockType() string
 	GetLevel() int
 	ProcessBlock(context.Context, *KformBlock) context.Context

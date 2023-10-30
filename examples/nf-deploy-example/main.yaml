@@ -22,6 +22,9 @@ data:
       interface:
         attributes:
           source: ./interface
+          providers:
+            kubernetes: kubernetes
+            resourcebackend: resourcebackend
           count: size($input.interface)
         inputParams:
           interface: $input.interface[$count.index]

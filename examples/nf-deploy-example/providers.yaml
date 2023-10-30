@@ -8,5 +8,11 @@ data:
   spec:
   - provider:
       kubernetes:
-        config:
+        config: {}
+  - provider:
+      resourcebackend:
+        config: {}
+  - provider:
+      test:
+        config: {}
         

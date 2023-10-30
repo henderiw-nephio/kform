@@ -19,6 +19,7 @@ const (
 	CtxKeyRecorder     CtxKey = "recorder"
 	CtxKeyModule       CtxKey = "module"
 	CtxKeyModuleName   CtxKey = "moduleName"
+	CtxKeyModuleKind   CtxKey = "moduleKind"
 	CtxKeyFileName     CtxKey = "fileName"
 	CtxKeyLevel        CtxKey = "level"
 	CtxKeyBlockType    CtxKey = "blockType"
@@ -31,13 +32,21 @@ const (
 	//CtxKeyDefault    CtxKey = "default"
 )
 
+type ModuleKind = string
+
+const (
+	ModuleKindRoot  ModuleKind = "root"
+	ModuleKindChild ModuleKind = "child"
+)
+
 type Context struct {
-	FileName  string  `json:"fileName"`
-	Module    string  `json:"module"`
-	BlockType *string `json:"blockType,omitempty"`
-	Level     int     `json:"level"`
-	VarName   *string `json:"varName,omitempty"`
-	VarType   *string `json:"varType,omitempty"`
+	FileName   string  `json:"fileName"`
+	ModuleKind string  `json:"moduleKind"`
+	Module     string  `json:"module"`
+	BlockType  *string `json:"blockType,omitempty"`
+	Level      int     `json:"level"`
+	VarName    *string `json:"varName,omitempty"`
+	VarType    *string `json:"varType,omitempty"`
 	//Provider  *string `json:"provider,omitempty"`
 }
 

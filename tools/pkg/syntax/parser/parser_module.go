@@ -23,6 +23,7 @@ func NewModuleParser(ctx context.Context, path string) (ModuleParser, error) {
 	}
 	return &moduleparser{
 		nsn:      cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName),
+		kind:     cctx.GetContextValue[types.ModuleKind](ctx, types.CtxKeyModuleKind),
 		path:     path,
 		fsys:     fsys.NewDiskFS(path),
 		recorder: recorder,
@@ -31,6 +32,7 @@ func NewModuleParser(ctx context.Context, path string) (ModuleParser, error) {
 
 type moduleparser struct {
 	nsn      cache.NSN
+	kind     types.ModuleKind
 	path     string
 	fsys     fsys.FS
 	recorder diag.Recorder
@@ -48,15 +50,18 @@ func (r *moduleparser) Parse(ctx context.Context) *types.Module {
 		r.recorder.Record(diag.DiagErrorf("cannot parse module with a kform file"))
 		return nil
 	}
-	m := types.NewModule(cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName), r.recorder)
+	m := types.NewModule(
+		cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName),
+		cctx.GetContextValue[types.ModuleKind](ctx, types.CtxKeyModuleKind),
+		r.recorder)
 	// add the required providers in the module
-	for providerName, provider := range kf.Spec.RequiredProviders {
+	for providerRawName, providerReq := range kf.Spec.ProviderRequirements {
 		if err := m.ProviderRequirements.Add(
 			ctx,
-			cache.NSN{Name: providerName},
-			provider,
+			cache.NSN{Name: providerRawName},
+			providerReq,
 		); err != nil {
-			r.recorder.Record(diag.DiagErrorf("cannot add provider %s in required providers, err: %s", providerName, err.Error()))
+			r.recorder.Record(diag.DiagErrorf("cannot add provider %s in provider requirements, err: %s", providerRawName, err.Error()))
 		}
 	}
 

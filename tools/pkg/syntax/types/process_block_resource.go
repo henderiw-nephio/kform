@@ -21,7 +21,7 @@ func newResource(ctx context.Context, n string) Block {
 			},
 			expectedAttributes: map[string]bool{
 				string(MetaArgumentSchema):        mandatory,
-				string(MetaArgumentAlias):         optional,
+				//string(MetaArgumentAlias):         optional,
 				string(MetaArgumentProvider):      optional,
 				string(MetaArgumentDependsOn):     optional,
 				string(MetaArgumentCount):         optional,
@@ -57,8 +57,6 @@ func (r *resource) UpdateModule(ctx context.Context) {
 		r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		return
 	}
-	x.provider = strings.Split(x.resourceType, "_")[0]
-	// if the provider is explicitly defined in the attributes this will override the provider
 	x.getProvider(ctx)
 
 	// update module
@@ -92,6 +90,8 @@ func (r *Resource) GetBlockName() string {
 }
 
 func (r *Resource) getProvider(ctx context.Context) {
+	// the provider is the first element in the resourceType of the resource
+	r.provider = strings.Split(r.resourceType, "_")[0]
 	if r.KformBlockContext.Attributes != nil && r.KformBlockContext.Attributes.Provider != nil {
 		r.provider = *r.KformBlockContext.Attributes.Provider
 	}

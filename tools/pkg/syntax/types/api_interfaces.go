@@ -1,7 +1,7 @@
 package types
 
 func (r *KformBlockAttributes) GetSource() string {
-	if r.Source != nil {
+	if r != nil && r.Source != nil {
 		return *r.Source
 	}
 	return ""

@@ -4,13 +4,14 @@ metadata:
   name: nf-deploy-example
 spec:
   kind: module
-  requiredProviders:
+  providerRequirements:
     aws:
       source: .terraform/providers/aws
     gke:
       source: .terraform/providers/gke
     kubernetes:
       source: .terraform/providers/kubernetes
+      version: v0.1.0
     fetch:
       source: .terraform/providers/fetch
   info: {}

@@ -4,15 +4,8 @@ metadata:
   name: dnn
 spec:
   kind: module
-  requiredProviders:
-    aws:
-      source: .terraform/providers/aws
-    gke:
-      source: .terraform/providers/gke
-    kubernetes:
-      source: .terraform/providers/kubernetes
-    fetch:
-      source: .terraform/providers/fetch
+  providerRequirements:
     resourcebackend:
       source: .terraform/providers/resourcebackend
+      version: v0.1.1
   info: {}

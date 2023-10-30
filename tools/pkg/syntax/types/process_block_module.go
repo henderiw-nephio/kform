@@ -67,6 +67,7 @@ type ModuleCall struct {
 
 	name      string
 	source    string
+	// providers key is the target provider, value is the source provider
 	providers map[string]string
 }
 
@@ -86,4 +87,8 @@ func (r *ModuleCall) getProviders(ctx context.Context) {
 	} else {
 		r.providers = map[string]string{}
 	}
+}
+
+func (r *ModuleCall) GetProviders() map[string]string {
+	return r.providers
 }

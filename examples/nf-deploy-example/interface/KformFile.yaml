@@ -4,15 +4,9 @@ metadata:
   name: interface
 spec:
   kind: module
-  requiredProviders:
-    aws:
-      source: .terraform/providers/aws
-    gke:
-      source: .terraform/providers/gke
-    kubernetes:
-      source: .terraform/providers/kubernetes
-    fetch:
-      source: .terraform/providers/fetch
-    resourcebackend:
-      source: .terraform/providers/resourcebackend
+  #providerRequirements:
+  #  kubernetes:
+  #    source: .terraform/providers/kubernetes
+  #  resourcebackend:
+  #    source: .terraform/providers/resourcebackend
   info: {}

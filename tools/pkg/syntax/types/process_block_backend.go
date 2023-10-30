@@ -26,7 +26,7 @@ func newBackend(ctx context.Context, n string) Block {
 }
 
 type backend struct {
-	config
+	config 
 }
 
 func (r *backend) UpdateModule(ctx context.Context) {
@@ -36,6 +36,7 @@ func (r *backend) UpdateModule(ctx context.Context) {
 		config: r.config,
 		name:   cctx.GetContextValue[string](ctx, CtxKeyVarName),
 	}
+	fmt.Println(x.fileName)
 	if len(r.dependencies) > 0 {
 		r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), fmt.Errorf("not expecting a dependency, got: %v", r.dependencies)))
 	}
