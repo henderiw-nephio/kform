@@ -1,5 +1,6 @@
 package diag
 
+/*
 import (
 	"fmt"
 	"sync"
@@ -47,3 +48,4 @@ func (r *recorder) Print() {
 		fmt.Println(d)
 	}
 }
+*/

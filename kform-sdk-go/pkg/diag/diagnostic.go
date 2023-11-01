@@ -10,7 +10,19 @@ type Diagnostic struct {
 	*kfplugin1.Diagnostic
 }
 
-var severities = []kfplugin1.Diagnostic_Severity{kfplugin1.Diagnostic_ERROR, kfplugin1.Diagnostic_WARNING}
+var severities = []kfplugin1.Severity{kfplugin1.Severity_ERROR, kfplugin1.Severity_WARNING}
+
+func (r Diagnostic) GetSeverity() kfplugin1.Severity {
+	return r.Severity
+}
+
+func (r Diagnostic) GetDetail() string {
+	return r.Detail
+}
+
+func (r Diagnostic) GetContext() string {
+	return r.Context
+}
 
 func (r Diagnostic) Validate() error {
 	var valid bool

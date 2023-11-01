@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
@@ -16,7 +17,7 @@ func newLocal(ctx context.Context, n string) Block {
 			blockType: GetBlockType(n),
 			expectedKeywords: map[BlockContextKey]bool{
 				BlockContextKeyAttributes: optional,
-				BlockContextKeyInstances:  mandatory,
+				BlockContextKeyValue:      mandatory,
 			},
 			expectedAttributes: map[string]bool{
 				string(MetaArgumentSchema):        mandatory,
@@ -28,7 +29,7 @@ func newLocal(ctx context.Context, n string) Block {
 				string(MetaArgumentPrecondition):  optional,
 				string(MetaArgumentPostcondition): optional,
 			},
-			recorder: cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder),
+			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},
 	}
 }

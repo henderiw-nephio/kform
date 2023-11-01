@@ -10,6 +10,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw/logger/log"
 )
@@ -126,7 +127,7 @@ func TestGetKforms(t *testing.T) {
 				Level: slog.LevelDebug,
 			}))
 
-			recorder := diag.NewRecorder()
+			recorder := recorder.New[diag.Diagnostic]()
 
 			ctx := context.Background()
 			ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
@@ -151,7 +152,7 @@ func TestGetKforms(t *testing.T) {
 				for name, provider := range m.ProviderConfigs.List() {
 					fmt.Printf("provider: %s, data: %v\n", name.Name, *provider)
 				}
-				
+
 			}
 
 		})

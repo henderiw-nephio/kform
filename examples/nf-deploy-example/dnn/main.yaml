@@ -14,8 +14,8 @@ data:
               apiVersion: ipam.resource.nephio.org/v1alpha1
               kind: IPClaim
             forEach: $input.dnn[0].spec.pools
-          instances: 
-          - metadata:
+          config: 
+            metadata:
               name: $input.dnn[0].metadata.name + "-" + $each.value.spec.pool[0]
             spec:
               kind: pool

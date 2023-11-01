@@ -4,7 +4,7 @@ import "github.com/google/cel-go/cel"
 
 const (
 	BlockAttrCount   = "count"
-	BlockAttrForEach = "for_each"
+	BlockAttrForEach = "forEach"
 
 	KeyCountIndex = "count.index"
 	KeyForEachKey = "each.key"

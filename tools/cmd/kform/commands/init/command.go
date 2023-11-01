@@ -8,6 +8,7 @@ import (
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/initdocs"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw/logger/log"
@@ -19,7 +20,7 @@ func NewRunner(ctx context.Context, version string) *Runner {
 	r := &Runner{}
 	cmd := &cobra.Command{
 		Use:     "init DIR [flags]",
-		Args:    cobra.MaximumNArgs(1),
+		Args:    cobra.ExactArgs(1),
 		Short:   docs.InitShort,
 		Long:    docs.InitShort + "\n" + docs.InitLong,
 		Example: docs.InitExamples,
@@ -46,8 +47,10 @@ type Runner struct {
 func (r *Runner) runE(c *cobra.Command, args []string) error {
 	ctx := c.Context()
 	log := log.FromContext(ctx)
-	//log := log.FromContext(ctx)
+
 	r.rootPath = args[0]
+	// validate the rootpath, so far we assume we run a directory calling the main function
+	// but not within the main fn
 	if err := fsys.ValidateDirPath(r.rootPath); err != nil {
 		return err
 	}
@@ -58,9 +61,10 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 
 	// initialize the recorder
-	recorder := diag.NewRecorder()
+	recorder := recorder.New[diag.Diagnostic]()
 	ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
 
+	// create a kform parser
 	log.Info("parsing modules")
 	p, err := parser.NewKformParser(ctx, r.rootPath)
 	if err != nil {
@@ -79,10 +83,10 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		fmt.Printf("provider: %s res: %v\n", nsn.Name, reqs)
 	}
 
-	// init and/or restore backend
+	// init and/or restore backend (todo)
 	// syntax check config -> build the dag but dont use it (done)
-	// download module
-	// download providers
+	// download module (todo for remote download)
+	// download providers (todo for remote and locla download)
 	// -> lock files
 
 	return nil

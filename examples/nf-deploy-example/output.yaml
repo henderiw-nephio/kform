@@ -12,8 +12,8 @@ data:
           schema:
             apiVersion: workload.nephio.org/v1alpha1
             kind: NFDeployment
-        instances:
-        - metadata:
+        value:
+          metadata:
             name: $input.upfdeploy.metadata.name + "-" +  $input.context.data.clusterName
             namespace: $input.upfdeploy.metadata.namespace
           spec:
@@ -27,5 +27,5 @@ data:
             apiVersion: k8s.cni.cncf.io/v1
             kind: NetworkAttachmentDefinition
           forEach: $module.interface.nad
-        instances: [$each.value]
+        value: $each.value
           

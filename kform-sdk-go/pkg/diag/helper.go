@@ -12,7 +12,7 @@ func DiagFromErr(err error) Diagnostic {
 	}
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_ERROR,
+			Severity: kfplugin1.Severity_ERROR,
 			Detail:   err.Error(),
 		},
 	}
@@ -24,35 +24,35 @@ func DiagFromErrWithContext(ctx string, err error) Diagnostic {
 	}
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_ERROR,
+			Severity: kfplugin1.Severity_ERROR,
 			Detail:   err.Error(),
 			Context:  ctx,
 		},
 	}
 }
 
-func FromErr(err error) Diagnostics {
+func FromErr(err error) []Diagnostic {
 	if err == nil {
 		return nil
 	}
-	return Diagnostics{
-		DiagFromErr(err).Diagnostic,
+	return []Diagnostic{
+		DiagFromErr(err),
 	}
 }
 
-func FromErrWithContext(ctx string, err error) Diagnostics {
+func FromErrWithContext(ctx string, err error) []Diagnostic {
 	if err == nil {
 		return nil
 	}
-	return Diagnostics{
-		DiagFromErrWithContext(ctx, err).Diagnostic,
+	return []Diagnostic{
+		DiagFromErrWithContext(ctx, err),
 	}
 }
 
 func DiagErrorf(format string, a ...interface{}) Diagnostic {
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_ERROR,
+			Severity: kfplugin1.Severity_ERROR,
 			Detail:   fmt.Sprintf(format, a...),
 		},
 	}
@@ -61,7 +61,7 @@ func DiagErrorf(format string, a ...interface{}) Diagnostic {
 func DiagWarnf(format string, a ...interface{}) Diagnostic {
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_WARNING,
+			Severity: kfplugin1.Severity_WARNING,
 			Detail:   fmt.Sprintf(format, a...),
 		},
 	}
@@ -70,7 +70,7 @@ func DiagWarnf(format string, a ...interface{}) Diagnostic {
 func DiagErrorfWithContext(ctx string, format string, a ...interface{}) Diagnostic {
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_ERROR,
+			Severity: kfplugin1.Severity_ERROR,
 			Detail:   fmt.Sprintf(format, a...),
 			Context:  ctx,
 		},
@@ -80,21 +80,21 @@ func DiagErrorfWithContext(ctx string, format string, a ...interface{}) Diagnost
 func DiagWarnfWithContext(ctx string, format string, a ...interface{}) Diagnostic {
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
-			Severity: kfplugin1.Diagnostic_WARNING,
+			Severity: kfplugin1.Severity_WARNING,
 			Detail:   fmt.Sprintf(format, a...),
 			Context:  ctx,
 		},
 	}
 }
 
-func Errorf(format string, a ...interface{}) Diagnostics {
-	return Diagnostics{
-		DiagErrorf(format, a...).Diagnostic,
+func Errorf(format string, a ...interface{}) []Diagnostic {
+	return []Diagnostic{
+		DiagErrorf(format, a...),
 	}
 }
 
-func ErrorfWithContext(ctx string, format string, a ...interface{}) Diagnostics {
-	return Diagnostics{
-		DiagErrorfWithContext(ctx, format, a...).Diagnostic,
+func ErrorfWithContext(ctx string, format string, a ...interface{}) []Diagnostic {
+	return []Diagnostic{
+		DiagErrorfWithContext(ctx, format, a...),
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
@@ -17,7 +18,7 @@ type ModuleParser interface {
 
 // TODO moduleName
 func NewModuleParser(ctx context.Context, path string) (ModuleParser, error) {
-	recorder := cctx.GetContextValue[diag.Recorder](ctx, types.CtxKeyRecorder)
+	recorder := cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, types.CtxKeyRecorder)
 	if recorder == nil {
 		return nil, fmt.Errorf("cannot parse without a recorder")
 	}
@@ -35,7 +36,7 @@ type moduleparser struct {
 	kind     types.ModuleKind
 	path     string
 	fsys     fsys.FS
-	recorder diag.Recorder
+	recorder recorder.Recorder[diag.Diagnostic]
 }
 
 // Parse

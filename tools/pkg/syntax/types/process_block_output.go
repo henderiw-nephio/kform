@@ -5,18 +5,19 @@ import (
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
 
-func newOutput(ctx context.Context,n string) Block {
+func newOutput(ctx context.Context, n string) Block {
 	return &output{
 		config: config{
 			level:     1,
 			blockType: GetBlockType(n),
 			expectedKeywords: map[BlockContextKey]bool{
 				BlockContextKeyAttributes: mandatory,
-				BlockContextKeyInstances:  mandatory,
+				BlockContextKeyValue:      mandatory,
 			},
 			expectedAttributes: map[string]bool{
 				string(MetaArgumentSchema):        mandatory,
@@ -27,9 +28,9 @@ func newOutput(ctx context.Context,n string) Block {
 				string(MetaArgumentForEach):       optional,
 				string(MetaArgumentPrecondition):  optional,
 				string(MetaArgumentPostcondition): optional,
-				string(MetaArgumentValidation): optional,
+				string(MetaArgumentValidation):    optional,
 			},
-			recorder: cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder),
+			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},
 	}
 }
@@ -45,6 +46,8 @@ func (r *output) UpdateModule(ctx context.Context) {
 		config: r.config,
 		name:   cctx.GetContextValue[string](ctx, CtxKeyVarName),
 	}
+
+	//fmt.Println("output processing: value", x.name, x.config.Value)
 
 	// update module
 	m := cctx.GetContextValue[*Module](ctx, CtxKeyModule)

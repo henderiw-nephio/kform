@@ -36,8 +36,8 @@ func (r *moduleparser) processBlock(ctx context.Context, block *types.KformBlock
 		r.recorder.Record(diag.DiagFromErr(err))
 		return
 	}
-	l := log.FromContext(ctx).With("blockType", blockType)
-	l.Debug("processBlock")
+	log := log.FromContext(ctx).With("blockType", blockType)
+	log.Debug("processBlock")
 	bt, err := types.GetBlock(ctx, blockType)
 	if err != nil {
 		r.recorder.Record(diag.DiagFromErr(err))

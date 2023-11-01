@@ -12,16 +12,16 @@ data:
           schema:
             apiVersion: k8s.cni.cncf.io/v1
             kind: NetworkAttachmentDefinition
-        instances: [$module.nad.nad]
+        value: $module.nad.nad
   - output:
       interface:
         attributes:
-          for_each: $resourcebackend_ipclaim.ipv4
+          forEach: $resourcebackend_ipclaim.ipv4
           schema:
             apiVersion: req.nephio.org/v1alpha1
             kind: Interface
-        instances:
-        - metadata: $input.interface[0]
+        value:
+          metadata: $input.interface[0]
           spec: $input.interface[0]
           status:
             vlanClaimStatus: 

@@ -16,6 +16,12 @@ const (
 	LoopKeyForEachVal = "each.value"
 )
 
+var LocalVars = map[string]struct{}{
+	LoopKeyCountIndex: {},
+	LoopKeyForEachKey: {},
+	LoopKeyForEachVal: {},
+}
+
 var LoopAttr = map[string]*cel.Type{
 	LoopAttrCount:   cel.IntType,
 	LoopAttrForEach: cel.DynType,

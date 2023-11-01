@@ -19,12 +19,14 @@ package dag
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 )
 
 const (
 	// errors
 	NotFound = "not found"
+	Root     = "root"
 )
 
 type DAG[T1 any] interface {
@@ -39,6 +41,8 @@ type DAG[T1 any] interface {
 	GetDownVertexes(from string) []string
 	GetUpVertexes(from string) []string
 	TransitiveReduction(ctx context.Context)
+	Print(name string)
+	PrintFrom(name, from string)
 }
 
 // used for returning
@@ -60,6 +64,9 @@ type dag[T1 any] struct {
 	// used for transit reduction
 	mvd         sync.RWMutex
 	vertexDepth map[string]int
+
+	// tempDepMap
+	tempDepMap map[string]struct{}
 }
 
 func New[T1 any]() DAG[T1] {
@@ -226,4 +233,67 @@ func (r *dag[T1]) GetUpVertexes(from string) []string {
 		}
 	}
 	return upVerteces
+}
+
+func (r *dag[T1]) Print(name string) {
+	r.printFrom(name, Root)
+}
+
+func (r *dag[T1]) PrintFrom(name, from string) {
+	r.printFrom(name, from)
+}
+
+func (r *dag[T1]) printFrom(name, from string) {
+	fmt.Println()
+	r.printVertices(name)
+	fmt.Printf("######### DAG %s dependency map start ###########\n", name)
+	r.tempDepMap = map[string]struct{}{
+		from: {},
+	}
+	r.getDependencyMap(from, 0)
+	fmt.Printf("######### DAG %s dependency map end   ###########\n", name)
+	fmt.Println()
+}
+
+func (r *dag[T1]) printVertices(module string) {
+	fmt.Printf("###### DAG %s start #######\n", module)
+	for vertexName := range r.GetVertices() {
+		fmt.Printf("vertexname: %s upVertices: %v, downVertices: %v\n", vertexName, r.GetUpVertexes(vertexName), r.GetDownVertexes(vertexName))
+	}
+	fmt.Printf("###### DAG %s output stop #######\n", module)
+}
+
+func (r *dag[T1]) getDependencyMap(from string, indent int) {
+	fmt.Printf("%s:\n", from)
+	for _, upVertex := range r.GetUpVertexes(from) {
+		found := r.checkVertex(upVertex)
+		if !found {
+			fmt.Printf("upVertex %s no found in vertices\n", upVertex)
+			os.Exit(1)
+		}
+		fmt.Printf("-> %s\n", upVertex)
+	}
+	indent++
+	for _, downVertex := range r.GetDownVertexes(from) {
+		if _, ok := r.tempDepMap[downVertex]; ok {
+			continue
+		}
+		r.tempDepMap[downVertex] = struct{}{}
+		found := r.checkVertex(downVertex)
+		if !found {
+			fmt.Printf("upVertex %s no found in vertices\n", downVertex)
+			os.Exit(1)
+		}
+		//fmt.Printf("<- %s\n", downVertex)
+		r.getDependencyMap(downVertex, indent)
+	}
+}
+
+func (r *dag[T1]) checkVertex(s string) bool {
+	for vertexName := range r.GetVertices() {
+		if vertexName == s {
+			return true
+		}
+	}
+	return false
 }

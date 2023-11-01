@@ -2,11 +2,15 @@ package types
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/dag"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/sets"
 )
@@ -14,7 +18,7 @@ import (
 type Module struct {
 	nsn       cache.NSN
 	Kind      ModuleKind
-	recorder  diag.Recorder
+	recorder  recorder.Recorder[diag.Diagnostic]
 	SourceDir string
 	Version   string
 
@@ -31,7 +35,7 @@ type Module struct {
 	ModuleCalls cache.Cache[*ModuleCall]
 }
 
-func NewModule(nsn cache.NSN, kind ModuleKind, recorder diag.Recorder) *Module {
+func NewModule(nsn cache.NSN, kind ModuleKind, recorder recorder.Recorder[diag.Diagnostic]) *Module {
 	return &Module{
 		nsn:                  nsn,
 		Kind:                 kind,
@@ -114,19 +118,19 @@ func (r *Module) resolveDependencies(ctx context.Context, nsn cache.NSN, v Depen
 		switch strings.Split(d, ".")[0] {
 		case string(BlockTypeInput):
 			if _, err := r.Inputs.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeOutput):
 			if _, err := r.Outputs.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeLocal):
 			if _, err := r.Locals.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeModule):
 			if _, err := r.ModuleCalls.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
 			}
 		case "each":
 			if v.GetAttributes().ForEach == nil {
@@ -139,105 +143,57 @@ func (r *Module) resolveDependencies(ctx context.Context, nsn cache.NSN, v Depen
 		default:
 			// resources - resource or data
 			if _, err := r.Resources.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
 			}
 		}
 	}
 }
 
-/*
-func (r *Module) ResolveResource2ProviderRequirements(ctx context.Context) {
-	for nsn, v := range r.Resources.List() {
-		// the raw provider reference (w/o alias tag) is the first segment of the provider name
-		// <provider>_<alias>
-		rawProvider := strings.Split(v.GetProvider(), "_")[0]
-		if _, err := r.ProviderRequirements.Get(cache.NSN{Name: rawProvider}); err != nil {
-			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s raw provider resolution resource2providerReq failed for %s", r.Kind, r.nsn.Name, rawProvider))
-		}
-	}
-}
-*/
-
 func (r *Module) ResolveResource2ProviderConfig(ctx context.Context) {
 	for nsn, v := range r.Resources.List() {
 		provider := v.GetProvider()
 		if _, err := r.ProviderConfigs.Get(cache.NSN{Name: provider}); err != nil {
-			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s provider resolution resource2providerConfig failed for %s", r.Kind, r.nsn.Name, provider))
+			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s provider resolution resource2providerConfig failed for %s, err: %s", r.Kind, r.nsn.Name, provider, err.Error()))
 		}
 	}
 }
 
-/*
-func (r *Module) ResolveProviderConfig2ProviderRequirements(ctx context.Context) {
-	for nsn, v := range r.ProviderConfigs.List() {
-		// reteurn the raw provider name w/o alias
-		provider := v.GetName()
-		if _, err := r.ProviderRequirements.Get(cache.NSN{Name: provider}); err != nil {
-			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s provider requirements providerConfig2providerReq resolution failed for %s", r.Kind, r.nsn.Name, provider))
-		}
-	}
-}
-*/
-
-/*
-func (r *Module) ValidateUnReferencedProviderConfigs(ctx context.Context) {
-	providerConfigs := r.ProviderConfigs.List()
-	for _, v := range r.Resources.List() {
-		delete(providerConfigs, cache.NSN{Name: v.GetProvider()})
-		if len(providerConfigs) == 0 {
-			return
-		}
-	}
-	if len(providerConfigs) > 0 {
-		unreferenceProviders := make([]string, 0, len(providerConfigs))
-		for nsn, v := range providerConfigs {
-			unreferenceProviders = append(unreferenceProviders, v.GetContext(nsn.Name))
-		}
-		sort.Strings(unreferenceProviders)
-		r.recorder.Record(diag.DiagWarnf("%s module: %s provider configs are unreferenced: %v", r.Kind, r.nsn.Name, unreferenceProviders))
-	}
-}
-*/
-
-/*
-func (r *Module) ValidateUnReferencedProviderRequirements(ctx context.Context) {
-	providerRequirements := r.ProviderRequirements.List()
-	for _, v := range r.ProviderConfigs.List() {
-		delete(providerRequirements, cache.NSN{Name: v.GetName()})
-		if len(providerRequirements) == 0 {
-			return
-		}
-	}
-	if len(providerRequirements) > 0 {
-		unreferenceProviderRequirements := make([]string, 0, len(providerRequirements))
-		for nsn := range providerRequirements {
-			unreferenceProviderRequirements = append(unreferenceProviderRequirements, nsn.Name)
-		}
-		sort.Strings(unreferenceProviderRequirements)
-		r.recorder.Record(diag.DiagWarnf("%s module %s provider requirements are unreferenced: %v", r.Kind, r.nsn.Name, unreferenceProviderRequirements))
-	}
-}
-*/
-
-func (r *Module) GenerateDAG(ctx context.Context) {
+func (r *Module) GenerateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	// add the vertices with the right VertexContext to the dag
-	dag := r.generateDAG(ctx)
+	d := r.generateDAG(ctx)
 	// connect the dag based on the depdenencies
-	for n, v := range dag.GetVertices() {
-		for d := range v.GetDependencies() {
-			dag.Connect(ctx, d, n)
+	for n, v := range d.GetVertices() {
+		deps := v.GetBlockDependencies()
+		fmt.Println("block dependencies", n, deps)
+		for dep := range deps {
+			d.Connect(ctx, dep, n)
 		}
+		if n != dag.Root {
+			if len(deps) == 0 {
+				d.Connect(ctx, dag.Root, n)
+			}
+		}
+
 	}
 	// optimize the dag by removing the transitive connection in the dag
-	dag.TransitiveReduction(ctx)
+	//d.TransitiveReduction(ctx)
+	return d
 }
 
 func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	d := dag.New[*VertexContext]()
+
+	d.AddVertex(ctx, dag.Root, &VertexContext{
+		FileName:     filepath.Join(r.SourceDir, pkgio.PkgFileMatch[0]),
+		ModuleName:   r.nsn.Name,
+		BlockType:    dag.Root,
+		BlockContext: KformBlockContext{},
+	})
+
 	for nsn, x := range r.Inputs.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			Module:          x.moduleName,
+			ModuleName:      x.moduleName,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -246,9 +202,10 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 		})
 	}
 	for nsn, x := range r.Outputs.List() {
+
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			Module:          x.moduleName,
+			ModuleName:      x.moduleName,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -259,7 +216,7 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.Locals.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			Module:          x.moduleName,
+			ModuleName:      x.moduleName,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -270,7 +227,7 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.ModuleCalls.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			Module:          x.moduleName,
+			ModuleName:      x.moduleName,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -281,7 +238,7 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.Resources.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			Module:          x.moduleName,
+			ModuleName:      x.moduleName,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,

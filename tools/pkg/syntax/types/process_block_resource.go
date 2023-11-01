@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
@@ -17,10 +18,10 @@ func newResource(ctx context.Context, n string) Block {
 			blockType: GetBlockType(n),
 			expectedKeywords: map[BlockContextKey]bool{
 				BlockContextKeyAttributes: mandatory,
-				BlockContextKeyInstances:  mandatory,
+				BlockContextKeyConfig:     mandatory,
 			},
 			expectedAttributes: map[string]bool{
-				string(MetaArgumentSchema):        mandatory,
+				string(MetaArgumentSchema): mandatory,
 				//string(MetaArgumentAlias):         optional,
 				string(MetaArgumentProvider):      optional,
 				string(MetaArgumentDependsOn):     optional,
@@ -35,7 +36,7 @@ func newResource(ctx context.Context, n string) Block {
 				string(MetaArgumentSensitive):     optional,
 				string(MetaArgumentValidation):    optional,
 			},
-			recorder: cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder),
+			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},
 	}
 }

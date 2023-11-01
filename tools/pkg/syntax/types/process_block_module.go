@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
@@ -25,7 +26,7 @@ func newModule(ctx context.Context, n string) Block {
 				string(MetaArgumentCount):     optional,
 				string(MetaArgumentForEach):   optional,
 			},
-			recorder: cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder),
+			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},
 	}
 }
@@ -65,8 +66,8 @@ func (r *module) UpdateModule(ctx context.Context) {
 type ModuleCall struct {
 	config
 
-	name      string
-	source    string
+	name   string
+	source string
 	// providers key is the target provider, value is the source provider
 	providers map[string]string
 }

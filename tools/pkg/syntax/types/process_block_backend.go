@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 )
 
@@ -20,13 +21,13 @@ func newBackend(ctx context.Context, n string) Block {
 			expectedAttributes: map[string]bool{
 				string(MetaArgumentSource): mandatory, // mandatory
 			},
-			recorder: cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder),
+			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},
 	}
 }
 
 type backend struct {
-	config 
+	config
 }
 
 func (r *backend) UpdateModule(ctx context.Context) {

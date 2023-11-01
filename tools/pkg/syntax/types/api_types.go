@@ -1,5 +1,7 @@
 package types
 
+import "github.com/henderiw-nephio/kform/tools/pkg/dag"
+
 type Kform struct {
 	Blocks []KformBlock `json:"spec" yaml:"spec"`
 }
@@ -11,17 +13,18 @@ type KformBlock struct {
 
 type KformBlockContext struct {
 	Attributes *KformBlockAttributes `json:"attributes,omitempty" yaml:"attributes,omitempty"`
-	Instances  []any                 `json:"instances,omitempty" yaml:"instances,omitempty"`
+	//Instances  []any                 `json:"instances,omitempty" yaml:"instances,omitempty"`
 	Default    []any                 `json:"default,omitempty" yaml:"default,omitempty"`
 	// NOTE: had to change to inputParams as input is a blocktype name
 	InputParams map[string]any `json:"inputParams,omitempty" yaml:"inputParams,omitempty"`
 	Config      any            `json:"config,omitempty" yaml:"config,omitempty"`
+	Value       any            `json:"value,omitempty" yaml:"value,omitempty"`
 }
 
 type KformBlockAttributes struct {
-	Schema        *KformBlockSchema `json:"schema,omitempty" yaml:"schema,omitempty"`
-	Source        *string           `json:"source,omitempty" yaml:"source,omitempty"`
-	Alias         *string           `json:"alias,omitempty" yaml:"alias,omitempty"`
+	Schema *KformBlockSchema `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Source *string           `json:"source,omitempty" yaml:"source,omitempty"`
+	Alias  *string           `json:"alias,omitempty" yaml:"alias,omitempty"`
 	// should be an int actually
 	Count         *string           `json:"count,omitempty" yaml:"count,omitempty"`
 	ForEach       *string           `json:"forEach,omitempty" yaml:"forEach,omitempty"`
@@ -59,6 +62,7 @@ const (
 	BlockTypeLocal             BlockType = "local"
 	BlockTypeResource          BlockType = "resource"
 	BlockTypeData              BlockType = "data"
+	BlockTypeRoot              BlockType = dag.Root
 )
 
 func GetBlockType(n string) BlockType {
@@ -91,18 +95,19 @@ type BlockContextKey string
 const (
 	BlockContextKeyUnknown     BlockContextKey = "unknown"
 	BlockContextKeyAttributes  BlockContextKey = "attributes"
-	BlockContextKeyInstances   BlockContextKey = "instances"
+	//BlockContextKeyInstances   BlockContextKey = "instances"
 	BlockContextKeyDefault     BlockContextKey = "default"
 	BlockContextKeyInputParams BlockContextKey = "inputParams"
 	BlockContextKeyConfig      BlockContextKey = "config"
+	BlockContextKeyValue       BlockContextKey = "value"
 )
 
 type MetaArgument string
 
 const (
-	MetaArgumentUnknown       MetaArgument = "unknown"
-	MetaArgumentSchema        MetaArgument = "schema"
-	MetaArgumentSource        MetaArgument = "source"
+	MetaArgumentUnknown MetaArgument = "unknown"
+	MetaArgumentSchema  MetaArgument = "schema"
+	MetaArgumentSource  MetaArgument = "source"
 	//MetaArgumentAlias         MetaArgument = "alias"
 	//MetaArgumentAliases       MetaArgument = "aliases"
 	MetaArgumentCount         MetaArgument = "count"

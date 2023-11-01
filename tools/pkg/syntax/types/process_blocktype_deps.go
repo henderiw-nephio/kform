@@ -48,8 +48,20 @@ func (r *renderer) GetModuleOutputDependencies() map[string]string {
 }
 
 func (r *renderer) GatherDependencies(ctx context.Context, x any) error {
+	/*
+		blockType := cctx.GetContextValue[string](ctx, CtxKeyBlockType)
+		if blockType == string(BlockTypeOutput) {
+			fmt.Println("gatherdeps", x)
+		}
+	*/
 	switch x := x.(type) {
 	case map[string]any:
+		for _, v := range x {
+			if err := r.GatherDependencies(ctx, v); err != nil {
+				return err
+			}
+		}
+	case map[any]any:
 		for _, v := range x {
 			if err := r.GatherDependencies(ctx, v); err != nil {
 				return err
@@ -62,14 +74,20 @@ func (r *renderer) GatherDependencies(ctx context.Context, x any) error {
 			}
 		}
 	case string:
-		if err := r.getExprDependencies(ctx, x); err != nil {
+		if err := r.getRefsFromExpr(ctx, x); err != nil {
 			return err
 		}
+	default:
+		/*
+			if blockType == string(BlockTypeOutput) {
+				fmt.Println("gatherdeps default", reflect.TypeOf(x))
+			}
+		*/
 	}
 	return nil
 }
 
-func (r *renderer) getExprDependencies(ctx context.Context, expr string) error {
+func (r *renderer) getRefsFromExpr(ctx context.Context, expr string) error {
 	depsSplit := strings.Split(expr, "$")
 	if len(depsSplit) == 1 {
 		return nil
@@ -80,20 +98,20 @@ func (r *renderer) getExprDependencies(ctx context.Context, expr string) error {
 			return fmt.Errorf("a dependency always need <namespace>.<name>, got: %s", dep)
 		}
 
-		r.addDependency(parsedependencyString(strings.Join(depSplit[:2], ".")), GetContext(ctx))
+		r.addDependency(ParseReferenceString(strings.Join(depSplit[:2], ".")), GetContext(ctx))
 
 		if depSplit[0] == "module" {
 			if len(depSplit) < 3 {
 				return fmt.Errorf("a module dependency always need <namespace>.<name>.<output>, got: %s", dep)
 			}
-			r.addModDependency(parsedependencyString(strings.Join(depSplit[:3], ".")), GetContext(ctx))
+			r.addModDependency(ParseReferenceString(strings.Join(depSplit[:3], ".")), GetContext(ctx))
 			//r.modDeps = append(r.modDeps, parsedependencyString(strings.Join(depSplit[:3], ".")))
 		}
 	}
 	return nil
 }
 
-func parsedependencyString(inputString string) string {
+func ParseReferenceString(inputString string) string {
 	// Define a regular expression pattern to match special characters
 	specialCharPattern := "[$&+,:;=?@#|'<>-^*()%!]"
 
@@ -103,20 +121,24 @@ func parsedependencyString(inputString string) string {
 	// Find all matches in the input string
 	matches := regex.FindAllStringIndex(inputString, -1)
 
+	fmt.Println("inputString", inputString)
 	if matches == nil {
 		//fmt.Println("No special characters found.")
+		fmt.Println("outputString no match", inputString)
 		return inputString
 	} else {
 		for matchIdx, match := range matches {
 			start, end := match[0], match[1]
-			//fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
+			fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
 			// if the special char is a lowercase/upercase letter or - or _ we continue
 			re := regexp.MustCompile(`^[a-zA-Z]+[a-zA-Z0-9_-]*$`)
 			if re.Match([]byte(inputString[start:end])) {
 				continue
 			}
+			fmt.Println("outputString match", inputString)
 			return inputString[0:matches[matchIdx][0]]
 		}
+		fmt.Println("outputString match out", inputString)
 		return inputString
 	}
 }

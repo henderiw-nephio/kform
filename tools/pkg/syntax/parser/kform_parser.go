@@ -9,6 +9,8 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
@@ -17,10 +19,11 @@ import (
 type KformParser interface {
 	Parse(ctx context.Context)
 	GetProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider
+	GenerateDAG(ctx context.Context) map[cache.NSN]dag.DAG[*types.VertexContext]
 }
 
 func NewKformParser(ctx context.Context, path string) (KformParser, error) {
-	recorder := cctx.GetContextValue[diag.Recorder](ctx, types.CtxKeyRecorder)
+	recorder := cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, types.CtxKeyRecorder)
 	if recorder == nil {
 		return nil, fmt.Errorf("cannot parse without a recorder")
 	}
@@ -34,7 +37,7 @@ func NewKformParser(ctx context.Context, path string) (KformParser, error) {
 type kformparser struct {
 	rootModulePath string
 	rootModuleName cache.NSN
-	recorder       diag.Recorder
+	recorder       recorder.Recorder[diag.Diagnostic]
 
 	modules cache.Cache[*types.Module]
 }
@@ -73,6 +76,8 @@ func (r *kformparser) parseModule(ctx context.Context, nsn cache.NSN, path strin
 	}
 	r.modules.Add(ctx, nsn, m)
 
+	// for each module that calls another module we need to continue
+	// processing the new module
 	var wg sync.WaitGroup
 	for name, module := range m.ModuleCalls.List() {
 		source := module.GetAttributes().GetSource()
@@ -111,7 +116,6 @@ func (r *kformparser) GetProviderRequirements(ctx context.Context) map[cache.NSN
 		allprovreqs[nsn] = []kformpkgmetav1alpha1.Provider{}
 	}
 
-	
 	for _, m := range r.modules.List() {
 		provReqs := m.ProviderRequirements.List()
 		for provNSN, provReq := range provReqs {
@@ -122,4 +126,12 @@ func (r *kformparser) GetProviderRequirements(ctx context.Context) map[cache.NSN
 		}
 	}
 	return allprovreqs
+}
+
+func (r *kformparser) GenerateDAG(ctx context.Context) map[cache.NSN]dag.DAG[*types.VertexContext] {
+	dags := map[cache.NSN]dag.DAG[*types.VertexContext]{}
+	for nsn, m := range r.modules.List() {
+		dags[nsn] = m.GenerateDAG(ctx)
+	}
+	return dags
 }

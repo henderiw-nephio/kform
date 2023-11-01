@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 	"github.com/henderiw/logger/log"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -23,7 +24,7 @@ type config struct {
 	blockType          BlockType
 	expectedKeywords   map[BlockContextKey]bool
 	expectedAttributes map[string]bool
-	recorder           diag.Recorder
+	recorder           recorder.Recorder[diag.Diagnostic]
 
 	// dynamic config
 	fileName   string
@@ -50,8 +51,13 @@ func (r *config) getDependencies(ctx context.Context) {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
-	if r.KformBlockContext.Instances != nil {
-		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Instances); err != nil {
+	if r.KformBlockContext.Value != nil {
+		/*
+			if r.blockType == BlockTypeOutput {
+				ctx = context.WithValue(ctx, CtxKeyBlockType, string(BlockTypeOutput))
+			}
+		*/
+		if err := rn.GatherDependencies(ctx, r.KformBlockContext.Value); err != nil {
 			r.recorder.Record(diag.DiagFromErrWithContext(GetContext(ctx), err))
 		}
 	}
@@ -93,7 +99,7 @@ func (r *config) getAttributeDependencies(ctx context.Context, rn Renderer) {
 }
 
 func (r *config) ProcessBlock(ctx context.Context, block *KformBlock) context.Context {
-	recorder := cctx.GetContextValue[diag.Recorder](ctx, CtxKeyRecorder)
+	recorder := cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder)
 	if recorder == nil {
 		//r.recorder.Record(diag.DiagErrorfWithContext(GetContext(ctx), "cannot parse without a recorder"))
 		return ctx
@@ -161,8 +167,8 @@ func validateBlock(ctx context.Context, block *KformBlock) error {
 
 func (r *config) validateAttrAndObjectAtIntermediateLevel(ctx context.Context, block *KformBlock) {
 	level := cctx.GetContextValue[int](ctx, CtxKeyLevel)
-	if len(block.Instances) > 0 {
-		r.recorder.Record(diag.DiagWarnfWithContext(GetContext(ctx), "instances at level %d present but ignored", level))
+	if block.Value != nil {
+		r.recorder.Record(diag.DiagWarnfWithContext(GetContext(ctx), "value at level %d present but ignored", level))
 	}
 	if block.Attributes != nil {
 		r.recorder.Record(diag.DiagWarnfWithContext(GetContext(ctx), "attributes at level %d present but ignored", level))
@@ -214,8 +220,8 @@ func (r *config) GetAttributes() *KformBlockAttributes {
 	return r.Attributes
 }
 
-func (r *config) GetInstances() []any {
-	return r.Instances
+func (r *config) GetValue() any {
+	return r.Value
 }
 
 func (r *config) GetInputParams() map[string]any {
@@ -292,12 +298,6 @@ func (r *config) validateKeyWords(ctx context.Context, kfctx KformBlockContext) 
 		r.validateKeyWord(ctx, nil, BlockContextKeyAttributes)
 	}
 
-	if len(kfctx.Instances) == 0 {
-		r.validateKeyWord(ctx, nil, BlockContextKeyInstances)
-	} else {
-		r.validateKeyWord(ctx, kfctx.Instances, BlockContextKeyInstances)
-	}
-
 	if len(kfctx.Default) == 0 {
 		r.validateKeyWord(ctx, nil, BlockContextKeyDefault)
 	} else {
@@ -310,6 +310,7 @@ func (r *config) validateKeyWords(ctx context.Context, kfctx KformBlockContext) 
 		r.validateKeyWord(ctx, kfctx.InputParams, BlockContextKeyInputParams)
 	}
 	r.validateKeyWord(ctx, kfctx.Config, BlockContextKeyConfig)
+	r.validateKeyWord(ctx, kfctx.Value, BlockContextKeyValue)
 }
 
 func (r *config) validateKeyWord(ctx context.Context, value any, keyword BlockContextKey) {

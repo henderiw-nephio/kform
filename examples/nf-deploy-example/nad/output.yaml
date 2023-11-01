@@ -12,7 +12,7 @@ data:
           schema:
             apiVersion: k8s.cni.cncf.io/v1
             kind: NetworkAttachmentDefinition
-        instances: ['[$input.nad, $input.ipClaimIPv4, $input.ipClaimIPv6, $input.vlanClaim].nad-fn']
+        value: '[$input.nad, $input.ipClaimIPv4, $input.ipClaimIPv6, $input.vlanClaim].nad-fn'
                 
               
           

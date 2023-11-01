@@ -14,8 +14,8 @@ data:
               apiVersion: infra.nephio.org/v1alpha1
               kind: Network
             forEach: $input.interface[*].spec.networkInstnace.name
-          instances:
-          - metadata:
+          config:
+            metadata:
               name: $each.value
               namespace: default
   - module:

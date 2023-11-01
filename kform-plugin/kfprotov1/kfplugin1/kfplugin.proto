@@ -107,12 +107,13 @@ message StopProvider {
 message ServerCapabilities {
 }
 
+enum Severity {
+    UNDEFINED = 0;
+    ERROR = 1;
+    WARNING = 2;
+}
+
 message Diagnostic {
-    enum Severity {
-        INVALID = 0;
-        ERROR = 1;
-        WARNING = 2;
-    }
     Severity severity = 1;
     string detail = 2;
     string context = 3;

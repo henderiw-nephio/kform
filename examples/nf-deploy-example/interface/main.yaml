@@ -14,9 +14,9 @@ data:
               apiVersion: ipam.resource.nephio.org/v1alpha1
               kind: IPClaim
             count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv4Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
-          instances:
-          - metadata:
-              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name, "ipv4"].concat("-")'
+          config:
+            metadata:
+              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name, "ipv4"].concat("-")'
             spec:
               kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
               selector:
@@ -34,9 +34,9 @@ data:
               apiVersion: ipam.resource.nephio.org/v1alpha1
               kind: IPClaim
             count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv6Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
-          instances:
-          - metadata:
-              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name, "ipv6"].concat("-")'
+          config:
+            metadata:
+              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name, "ipv6"].concat("-")'
             spec:
               kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
               selector:
@@ -54,9 +54,9 @@ data:
               apiVersion: vlan.resource.nephio.org/v1alpha1
               kind: VLANClaim
             count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.attachmentType == "vlan") ? 1 | 0
-          instances:
-          - metadata:
-              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
+          config:
+            metadata:
+              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
             spec:
               vlanIndex:
                 name: $input.context.data.clusterName
@@ -68,9 +68,9 @@ data:
               apiVersion: k8s.cni.cncf.io/v1
               kind: NetworkAttachmentDefinition
             count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.cniType != "") ? 1 | 0
-          instances:
-          - metadata:
-              name: '[$input.upf, $input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
+          config:
+            metadata:
+              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
   - module:
       nad:
         attributes:

@@ -13,8 +13,8 @@ data:
             apiVersion: req.nephio.org/v1alpha1
             kind: DataNetwork
           forEach: $resourcebackend_ipclaim.this
-        instances:
-        - metadata: "$input.dnn[0]"
+        value:
+          metadata: "$input.dnn[0]"
           spec: "$input.dnn[0]"
           status: 
             pools: 
