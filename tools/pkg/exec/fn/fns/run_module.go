@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/render"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
@@ -12,14 +13,16 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/executor"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 )
 
 func NewModuleFn(cfg *Config) fn.BlockInstanceRunner {
 	return &module{
-		vars:     cfg.Vars,
-		recorder: cfg.Recorder,
+		rootModuleName: cfg.RootModuleName,
+		vars:           cfg.Vars,
+		recorder:       cfg.Recorder,
 	}
 }
 
@@ -47,7 +50,7 @@ Per execution instance (single or range (count/for_each))
 3. if ok copy the output of the vars into the local vars
 */
 
-func (r *module) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
 	log.Info("run instance")
 	// render the new vars input
@@ -78,18 +81,15 @@ func (r *module) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars ma
 		}
 	}
 	// prepare and execute the dag
-	e := executor.New[*vctx.VertexContext](ctx, vCtx.DAG, &executor.Config[*vctx.VertexContext]{
+	e := executor.New[*types.VertexContext](ctx, vCtx.DAG, &executor.Config[*types.VertexContext]{
 		Name: vCtx.BlockName,
-		Handler: &ExecHandler{
+		From: dag.Root,
+		Handler: NewExecHandler(ctx, &EHConfig{
 			RootModuleName: r.rootModuleName,
 			ModuleName:     vCtx.BlockName,
-			FnsMap: NewMap(ctx, &Config{
-				Vars:     newvars,
-				Recorder: r.recorder,
-			}),
-			Vars:     newvars,
-			Recorder: r.recorder,
-		},
+			Vars:           newvars,
+			Recorder:       r.recorder,
+		}),
 	})
 	success := e.Run(ctx)
 	if success {

@@ -3,13 +3,15 @@ package vctx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 )
 
 func GetContextFromName(vertexName string) string {
 	return fmt.Sprintf("blockName=%s", vertexName)
 }
 
-func GetContext(vctx *VertexContext) string {
+func GetContext(vctx *types.VertexContext) string {
 	if vctx == nil {
 		return ""
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 )
@@ -20,7 +21,7 @@ type localOrOutput struct {
 	vars cache.Cache[vars.Variable]
 }
 
-func (r *localOrOutput) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+func (r *localOrOutput) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	// NOTE: forEach or count expected and its respective values will be represented in localVars
 	// ForEach: each.key/value
 	// Count: count.index

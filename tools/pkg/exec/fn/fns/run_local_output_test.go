@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
-	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
@@ -19,7 +18,7 @@ func TestRunLocal(t *testing.T) {
 	cases := map[string]struct {
 		vars        map[string]vars.Variable
 		localVars   map[string]any
-		vCtx        *vctx.VertexContext
+		vCtx        *types.VertexContext
 		want        vars.Variable
 		expectedErr bool
 	}{
@@ -32,7 +31,7 @@ func TestRunLocal(t *testing.T) {
 				},
 			},
 			localVars: map[string]any{},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeLocal,
@@ -59,7 +58,7 @@ func TestRunLocal(t *testing.T) {
 			localVars: map[string]any{
 				"count.index": 5,
 			},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeLocal,

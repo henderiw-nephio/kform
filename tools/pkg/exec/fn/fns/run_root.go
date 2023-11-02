@@ -5,6 +5,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw/logger/log"
 )
 
@@ -15,7 +16,7 @@ func NewRootFn(cfg *Config) fn.BlockInstanceRunner {
 type root struct {
 }
 
-func (r *root) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+func (r *root) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
 	log.Info("run instance")
 	return nil

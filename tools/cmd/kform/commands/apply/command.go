@@ -4,13 +4,19 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
+	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 	"github.com/spf13/cobra"
 )
@@ -62,8 +68,8 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 
 	// initialize the recorder
-	recorder := recorder.New[diag.Diagnostic]()
-	ctx = context.WithValue(ctx, types.CtxKeyRecorder, recorder)
+	parserecorder := recorder.New[diag.Diagnostic]()
+	ctx = context.WithValue(ctx, types.CtxKeyRecorder, parserecorder)
 
 	// syntax check config -> build the dag
 	log.Info("parsing modules")
@@ -72,25 +78,43 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return err
 	}
 	p.Parse(ctx)
-	if recorder.Get().HasError() {
-		recorder.Print()
-		log.Error("failed parsing modules", "error", recorder.Get().Error())
-		return recorder.Get().Error()
+	if parserecorder.Get().HasError() {
+		parserecorder.Print()
+		log.Error("failed parsing modules", "error", parserecorder.Get().Error())
+		return parserecorder.Get().Error()
 	}
+	parserecorder.Print()
 	log.Info("generate dag(s)")
-
 	rm := p.GetRootModule(ctx)
 	if rm == nil {
 		log.Error("failed parsing no root module found")
 		return fmt.Errorf("failed parsing no root module found")
 	}
-	fmt.Println(rm.NSN.Name, rm.Kind)
-	rm.DAG.Print(rm.NSN.Name)
-
-	recorder.Print()
+	//fmt.Println(rm.NSN.Name, rm.Kind)
+	//rm.DAG.Print(rm.NSN.Name)
 
 	// initialize the providers -> provider factory
+
 	// execute the dag
+	runrecorder := recorder.New[record.Record]()
+	varsCache := cache.New[vars.Variable]()
+
+	rmfn := fns.NewModuleFn(&fns.Config{RootModuleName: rm.NSN.Name, Vars: varsCache, Recorder: runrecorder})
+
+	log.Info("executing module")
+	if err := rmfn.Run(ctx, &types.VertexContext{
+		FileName:     filepath.Join(r.rootPath, pkgio.PkgFileMatch[0]),
+		ModuleName:   rm.NSN.Name,
+		BlockType:    types.BlockTypeModule,
+		BlockName:    rm.NSN.Name,
+		DAG:          rm.DAG,
+		BlockContext: types.KformBlockContext{},
+	}, map[string]any{}); err != nil {
+		log.Error("failed executing module", "err", err)
+		return err
+	}
+	log.Info("success executing module")
+
 	// auto-apply -> depends on the flag if we approve the change or not.
 	return nil
 }

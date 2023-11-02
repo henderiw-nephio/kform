@@ -23,13 +23,35 @@ import (
 // It uses a fnmap to execute the particular vertex BlockType
 // Before calling the specific blockTYpe
 
+type EHConfig struct {
+	RootModuleName string
+	ModuleName     string
+	BlockName      string
+	Vars           cache.Cache[vars.Variable]
+	Recorder       recorder.Recorder[record.Record]
+}
+
+func NewExecHandler(ctx context.Context, cfg *EHConfig) *ExecHandler {
+	return &ExecHandler{
+		RootModuleName: cfg.RootModuleName,
+		ModuleName:     cfg.ModuleName,
+		BlockName:      cfg.BlockName,
+		Vars:           cfg.Vars,
+		Recorder:       cfg.Recorder,
+		fnsMap: NewMap(ctx, &Config{
+			RootModuleName: cfg.RootModuleName,
+			Vars:           cfg.Vars,
+			Recorder:       cfg.Recorder}),
+	}
+}
+
 type ExecHandler struct {
 	RootModuleName string
 	ModuleName     string
 	BlockName      string
-	FnsMap         Map
 	Vars           cache.Cache[vars.Variable]
 	Recorder       recorder.Recorder[record.Record]
+	fnsMap         Map
 }
 
 // PostRun records the overall result of the module
@@ -42,7 +64,7 @@ func (r *ExecHandler) PostRun(ctx context.Context, start, stop time.Time, succes
 	}
 }
 
-func (r *ExecHandler) BlockRun(ctx context.Context, vertexName string, vCtx *vctx.VertexContext) bool {
+func (r *ExecHandler) BlockRun(ctx context.Context, vertexName string, vCtx *types.VertexContext) bool {
 	//log := log.FromContext(ctx).With("rootModuleName", r.RootModuleName, "moduleName", r.ModuleName, "blockName", vertexName)
 	recorder := r.Recorder
 	start := time.Now()
@@ -55,7 +77,7 @@ func (r *ExecHandler) BlockRun(ctx context.Context, vertexName string, vCtx *vct
 	return success
 }
 
-func (r *ExecHandler) runInstances(ctx context.Context, vCtx *vctx.VertexContext) error {
+func (r *ExecHandler) runInstances(ctx context.Context, vCtx *types.VertexContext) error {
 	recorder := r.Recorder
 	isForEach, items, err := r.getLoopItems(ctx, vCtx.BlockContext.Attributes)
 	if err != nil {
@@ -77,7 +99,7 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *vctx.VertexContext
 		g.Go(func() error {
 			start := time.Now()
 			// lookup the blockType in the map
-			if err := r.FnsMap.Run(ctx, vCtx, localVars); err != nil {
+			if err := r.fnsMap.Run(ctx, vCtx, localVars); err != nil {
 				recorder.Record(record.FromErr(vctx.GetContextFromName(r.BlockName), start, time.Now(), err))
 				return err
 			}

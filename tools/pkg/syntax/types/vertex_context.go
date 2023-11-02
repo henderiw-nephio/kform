@@ -36,10 +36,10 @@ type VertexContext struct {
 	// only relevaant for blocktype resource and data
 	Provider string
 	// only relevant for blocktype module
-	DAG dag.DAG[VertexContext]
+	DAG dag.DAG[*VertexContext]
 }
 
-func (r *VertexContext) AddDAG(d dag.DAG[VertexContext]) {
+func (r *VertexContext) AddDAG(d dag.DAG[*VertexContext]) {
 	r.DAG = d
 }
 

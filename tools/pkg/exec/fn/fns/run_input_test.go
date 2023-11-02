@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
-	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
@@ -19,14 +18,14 @@ func TestRunInput(t *testing.T) {
 	cases := map[string]struct {
 		vars        map[string]vars.Variable
 		localVars   map[string]any
-		vCtx        *vctx.VertexContext
+		vCtx        *types.VertexContext
 		want        vars.Variable
 		expectedErr bool
 	}{
 		"NoVarWithDefault": {
 			vars:      map[string]vars.Variable{},
 			localVars: map[string]any{},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeInput,
@@ -45,7 +44,7 @@ func TestRunInput(t *testing.T) {
 		"NoVarNoDefault": {
 			vars:      map[string]vars.Variable{},
 			localVars: map[string]any{},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:     "a.yaml",
 				ModuleName:   "a",
 				BlockType:    types.BlockTypeInput,
@@ -63,7 +62,7 @@ func TestRunInput(t *testing.T) {
 				},
 			},
 			localVars: map[string]any{},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeInput,

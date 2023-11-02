@@ -1,5 +1,6 @@
 package vctx
 
+/*
 import (
 	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
@@ -33,3 +34,4 @@ func (r *VertexContext) AddDAG(d dag.DAG[*VertexContext]) {
 func (r *VertexContext) GetDependencies() map[string]string {
 	return r.Dependencies
 }
+*/

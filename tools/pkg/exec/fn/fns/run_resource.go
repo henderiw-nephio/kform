@@ -6,6 +6,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 )
@@ -32,7 +33,7 @@ type resource struct {
 	vars cache.Cache[vars.Variable]
 }
 
-func (r *resource) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
 	log.Info("run instance")
 	if vCtx.BlockContext.Config != nil {

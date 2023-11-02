@@ -9,7 +9,6 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
-	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
@@ -22,8 +21,9 @@ type Map interface {
 }
 
 type Config struct {
-	Vars     cache.Cache[vars.Variable]
-	Recorder recorder.Recorder[record.Record]
+	RootModuleName string
+	Vars           cache.Cache[vars.Variable]
+	Recorder       recorder.Recorder[record.Record]
 }
 
 func NewMap(ctx context.Context, cfg *Config) Map {
@@ -72,7 +72,7 @@ func (r *fnMap) init(blockType types.BlockType) (fn.BlockInstanceRunner, error) 
 
 }
 
-func (r *fnMap) Run(ctx context.Context, vctx *vctx.VertexContext, localVars map[string]any) error {
+func (r *fnMap) Run(ctx context.Context, vctx *types.VertexContext, localVars map[string]any) error {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	fn, err := r.init(vctx.BlockType)

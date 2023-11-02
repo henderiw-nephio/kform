@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
-	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
@@ -21,7 +20,7 @@ import (
 func TestExecHandlerLocal(t *testing.T) {
 	cases := map[string]struct {
 		vars map[string]vars.Variable
-		vCtx *vctx.VertexContext
+		vCtx *types.VertexContext
 		want vars.Variable
 	}{
 		"Single": {
@@ -32,7 +31,7 @@ func TestExecHandlerLocal(t *testing.T) {
 					},
 				},
 			},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeLocal,
@@ -56,7 +55,7 @@ func TestExecHandlerLocal(t *testing.T) {
 					},
 				},
 			},
-			vCtx: &vctx.VertexContext{
+			vCtx: &types.VertexContext{
 				FileName:   "a.yaml",
 				ModuleName: "a",
 				BlockType:  types.BlockTypeLocal,
@@ -96,16 +95,12 @@ func TestExecHandlerLocal(t *testing.T) {
 				varsCache.Add(ctx, cache.NSN{Name: name}, v)
 			}
 
-			h := &ExecHandler{
+			h := NewExecHandler(ctx, &EHConfig{
 				RootModuleName: "dummy",
 				ModuleName:     tc.vCtx.BlockName,
-				FnsMap: NewMap(ctx, &Config{
-					Vars:     varsCache,
-					Recorder: recorder,
-				}),
-				Vars:     varsCache,
-				Recorder: recorder,
-			}
+				Vars:           varsCache,
+				Recorder:       recorder,
+			})
 			success := h.BlockRun(ctx, tc.vCtx.BlockName, tc.vCtx)
 			if !success {
 				t.Errorf("want success, but failed\n")
