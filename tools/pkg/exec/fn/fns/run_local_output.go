@@ -10,35 +10,29 @@ import (
 	"github.com/henderiw/logger/log"
 )
 
-func NewOutputFn(cfg *Config) fn.BlockInstanceRunner {
-	return &output{
+func NewLocalOrOutputFn(cfg *Config) fn.BlockInstanceRunner {
+	return &localOrOutput{
 		vars: cfg.Vars,
 	}
 }
 
-type output struct {
+type localOrOutput struct {
 	vars cache.Cache[vars.Variable]
 }
 
-/*
-	1. run for_each or count
-	-> determines how many child modules will be instantiated
-	-> assign a local variable each.key/value or count.key/value
-
-	Per execution context (single or range (count/for_each))
-	1. run the cell functions to generate the respected output
-
-*/
-
-func (r *output) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+func (r *localOrOutput) Run(ctx context.Context, vCtx *vctx.VertexContext, localVars map[string]any) error {
+	// NOTE: forEach or count expected and its respective values will be represented in localVars
+	// ForEach: each.key/value
+	// Count: count.index
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
 	log.Info("run instance")
+	// if the BlockContext Value is defined we render the expected output
+	// the syntax parser should validate this, meaning the value should always be defined
 	if vCtx.BlockContext.Value != nil {
 		renderer := &renderer{vars: r.vars}
 		if err := renderer.renderData(ctx, vCtx.BlockName, vCtx.BlockContext.Value, localVars); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }

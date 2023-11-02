@@ -62,9 +62,11 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *vctx.VertexContext
 		return err
 	}
 	g, ctx := errgroup.WithContext(ctx)
-	for _, item := range items.UnsortedList() {
+	for idx, item := range items.UnsortedList() {
 		localVars := map[string]any{}
 		item := item
+		localVars[render.LoopKeyItemsTotal] = items.Len()
+		localVars[render.LoopKeyItemsIndex] = idx
 		if isForEach {
 			localVars[render.LoopKeyForEachKey] = item.key
 			localVars[render.LoopKeyForEachVal] = item.val
@@ -72,7 +74,6 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *vctx.VertexContext
 			// we treat a singleton in the same way as count -> count.index will not be used based on our syntax checks
 			localVars[render.LoopKeyCountIndex] = item.key
 		}
-
 		g.Go(func() error {
 			start := time.Now()
 			// lookup the blockType in the map
@@ -156,7 +157,7 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 
 func getSetWithInt(i int) sets.Set[item] {
 	items := sets.New[item]()
-	for idx := 0; idx <= i; idx++ {
+	for idx := 0; idx < i; idx++ {
 		sets.Insert[item](items, item{key: idx, val: idx})
 	}
 	return items

@@ -35,8 +35,8 @@ func NewMap(ctx context.Context, cfg *Config) Map {
 		fns: map[types.BlockType]Initializer{
 			types.BlockTypeModule:   NewModuleFn,
 			types.BlockTypeInput:    NewInputFn,
-			types.BlockTypeOutput:   NewOutputFn,
-			types.BlockTypeLocal:    NewLocalFn,
+			types.BlockTypeOutput:   NewLocalOrOutputFn,
+			types.BlockTypeLocal:    NewLocalOrOutputFn,
 			types.BlockTypeResource: NewResourceFn,
 			types.BlockTypeData:     NewResourceFn,
 			types.BlockTypeRoot:     NewRootFn,
