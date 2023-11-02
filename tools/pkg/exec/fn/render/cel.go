@@ -14,6 +14,8 @@ const (
 	LoopKeyCountIndex = "count.index"
 	LoopKeyForEachKey = "each.key"
 	LoopKeyForEachVal = "each.value"
+	LoopKeyItemsTotal = "items.total"
+	LoopKeyItemsIndex = "items.index"
 )
 
 var LocalVars = map[string]struct{}{

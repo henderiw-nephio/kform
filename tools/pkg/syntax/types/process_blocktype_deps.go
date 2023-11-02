@@ -121,10 +121,10 @@ func ParseReferenceString(inputString string) string {
 	// Find all matches in the input string
 	matches := regex.FindAllStringIndex(inputString, -1)
 
-	fmt.Println("inputString", inputString)
+	//fmt.Println("inputString", inputString)
 	if matches == nil {
 		//fmt.Println("No special characters found.")
-		fmt.Println("outputString no match", inputString)
+		//fmt.Println("outputString no match", inputString)
 		return inputString
 	} else {
 		for matchIdx, match := range matches {
@@ -135,10 +135,10 @@ func ParseReferenceString(inputString string) string {
 			if re.Match([]byte(inputString[start:end])) {
 				continue
 			}
-			fmt.Println("outputString match", inputString)
+			//fmt.Println("outputString match", inputString)
 			return inputString[0:matches[matchIdx][0]]
 		}
-		fmt.Println("outputString match out", inputString)
+		//fmt.Println("outputString match out", inputString)
 		return inputString
 	}
 }

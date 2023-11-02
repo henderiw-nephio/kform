@@ -16,7 +16,7 @@ import (
 )
 
 type Module struct {
-	nsn       cache.NSN
+	NSN       cache.NSN
 	Kind      ModuleKind
 	recorder  recorder.Recorder[diag.Diagnostic]
 	SourceDir string
@@ -33,11 +33,13 @@ type Module struct {
 	Outputs     cache.Cache[*Output]
 	Resources   cache.Cache[*Resource]
 	ModuleCalls cache.Cache[*ModuleCall]
+
+	DAG dag.DAG[*VertexContext]
 }
 
 func NewModule(nsn cache.NSN, kind ModuleKind, recorder recorder.Recorder[diag.Diagnostic]) *Module {
 	return &Module{
-		nsn:                  nsn,
+		NSN:                  nsn,
 		Kind:                 kind,
 		recorder:             recorder,
 		ProviderRequirements: cache.New[kformpkgmetav1alpha1.Provider](),
@@ -118,32 +120,32 @@ func (r *Module) resolveDependencies(ctx context.Context, nsn cache.NSN, v Depen
 		switch strings.Split(d, ".")[0] {
 		case string(BlockTypeInput):
 			if _, err := r.Inputs.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.NSN.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeOutput):
 			if _, err := r.Outputs.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.NSN.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeLocal):
 			if _, err := r.Locals.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.NSN.Name, d, dctx, err.Error()))
 			}
 		case string(BlockTypeModule):
 			if _, err := r.ModuleCalls.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.NSN.Name, d, dctx, err.Error()))
 			}
 		case "each":
 			if v.GetAttributes().ForEach == nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed each requires a for_each attribute dependency: %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed each requires a for_each attribute dependency: %s, ctx: %s", r.Kind, r.NSN.Name, d, dctx))
 			}
 		case "count":
 			if v.GetAttributes().Count == nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed each requires a count attribute dependency: %s, ctx: %s", r.Kind, r.nsn.Name, d, dctx))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed each requires a count attribute dependency: %s, ctx: %s", r.Kind, r.NSN.Name, d, dctx))
 			}
 		default:
 			// resources - resource or data
 			if _, err := r.Resources.Get(cache.NSN{Name: d}); err != nil {
-				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.nsn.Name, d, dctx, err.Error()))
+				r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s dependency resolution failed for %s, ctx: %s, err: %s", r.Kind, r.NSN.Name, d, dctx, err.Error()))
 			}
 		}
 	}
@@ -153,31 +155,29 @@ func (r *Module) ResolveResource2ProviderConfig(ctx context.Context) {
 	for nsn, v := range r.Resources.List() {
 		provider := v.GetProvider()
 		if _, err := r.ProviderConfigs.Get(cache.NSN{Name: provider}); err != nil {
-			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s provider resolution resource2providerConfig failed for %s, err: %s", r.Kind, r.nsn.Name, provider, err.Error()))
+			r.recorder.Record(diag.DiagErrorfWithContext(v.GetContext(nsn.Name), "%s module: %s provider resolution resource2providerConfig failed for %s, err: %s", r.Kind, r.NSN.Name, provider, err.Error()))
 		}
 	}
 }
 
-func (r *Module) GenerateDAG(ctx context.Context) dag.DAG[*VertexContext] {
+func (r *Module) GenerateDAG(ctx context.Context) {
 	// add the vertices with the right VertexContext to the dag
-	d := r.generateDAG(ctx)
+	r.DAG = r.generateDAG(ctx)
 	// connect the dag based on the depdenencies
-	for n, v := range d.GetVertices() {
+	for n, v := range r.DAG.GetVertices() {
 		deps := v.GetBlockDependencies()
 		fmt.Println("block dependencies", n, deps)
 		for dep := range deps {
-			d.Connect(ctx, dep, n)
+			r.DAG.Connect(ctx, dep, n)
 		}
 		if n != dag.Root {
 			if len(deps) == 0 {
-				d.Connect(ctx, dag.Root, n)
+				r.DAG.Connect(ctx, dag.Root, n)
 			}
 		}
-
 	}
 	// optimize the dag by removing the transitive connection in the dag
-	//d.TransitiveReduction(ctx)
-	return d
+	r.DAG.TransitiveReduction(ctx)
 }
 
 func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
@@ -185,7 +185,7 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 
 	d.AddVertex(ctx, dag.Root, &VertexContext{
 		FileName:     filepath.Join(r.SourceDir, pkgio.PkgFileMatch[0]),
-		ModuleName:   r.nsn.Name,
+		ModuleName:   r.NSN.Name,
 		BlockType:    dag.Root,
 		BlockContext: KformBlockContext{},
 	})
@@ -257,7 +257,7 @@ func (r *Module) ValidateChildProviderConfigs(ctx context.Context) {
 			providerConfigs = append(providerConfigs, nsn.Name)
 		}
 		if len(providerConfigs) > 0 {
-			r.recorder.Record(diag.DiagErrorf("%s module: %s child modules cannot have provider configs, provider configs must come from the root module, providers: %v", r.Kind, r.nsn.Name, providerConfigs))
+			r.recorder.Record(diag.DiagErrorf("%s module: %s child modules cannot have provider configs, provider configs must come from the root module, providers: %v", r.Kind, r.NSN.Name, providerConfigs))
 		}
 	}
 }

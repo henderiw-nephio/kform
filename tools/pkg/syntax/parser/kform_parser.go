@@ -9,7 +9,6 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
-	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
@@ -19,7 +18,8 @@ import (
 type KformParser interface {
 	Parse(ctx context.Context)
 	GetProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider
-	GenerateDAG(ctx context.Context) map[cache.NSN]dag.DAG[*types.VertexContext]
+	GetModules(ctx context.Context) map[cache.NSN]*types.Module
+	GetRootModule(ctx context.Context) *types.Module
 }
 
 func NewKformParser(ctx context.Context, path string) (KformParser, error) {
@@ -54,6 +54,8 @@ func (r *kformparser) Parse(ctx context.Context) {
 	r.validateModuleCalls(ctx)
 	r.validateUnreferencedProviderConfigs(ctx)
 	r.validateUnreferencedProviderRequirements(ctx)
+
+	r.generateDAG(ctx)
 }
 
 func (r *kformparser) parseModule(ctx context.Context, nsn cache.NSN, path string) {
@@ -128,10 +130,21 @@ func (r *kformparser) GetProviderRequirements(ctx context.Context) map[cache.NSN
 	return allprovreqs
 }
 
-func (r *kformparser) GenerateDAG(ctx context.Context) map[cache.NSN]dag.DAG[*types.VertexContext] {
-	dags := map[cache.NSN]dag.DAG[*types.VertexContext]{}
-	for nsn, m := range r.modules.List() {
-		dags[nsn] = m.GenerateDAG(ctx)
+func (r *kformparser) generateDAG(ctx context.Context) {
+	for _, m := range r.modules.List() {
+		m.GenerateDAG(ctx)
 	}
-	return dags
+}
+
+func (r *kformparser) GetModules(ctx context.Context) map[cache.NSN]*types.Module {
+	return r.modules.List()
+}
+
+func (r *kformparser) GetRootModule(ctx context.Context) *types.Module {
+	for _, m := range r.modules.List() {
+		if m.Kind == types.ModuleKindRoot {
+			return m
+		}
+	}
+	return nil
 }

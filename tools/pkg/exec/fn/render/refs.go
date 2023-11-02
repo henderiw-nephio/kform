@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/sets"
@@ -16,7 +17,7 @@ func (r *Renderer) getRefsFromExpression(expr string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("refs", refs.UnsortedList())
+	//fmt.Println("refs", refs.UnsortedList())
 	// we create a new copy to ensure we dont loose the init values
 	newVars := make(map[string]any, refs.Len()+len(r.LocalVars))
 	for _, ref := range refs.UnsortedList() {
@@ -29,7 +30,19 @@ func (r *Renderer) getRefsFromExpression(expr string) (map[string]any, error) {
 			if err != nil {
 				return nil, err
 			}
-			v = varVal.Data
+			split := strings.Split(ref, ".")
+			if split[0] == string(types.BlockTypeModule) {
+				if len(split) != 3 {
+					return nil, fmt.Errorf("getRefsFromExpression, expecting module ref with module.<moduleName>.<outputname>, got: %s", ref)
+				}
+				if v, ok = varVal.Data[split[2]]; !ok {
+					return nil, fmt.Errorf("getRefsFromExpression, ref error module output %s does not exist in var", ref)
+				}
+			} else {
+				if v, ok = varVal.Data[vars.DummyKey]; !ok {
+					return nil, fmt.Errorf("getRefsFromExpression, ref %s does not exist in var", ref)
+				}
+			}
 		}
 		newVars[ref] = v
 	}

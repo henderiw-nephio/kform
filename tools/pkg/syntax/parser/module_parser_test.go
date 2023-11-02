@@ -152,10 +152,7 @@ func TestGetKforms(t *testing.T) {
 				for name, provider := range m.ProviderConfigs.List() {
 					fmt.Printf("provider: %s, data: %v\n", name.Name, *provider)
 				}
-
 			}
-
 		})
 	}
-
 }

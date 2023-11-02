@@ -2,7 +2,6 @@ package render
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -109,7 +108,7 @@ func (r *Renderer) handleString(ctx context.Context, x string) (any, error) {
 		for k, v := range varsForExpr {
 			newVarsForExpr[strings.ReplaceAll(k, ".", "_")] = v
 		}
-		fmt.Println("newVarsForExpr", newVarsForExpr)
+		//fmt.Println("newVarsForExpr", newVarsForExpr)
 
 		val, _, err := prog.Eval(newVarsForExpr)
 		if err != nil {

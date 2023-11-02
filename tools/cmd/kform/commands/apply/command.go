@@ -78,11 +78,14 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return recorder.Get().Error()
 	}
 	log.Info("generate dag(s)")
-	dags := p.GenerateDAG(ctx)
 
-	for nsn, d := range dags {
-		d.Print(nsn.Name)
+	rm := p.GetRootModule(ctx)
+	if rm == nil {
+		log.Error("failed parsing no root module found")
+		return fmt.Errorf("failed parsing no root module found")
 	}
+	fmt.Println(rm.NSN.Name, rm.Kind)
+	rm.DAG.Print(rm.NSN.Name)
 
 	recorder.Print()
 
