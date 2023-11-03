@@ -48,9 +48,9 @@ data:
             schema:
               apiVersion: infra.nephio.org/v1alpha1
               kind: Network
-            for_each: $local.unique_networkinstances
-          instances:
-          - metadata:
+            forEach: $input.context
+          config:
+            metadata:
               name: $each.value
               namespace: default
   - module:
@@ -95,7 +95,7 @@ data:
             apiVersion: k8s.cni.cncf.io/v1
             kind: NetworkAttachmentDefinition
           forEach: $module.interface.nad
-        instances: [$each.value]
+        value: [$each.value]
 `
 
 func buildFs(rootPath string, files map[string]string) fsys.FS {
