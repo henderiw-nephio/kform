@@ -80,7 +80,12 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 
 	provReqs := p.GetProviderRequirements(ctx)
 	for nsn, reqs := range provReqs {
-		fmt.Printf("provider: %s res: %v\n", nsn.Name, reqs)
+		fmt.Printf("provider req: %s res: %v\n", nsn.Name, reqs)
+	}
+
+	provConfigs := p.GetProviderConfigs(ctx)
+	for nsn, reqs := range provConfigs {
+		fmt.Printf("provider config: %s res: %v\n", nsn.Name, reqs)
 	}
 
 	// init and/or restore backend (todo)

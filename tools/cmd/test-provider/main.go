@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,12 +10,8 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	kfplugin "github.com/henderiw-nephio/kform/kform-plugin/plugin"
-	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/plugin"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api"
 	"github.com/henderiw/logger/log"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -34,7 +29,8 @@ func main() {
 		//AutoMTLS:         enableProviderAutoMTLS,
 		//SyncStdout:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stdout", meta.Name)),
 		//SyncStderr:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stderr", meta.Name)),
-		Cmd:        exec.Command("./bin/provider-kubernetes"),
+		Cmd:        exec.Command("./bin/provider-resourcebackend"),
+		//Cmd:        exec.Command("./bin/provider-kubernetes"),
 		SyncStdout: PluginOutputMonitor(fmt.Sprintf("%s:stdout", "test")),
 		SyncStderr: PluginOutputMonitor(fmt.Sprintf("%s:stderr", "test")),
 	})
@@ -71,93 +67,95 @@ func main() {
 		"listDataSources", capResp.ListDataSources,
 		"diag", capResp.Diagnostics)
 
-	conf := &api.ProviderAPI{
-		Kind:      api.ProviderKindPackage,
-		Directory: pointer.String("./examples/crd"),
-	}
-	confByte, err := json.Marshal(conf)
-	if err != nil {
-		log.Error("cannot json marshal config", "error", err.Error())
-		panic(err)
-	}
-
-	confResp, err := p.Configure(ctx, &kfplugin1.Configure_Request{
-		Config: confByte,
-	})
-	if err != nil {
-		log.Error("cannot get capabilities", "error", err.Error())
-		panic(err)
-	}
-	log.Info("configure response", "diag", confResp.Diagnostics)
-
-	u := unstructured.Unstructured{}
-	u.SetAPIVersion("apiextensions.k8s.io/v1")
-	u.SetKind("CustomResourceDefinition")
-	u.SetName("nodepools.inv.nephio.org")
-	readByte, err := json.Marshal(&u)
-	if err != nil {
-		log.Error("cannot json marshal list", "error", err.Error())
-		panic(err)
-	}
-	slog.Info("data", "req", string(readByte))
-
-	readResp, err := p.ReadDataSource(ctx, &kfplugin1.ReadDataSource_Request{
-		Name: "kubernetes_manifest",
-		Data: readByte,
-	})
-	if err != nil {
-		log.Error("cannot read resource", "error", err.Error())
-		panic(err)
-	}
-
-	if err := json.Unmarshal(readResp.Data, &u); err != nil {
-		log.Error("cannot unmarshal read resp", "error", err.Error())
-		panic(err)
-	}
-	log.Info("read response",
-		"apiVersion", u.GetAPIVersion(),
-		"kind", u.GetKind(),
-		"name", u.GetName(),
-	)
-
-	ul := unstructured.UnstructuredList{}
-	ul.SetAPIVersion("apiextensions.k8s.io/v1")
-	ul.SetKind("CustomResourceDefinition")
-	listByte, err := json.Marshal(&ul)
-	if err != nil {
-		log.Error("cannot json marshal list", "error", err.Error())
-		panic(err)
-	}
-
-	listResp, err := p.ListDataSource(ctx, &kfplugin1.ListDataSource_Request{
-		Name: "kubernetes_manifest",
-		Data: listByte,
-	})
-	if err != nil {
-		log.Error("cannot get capabilities", "error", err.Error())
-		panic(err)
-	}
-
-	if listResp.Diagnostics != nil && diag.Diagnostics(listResp.GetDiagnostics()).HasError() {
-		log.Error("list failed", "error", diag.Diagnostics(listResp.GetDiagnostics()).Error())
-		panic(diag.Diagnostics(listResp.GetDiagnostics()).HasError())
-	}
-
-	//log.Info("list response", "response", listResp)
-	if listResp.GetData() != nil {
-		if err := json.Unmarshal(listResp.GetData(), &ul); err != nil {
-			log.Error("list failed", "error", diag.Diagnostics(listResp.GetDiagnostics()).Error())
+	/*
+		conf := &api.ProviderAPI{
+			Kind:      api.ProviderKindPackage,
+			Directory: pointer.String("./examples/crd"),
+		}
+		confByte, err := json.Marshal(conf)
+		if err != nil {
+			log.Error("cannot json marshal config", "error", err.Error())
 			panic(err)
 		}
 
-		for _, u := range ul.Items {
-			log.Info("list response",
-				"apiVersion", u.GetAPIVersion(),
-				"kind", u.GetKind(),
-				"name", u.GetName(),
-			)
+		confResp, err := p.Configure(ctx, &kfplugin1.Configure_Request{
+			Config: confByte,
+		})
+		if err != nil {
+			log.Error("cannot get capabilities", "error", err.Error())
+			panic(err)
 		}
-	}
+		log.Info("configure response", "diag", confResp.Diagnostics)
+
+		u := unstructured.Unstructured{}
+		u.SetAPIVersion("apiextensions.k8s.io/v1")
+		u.SetKind("CustomResourceDefinition")
+		u.SetName("nodepools.inv.nephio.org")
+		readByte, err := json.Marshal(&u)
+		if err != nil {
+			log.Error("cannot json marshal list", "error", err.Error())
+			panic(err)
+		}
+		slog.Info("data", "req", string(readByte))
+
+		readResp, err := p.ReadDataSource(ctx, &kfplugin1.ReadDataSource_Request{
+			Name: "kubernetes_manifest",
+			Data: readByte,
+		})
+		if err != nil {
+			log.Error("cannot read resource", "error", err.Error())
+			panic(err)
+		}
+
+		if err := json.Unmarshal(readResp.Data, &u); err != nil {
+			log.Error("cannot unmarshal read resp", "error", err.Error())
+			panic(err)
+		}
+		log.Info("read response",
+			"apiVersion", u.GetAPIVersion(),
+			"kind", u.GetKind(),
+			"name", u.GetName(),
+		)
+
+		ul := unstructured.UnstructuredList{}
+		ul.SetAPIVersion("apiextensions.k8s.io/v1")
+		ul.SetKind("CustomResourceDefinition")
+		listByte, err := json.Marshal(&ul)
+		if err != nil {
+			log.Error("cannot json marshal list", "error", err.Error())
+			panic(err)
+		}
+
+		listResp, err := p.ListDataSource(ctx, &kfplugin1.ListDataSource_Request{
+			Name: "kubernetes_manifest",
+			Data: listByte,
+		})
+		if err != nil {
+			log.Error("cannot get capabilities", "error", err.Error())
+			panic(err)
+		}
+
+		if listResp.Diagnostics != nil && diag.Diagnostics(listResp.GetDiagnostics()).HasError() {
+			log.Error("list failed", "error", diag.Diagnostics(listResp.GetDiagnostics()).Error())
+			panic(diag.Diagnostics(listResp.GetDiagnostics()).HasError())
+		}
+
+		//log.Info("list response", "response", listResp)
+		if listResp.GetData() != nil {
+			if err := json.Unmarshal(listResp.GetData(), &ul); err != nil {
+				log.Error("list failed", "error", diag.Diagnostics(listResp.GetDiagnostics()).Error())
+				panic(err)
+			}
+
+			for _, u := range ul.Items {
+				log.Info("list response",
+					"apiVersion", u.GetAPIVersion(),
+					"kind", u.GetKind(),
+					"name", u.GetName(),
+				)
+			}
+		}
+	*/
 
 	os.Exit(0)
 }

@@ -5,8 +5,20 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/plugin"
+	"github.com/henderiw/logger/log"
 	"google.golang.org/grpc"
 )
+
+type Provider interface {
+	Capabilities(ctx context.Context, req *kfplugin1.Capabilities_Request) (*kfplugin1.Capabilities_Response, error)
+	Configure(ctx context.Context, req *kfplugin1.Configure_Request) (*kfplugin1.Configure_Response, error)
+	StopProvider(ctx context.Context, req *kfplugin1.StopProvider_Request) (*kfplugin1.StopProvider_Response, error)
+	ReadDataSource(ctx context.Context, req *kfplugin1.ReadDataSource_Request) (*kfplugin1.ReadDataSource_Response, error)
+	ListDataSource(ctx context.Context, req *kfplugin1.ListDataSource_Request) (*kfplugin1.ListDataSource_Response, error)
+	ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error)
+	CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error)
+	Close(ctx context.Context)
+}
 
 // GRPCProviderPlugin implements plugin.GRPCPlugin for the go-plugin package.
 type GRPCProviderPlugin struct {
@@ -80,4 +92,14 @@ func (r *GRPCProvider) ReadResource(ctx context.Context, req *kfplugin1.ReadReso
 }
 func (r *GRPCProvider) CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error) {
 	return r.client.CreateResource(ctx, req)
+}
+
+func (r *GRPCProvider) Close(ctx context.Context) {
+	log := log.FromContext(ctx)
+	log.Debug("GRPCProvider: Close")
+	if r.PluginClient == nil {
+		log.Debug("provider has no plugin.Client")
+		return
+	}
+	r.PluginClient.Kill()
 }

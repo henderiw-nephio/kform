@@ -17,9 +17,11 @@ import (
 
 type KformParser interface {
 	Parse(ctx context.Context)
-	GetProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider
-	GetModules(ctx context.Context) map[cache.NSN]*types.Module
 	GetRootModule(ctx context.Context) *types.Module
+	GetModules(ctx context.Context) map[cache.NSN]*types.Module
+	// returns a list of all provider Requirements from all the modules referenced
+	GetProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider
+	GetProviderConfigs(ctx context.Context) map[cache.NSN]*types.ProviderConfig
 }
 
 func NewKformParser(ctx context.Context, path string) (KformParser, error) {
@@ -147,4 +149,19 @@ func (r *kformparser) GetRootModule(ctx context.Context) *types.Module {
 		}
 	}
 	return nil
+}
+
+func (r *kformparser) GetProviderConfigs(ctx context.Context) map[cache.NSN]*types.ProviderConfig {
+	rootModule, err := r.modules.Get(r.rootModuleName)
+	if err != nil {
+		r.recorder.Record(diag.DiagErrorf("cannot validate provider requirements references, root module %s not found", r.rootModuleName.Name))
+	}
+
+	rootProviderConfigs := rootModule.ProviderConfigs.List()
+	// delete the unreferenced provider configs from the provider configs
+	unreferenceProviderConfigs := r.getUnReferencedProviderConfigs(ctx)
+	for _, name := range unreferenceProviderConfigs {
+		delete(rootProviderConfigs, cache.NSN{Name: name})
+	}
+	return rootProviderConfigs
 }

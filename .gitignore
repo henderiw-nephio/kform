@@ -8,6 +8,7 @@ bin
 vendor
 config
 *.kformpkg
+.kform
 
 # Test binary, built with `go test -c`
 *.test
@@ -22,7 +23,7 @@ config
 # Tox environments
 .tox/
 *.dic
-/.vscode
+.vscode
 go.work
 go.work.sum
 lcov.info
