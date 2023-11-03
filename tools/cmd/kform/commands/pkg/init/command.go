@@ -26,7 +26,7 @@ func NewRunner(ctx context.Context, version string) *Runner {
 	r.Command = cmd
 
 	r.Command.Flags().StringVar(&r.description, "description", "sample description", "short description of the package.")
-	
+
 	//r.Command.Usage()
 	return r
 }

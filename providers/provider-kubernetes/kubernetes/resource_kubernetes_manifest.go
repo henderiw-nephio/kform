@@ -8,7 +8,7 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -28,7 +28,7 @@ func resourceKubernetesManifest() *schema.Resource {
 
 func resourceKubernetesManifestCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
 	// TODO distinguish between offline and api
-	client := meta.(provclient.Client)
+	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
 	if err := json.Unmarshal(d.GetData(), u); err != nil {
@@ -72,7 +72,7 @@ func resourceKubernetesManifestCreate(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
-	client := meta.(provclient.Client)
+	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
 	if err := json.Unmarshal(d.GetData(), u); err != nil {

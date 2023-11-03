@@ -14,7 +14,7 @@ type KformBlock struct {
 type KformBlockContext struct {
 	Attributes *KformBlockAttributes `json:"attributes,omitempty" yaml:"attributes,omitempty"`
 	//Instances  []any                 `json:"instances,omitempty" yaml:"instances,omitempty"`
-	Default    []any                 `json:"default,omitempty" yaml:"default,omitempty"`
+	Default []any `json:"default,omitempty" yaml:"default,omitempty"`
 	// NOTE: had to change to inputParams as input is a blocktype name
 	InputParams map[string]any `json:"inputParams,omitempty" yaml:"inputParams,omitempty"`
 	Config      any            `json:"config,omitempty" yaml:"config,omitempty"`
@@ -93,8 +93,8 @@ func GetBlockType(n string) BlockType {
 type BlockContextKey string
 
 const (
-	BlockContextKeyUnknown     BlockContextKey = "unknown"
-	BlockContextKeyAttributes  BlockContextKey = "attributes"
+	BlockContextKeyUnknown    BlockContextKey = "unknown"
+	BlockContextKeyAttributes BlockContextKey = "attributes"
 	//BlockContextKeyInstances   BlockContextKey = "instances"
 	BlockContextKeyDefault     BlockContextKey = "default"
 	BlockContextKeyInputParams BlockContextKey = "inputParams"

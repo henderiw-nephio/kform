@@ -7,11 +7,20 @@ import (
 
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/render"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 )
 
 type renderer struct {
 	vars cache.Cache[vars.Variable]
+}
+
+func (r *renderer) renderConfig(ctx context.Context, blockName string, x any, localVars map[string]any) (any, error) {
+	renderer := render.Renderer{
+		Vars:      r.vars,
+		LocalVars: localVars,
+	}
+	return renderer.Render(ctx, x)
 }
 
 func (r *renderer) renderData(ctx context.Context, blockName string, x any, localVars map[string]any) error {
@@ -21,7 +30,7 @@ func (r *renderer) renderData(ctx context.Context, blockName string, x any, loca
 	}
 	d, err := renderer.Render(ctx, x)
 	if err != nil {
-		return fmt.Errorf("run output, render failed for blockName %s, err: %s", blockName, err.Error())
+		return fmt.Errorf("render failed for blockName %s, err: %s", blockName, err.Error())
 	}
 
 	total, ok := localVars[render.LoopKeyItemsTotal]
@@ -85,4 +94,18 @@ func (r *renderer) insert(slice []any, pos int, value any) []any {
 	}
 	slice[pos] = value
 	return slice
+}
+
+func addTypeMeta(ctx context.Context, schema types.KformBlockSchema, d any) (any, error) {
+	switch d := d.(type) {
+	case map[any]any:
+		d["apiVersion"] = schema.ApiVersion
+		d["kind"] = schema.Kind
+	case map[string]any:
+		d["apiVersion"] = schema.ApiVersion
+		d["kind"] = schema.Kind
+	default:
+		return d, fmt.Errorf("expecting map[string]any or map[any]any, got: %s", reflect.TypeOf(d))
+	}
+	return d, nil
 }

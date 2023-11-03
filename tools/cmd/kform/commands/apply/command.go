@@ -115,7 +115,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 	log.Info("success executing module")
 
-
 	for nsn, v := range varsCache.List() {
 		fmt.Println("nsn", nsn)
 		fmt.Println("vars", v)

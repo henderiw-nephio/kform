@@ -8,7 +8,7 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -25,14 +25,14 @@ func dataSourceKubernetesManifest() *schema.Resource {
 }
 
 func dataSourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
-	client := meta.(provclient.Client)
+	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
 	if err := json.Unmarshal(d.GetData(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	nsn := types.NamespacedName{Namespace: u.GetNamespace(), Name: u.GetName()}
-	if d.GetScope() == kfplugin1.Scope_CLUSTER {
+	if d.GetScope() != kfplugin1.Scope_CLUSTER {
 		nsn = types.NamespacedName{Name: u.GetName()}
 	}
 	newu := &unstructured.Unstructured{}

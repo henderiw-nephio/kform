@@ -7,7 +7,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
 	"github.com/henderiw/logger/log"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -24,7 +24,7 @@ func dataSourcesKubernetesManifest() *schema.Resource {
 }
 
 func dataSourcesKubernetesManifestList(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
-	client := meta.(provclient.Client)
+	client := meta.(client.Client)
 	log := log.FromContext(ctx)
 	log.Info("list resources")
 

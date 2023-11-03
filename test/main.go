@@ -18,7 +18,6 @@ type goStruct struct {
 
 func main() {
 
-
 	var x goStruct
 	if err := yaml.Unmarshal([]byte(data), &x); err != nil {
 		panic(err)

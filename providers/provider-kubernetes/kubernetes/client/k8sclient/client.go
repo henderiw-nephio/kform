@@ -1,7 +1,7 @@
 package k8sclient
 
 import (
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
+	provclient "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"

@@ -30,7 +30,7 @@ func (r *GRPCProviderServer) Capabilities(ctx context.Context, req *kfplugin1.Ca
 	log.Info(rpc)
 
 	return &kfplugin1.Capabilities_Response{
-		Diagnostics:        diag.Diagnostics{},
+		Diagnostics:        []*kfplugin1.Diagnostic{},
 		ReadDataSources:    r.provider.getDataSources(),
 		ListDataSources:    r.provider.getListDataSources(),
 		Resources:          r.provider.getResources(),

@@ -24,9 +24,9 @@ func (r *moduleparser) resolve(ctx context.Context, m *types.Module) {
 
 	// check if we have too many providers and required providers that are not referenced
 	/*
-	if m.Kind == types.ModuleKindRoot {
-		m.ValidateUnReferencedProviderConfigs(ctx)
-		m.ValidateUnReferencedProviderRequirements(ctx)
-	}
+		if m.Kind == types.ModuleKindRoot {
+			m.ValidateUnReferencedProviderConfigs(ctx)
+			m.ValidateUnReferencedProviderRequirements(ctx)
+		}
 	*/
 }

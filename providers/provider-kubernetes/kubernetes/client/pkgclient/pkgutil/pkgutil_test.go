@@ -7,8 +7,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/pkgclient/testutil"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/pkgclient/testutil/pkgbuilder"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient/testutil"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient/testutil/pkgbuilder"
 	"github.com/stretchr/testify/assert"
 )
 

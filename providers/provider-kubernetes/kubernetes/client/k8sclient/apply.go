@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
+	provclient "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

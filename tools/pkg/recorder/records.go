@@ -7,9 +7,14 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 )
 
-type Records[T Record] []T
+type Records interface {
+	HasError() bool
+	Error() error
+}
 
-func (r Records[T]) HasError() bool {
+type records[T Record] []T
+
+func (r records[T]) HasError() bool {
 	for _, d := range r {
 		d := d
 		if d.GetSeverity() == kfplugin1.Severity_ERROR {
@@ -19,7 +24,7 @@ func (r Records[T]) HasError() bool {
 	return false
 }
 
-func (r Records[T]) Error() error {
+func (r records[T]) Error() error {
 	var err error
 	for _, d := range r {
 		d := d

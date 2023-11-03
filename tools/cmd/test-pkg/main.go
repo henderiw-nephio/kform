@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/pkgclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 )

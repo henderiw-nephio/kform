@@ -29,7 +29,9 @@ vet: ## Run go vet against code.
 
 .PHONY: all
 all: generate fmt vet ## Build manager binary.
-	go build -ldflags "-X github.com/henderiw-nephio/k8sform/tools/cmd/kform/commands.version=${GIT_COMMIT}" -o $(GOBIN)/kform -v tools/cmd/kform/main.go
+	go build -ldflags "-X github.com/henderiw-nephio/k8sform/tools/cmd/kform/commands.version=${GIT_COMMIT}" -o $(LOCALBIN)/kform -v tools/cmd/kform/main.go
+	go build -o $(LOCALBIN)/provider-kubernetes -v providers/provider-kubernetes/main.go
+	go build -o $(LOCALBIN)/provider-resourcebackend -v providers/provider-resourcebackend/main.go
 
 ##@ Build Dependencies
 

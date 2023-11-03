@@ -21,12 +21,11 @@ import (
 )
 
 func main() {
+	ctx := ctrl.SetupSignalHandler()
+
 	l := log.NewLogger(&log.HandlerOptions{Name: "kform-logger", AddSource: false})
 	slog.SetDefault(l)
-
-	ctx := ctrl.SetupSignalHandler()
 	ctx = log.IntoContext(ctx, l)
-
 	log := l
 
 	client := plugin.NewClient(&plugin.ClientConfig{

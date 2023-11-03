@@ -7,14 +7,14 @@ import (
 
 type Recorder[T Record] interface {
 	Record(r T)
-	Get() Records[T]
+	Get() Records
 	Print()
 }
 
 type recorder[T Record] struct {
 	m        sync.RWMutex
 	initOnce sync.Once
-	records  Records[T]
+	records  records[T]
 }
 
 func New[T Record]() Recorder[T] {
@@ -36,14 +36,14 @@ func (r *recorder[T]) Record(rec T) {
 	r.records = append(r.records, rec)
 }
 
-func (r *recorder[T]) Get() Records[T] {
+func (r *recorder[T]) Get() Records {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return r.records
 }
 
 func (r *recorder[T]) Print() {
-	for _, d := range r.Get() {
+	for _, d := range r.records {
 		fmt.Println(d)
 	}
 }

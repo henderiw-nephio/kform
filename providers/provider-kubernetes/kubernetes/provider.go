@@ -12,8 +12,8 @@ import (
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
 	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/k8sclient"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/pkgclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/k8sclient"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient"
 	"github.com/mitchellh/go-homedir"
 
 	//apiext "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"

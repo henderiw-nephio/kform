@@ -1,6 +1,5 @@
 package diag
 
-/*
 import (
 	"errors"
 	"fmt"
@@ -30,4 +29,3 @@ func (r Diagnostics) Error() error {
 	}
 	return err
 }
-*/

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/provclient/pkgclient/pkgutil"
+	provclient "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient/pkgutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"

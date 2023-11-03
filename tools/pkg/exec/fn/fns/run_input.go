@@ -3,7 +3,6 @@ package fns
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
@@ -33,24 +32,21 @@ func (r *input) Run(ctx context.Context, vCtx *types.VertexContext, localVars ma
 	if _, err := r.vars.Get(cache.NSN{Name: vCtx.BlockName}); err != nil {
 		if len(vCtx.BlockContext.Default) > 0 {
 
-			data := vCtx.BlockContext.Default
-			if len(data) > 0 {
-				for _, v := range data {
-					switch x := v.(type) {
-					case map[any]any:
-						x["apiVersion"] = vCtx.BlockContext.Attributes.Schema.ApiVersion
-						x["kind"] = vCtx.BlockContext.Attributes.Schema.Kind
-					case map[string]any:
-						x["apiVersion"] = vCtx.BlockContext.Attributes.Schema.ApiVersion
-						x["kind"] = vCtx.BlockContext.Attributes.Schema.Kind
-					default:
-						return fmt.Errorf("%s expecting map[string]any or map[any]any, got: %s", vctx.GetContext(vCtx), reflect.TypeOf(v))
+			d := vCtx.BlockContext.Default
+			if len(d) > 0 {
+				for idx, v := range d {
+					if vCtx.BlockContext.Attributes.Schema == nil {
+						return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
+					}
+					d[idx], err = addTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, v)
+					if err != nil {
+						return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
 					}
 				}
 			}
 
 			r.vars.Upsert(ctx, cache.NSN{Name: vCtx.BlockName}, vars.Variable{Data: map[string][]any{
-				vars.DummyKey: data,
+				vars.DummyKey: d,
 			}})
 		}
 	}

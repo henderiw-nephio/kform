@@ -22,7 +22,7 @@ func NewModuleParser(ctx context.Context, path string) (ModuleParser, error) {
 	if recorder == nil {
 		return nil, fmt.Errorf("cannot parse without a recorder")
 	}
-	
+
 	return &moduleparser{
 		nsn:      cctx.GetContextValue[cache.NSN](ctx, types.CtxKeyModuleName),
 		kind:     cctx.GetContextValue[types.ModuleKind](ctx, types.CtxKeyModuleKind),

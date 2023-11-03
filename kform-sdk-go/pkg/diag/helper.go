@@ -31,24 +31,6 @@ func DiagFromErrWithContext(ctx string, err error) Diagnostic {
 	}
 }
 
-func FromErr(err error) []Diagnostic {
-	if err == nil {
-		return nil
-	}
-	return []Diagnostic{
-		DiagFromErr(err),
-	}
-}
-
-func FromErrWithContext(ctx string, err error) []Diagnostic {
-	if err == nil {
-		return nil
-	}
-	return []Diagnostic{
-		DiagFromErrWithContext(ctx, err),
-	}
-}
-
 func DiagErrorf(format string, a ...interface{}) Diagnostic {
 	return Diagnostic{
 		Diagnostic: &kfplugin1.Diagnostic{
@@ -87,14 +69,32 @@ func DiagWarnfWithContext(ctx string, format string, a ...interface{}) Diagnosti
 	}
 }
 
-func Errorf(format string, a ...interface{}) []Diagnostic {
-	return []Diagnostic{
-		DiagErrorf(format, a...),
+func FromErr(err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return Diagnostics{
+		DiagFromErr(err).Get(),
 	}
 }
 
-func ErrorfWithContext(ctx string, format string, a ...interface{}) []Diagnostic {
-	return []Diagnostic{
-		DiagErrorfWithContext(ctx, format, a...),
+func FromErrWithContext(ctx string, err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return Diagnostics{
+		DiagFromErrWithContext(ctx, err).Get(),
+	}
+}
+
+func Errorf(format string, a ...interface{}) Diagnostics {
+	return Diagnostics{
+		DiagErrorf(format, a...).Get(),
+	}
+}
+
+func ErrorfWithContext(ctx string, format string, a ...interface{}) Diagnostics {
+	return Diagnostics{
+		DiagErrorfWithContext(ctx, format, a...).Get(),
 	}
 }

@@ -1,4 +1,4 @@
-package provclient
+package client
 
 import (
 	"context"
