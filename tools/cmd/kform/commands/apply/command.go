@@ -115,6 +115,11 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 	log.Info("success executing module")
 
+
+	for nsn, v := range varsCache.List() {
+		fmt.Println("nsn", nsn)
+		fmt.Println("vars", v)
+	}
 	// auto-apply -> depends on the flag if we approve the change or not.
 	return nil
 }

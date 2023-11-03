@@ -186,6 +186,7 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	d.AddVertex(ctx, dag.Root, &VertexContext{
 		FileName:     filepath.Join(r.SourceDir, pkgio.PkgFileMatch[0]),
 		ModuleName:   r.NSN.Name,
+		BlockName:    r.NSN.Name,
 		BlockType:    dag.Root,
 		BlockContext: KformBlockContext{},
 	})
@@ -193,7 +194,8 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.Inputs.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			ModuleName:      x.moduleName,
+			ModuleName:      x.moduleName.Name,
+			BlockName:       nsn.Name,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -205,7 +207,8 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			ModuleName:      x.moduleName,
+			ModuleName:      x.moduleName.Name,
+			BlockName:       nsn.Name,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -216,7 +219,8 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.Locals.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			ModuleName:      x.moduleName,
+			ModuleName:      x.moduleName.Name,
+			BlockName:       nsn.Name,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -227,7 +231,8 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.ModuleCalls.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			ModuleName:      x.moduleName,
+			ModuleName:      x.moduleName.Name,
+			BlockName:       nsn.Name,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,
@@ -238,7 +243,8 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 	for nsn, x := range r.Resources.List() {
 		d.AddVertex(ctx, nsn.Name, &VertexContext{
 			FileName:        x.fileName,
-			ModuleName:      x.moduleName,
+			ModuleName:      x.moduleName.Name,
+			BlockName:       nsn.Name,
 			BlockType:       x.blockType,
 			GVK:             x.gvk,
 			BlockContext:    x.KformBlockContext,

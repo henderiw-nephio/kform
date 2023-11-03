@@ -9,6 +9,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
+	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
 	"github.com/henderiw/logger/log"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,7 +29,7 @@ type config struct {
 
 	// dynamic config
 	fileName   string
-	moduleName string
+	moduleName cache.NSN
 	gvk        schema.GroupVersionKind
 	KformBlockContext
 	dependencies    map[string]string
@@ -213,7 +214,7 @@ func (r *config) GetFileName() string {
 }
 
 func (r *config) GetModuleName() string {
-	return r.moduleName
+	return r.moduleName.Name
 }
 
 func (r *config) GetAttributes() *KformBlockAttributes {
@@ -367,7 +368,7 @@ func (r *config) validateAttributes(ctx context.Context, kfctx KformBlockContext
 
 func (r *config) initAndValidateBlockConfig(ctx context.Context) {
 	r.fileName = cctx.GetContextValue[string](ctx, CtxKeyFileName)
-	r.moduleName = cctx.GetContextValue[string](ctx, CtxKeyModuleName)
+	r.moduleName = cctx.GetContextValue[cache.NSN](ctx, CtxKeyModuleName)
 	//r.getFileName(ctx)
 	//r.getModuleName(ctx)
 	r.validateKeyWordsAndAttributes(ctx)

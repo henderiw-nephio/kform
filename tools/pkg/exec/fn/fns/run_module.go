@@ -95,6 +95,7 @@ func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars m
 	if success {
 		// copy the output to the newvars to the original var
 		for nsn, v := range newvars.List() {
+			fmt.Println("newvars", "nsn", nsn.Name)
 			split := strings.Split(nsn.Name, ".")
 			if split[0] == "output" {
 				if d, ok := v.Data[vars.DummyKey]; ok {
@@ -103,7 +104,7 @@ func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars m
 						v = vars.Variable{Data: map[string][]any{}}
 					}
 					v.Data[split[1]] = d
-					r.vars.Upsert(ctx, cache.NSN{Name: vCtx.BlockName}, v)
+					r.vars.Upsert(ctx, cache.NSN{Name: fmt.Sprintf("module.%s", vCtx.BlockName)}, v)
 				}
 			}
 		}
