@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
@@ -18,7 +19,9 @@ import (
 
 type KformParser interface {
 	Parse(ctx context.Context)
-	GetRootModule(ctx context.Context) *types.Module
+	InitProviderInventory(ctx context.Context) (cache.Cache[types.Provider], error)
+	InitProviderInstances(ctx context.Context) cache.Cache[plugin.Provider]
+	GetRootModule(ctx context.Context) (*types.Module, error)
 	GetModules(ctx context.Context) map[cache.NSN]*types.Module
 	// returns a list of all provider Requirements from all the modules referenced
 	GetProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider
@@ -58,7 +61,9 @@ func (r *kformparser) Parse(ctx context.Context) {
 	r.validateUnreferencedProviderConfigs(ctx)
 	r.validateUnreferencedProviderRequirements(ctx)
 
+	r.generateProviderDAG(ctx, r.getUnReferencedProviderConfigs(ctx))
 	r.generateDAG(ctx)
+
 }
 
 func (r *kformparser) parseModule(ctx context.Context, nsn cache.NSN, path string) {
@@ -133,11 +138,25 @@ func (r *kformparser) GetProviderRequirements(ctx context.Context) map[cache.NSN
 	return allprovreqs
 }
 
+func (r *kformparser) generateProviderDAG(ctx context.Context, unrefed []string) {
+	log := log.FromContext(ctx)
+	log.Info("generating DAG")
+	m, err := r.GetRootModule(ctx)
+	if err != nil {
+		r.recorder.Record(diag.DiagFromErr(err))
+		return
+	}
+	m.GenerateDAG(ctx, true, unrefed)
+	// update the module with the DAG in the cache
+	r.modules.Upsert(ctx, r.rootModuleName, m)
+}
+
 func (r *kformparser) generateDAG(ctx context.Context) {
 	log := log.FromContext(ctx)
 	log.Info("generating DAG")
 	for nsn, m := range r.modules.List() {
-		m.GenerateDAG(ctx)
+		// generate a regular DAG
+		m.GenerateDAG(ctx, false, []string{})
 		// update the module with the DAG in the cache
 		r.modules.Upsert(ctx, nsn, m)
 	}
@@ -165,13 +184,8 @@ func (r *kformparser) GetModules(ctx context.Context) map[cache.NSN]*types.Modul
 	return r.modules.List()
 }
 
-func (r *kformparser) GetRootModule(ctx context.Context) *types.Module {
-	for _, m := range r.modules.List() {
-		if m.Kind == types.ModuleKindRoot {
-			return m
-		}
-	}
-	return nil
+func (r *kformparser) GetRootModule(ctx context.Context) (*types.Module, error) {
+	return r.modules.Get(r.rootModuleName)
 }
 
 func (r *kformparser) GetProviderConfigs(ctx context.Context) map[cache.NSN]*types.ProviderConfig {
@@ -187,4 +201,30 @@ func (r *kformparser) GetProviderConfigs(ctx context.Context) map[cache.NSN]*typ
 		delete(rootProviderConfigs, cache.NSN{Name: name})
 	}
 	return rootProviderConfigs
+}
+
+func (r *kformparser) InitProviderInventory(ctx context.Context) (cache.Cache[types.Provider], error) {
+	inventory := cache.New[types.Provider]()
+
+	for nsn, reqs := range r.GetProviderRequirements(ctx) {
+		p := types.Provider{}
+		if err := p.Download(ctx, r.rootModulePath, nsn, reqs); err != nil {
+			return nil, err
+		}
+		if err := p.Init(ctx); err != nil {
+			return nil, err
+		}
+		inventory.Add(ctx, nsn, p)
+	}
+
+	return inventory, nil
+}
+
+func (r *kformparser) InitProviderInstances(ctx context.Context) cache.Cache[plugin.Provider] {
+	instances := cache.New[plugin.Provider]()
+
+	for nsn := range r.GetProviderConfigs(ctx) {
+		instances.Add(ctx, nsn, nil)
+	}
+	return instances
 }

@@ -28,7 +28,6 @@ func GetMain(ctx context.Context) *cobra.Command {
 			if h {
 				return cmd.Help()
 			}
-
 			return cmd.Usage()
 		},
 	}

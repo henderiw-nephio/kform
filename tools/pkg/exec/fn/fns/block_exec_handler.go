@@ -24,15 +24,19 @@ import (
 // It uses a fnmap to execute the particular vertex BlockType
 // Before calling the specific blockTYpe
 
+/*
 type EHConfig struct {
 	RootModuleName string
 	ModuleName     string
 	BlockName      string
 	Vars           cache.Cache[vars.Variable]
 	Recorder       recorder.Recorder[record.Record]
+	// only used for provider run
+	ProviderInstances cache.Cache[plugin.Provider]
 }
+*/
 
-func NewExecHandler(ctx context.Context, cfg *EHConfig) *ExecHandler {
+func NewExecHandler(ctx context.Context, cfg *Config) *ExecHandler {
 	return &ExecHandler{
 		RootModuleName: cfg.RootModuleName,
 		ModuleName:     cfg.ModuleName,
@@ -40,9 +44,13 @@ func NewExecHandler(ctx context.Context, cfg *EHConfig) *ExecHandler {
 		Vars:           cfg.Vars,
 		Recorder:       cfg.Recorder,
 		fnsMap: NewMap(ctx, &Config{
-			RootModuleName: cfg.RootModuleName,
-			Vars:           cfg.Vars,
-			Recorder:       cfg.Recorder}),
+			Provider:          cfg.Provider,
+			RootModuleName:    cfg.RootModuleName,
+			Vars:              cfg.Vars,
+			Recorder:          cfg.Recorder,
+			ProviderInstances: cfg.ProviderInstances,
+			ProviderInventory: cfg.ProviderInventory,
+		}),
 	}
 }
 
@@ -185,7 +193,9 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 }
 
 func getSetWithInt(i int) *items {
-	items := &items{}
+	items := &items{
+		items: map[any]item{},
+	}
 	for idx := 0; idx < i; idx++ {
 		items.Add(idx, item{key: idx, val: idx})
 

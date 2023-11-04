@@ -95,7 +95,7 @@ func TestExecHandlerLocal(t *testing.T) {
 				varsCache.Add(ctx, cache.NSN{Name: name}, v)
 			}
 
-			h := NewExecHandler(ctx, &EHConfig{
+			h := NewExecHandler(ctx, &Config{
 				RootModuleName: "dummy",
 				ModuleName:     tc.vCtx.BlockName,
 				Vars:           varsCache,

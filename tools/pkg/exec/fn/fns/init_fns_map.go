@@ -6,6 +6,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
@@ -21,9 +22,17 @@ type Map interface {
 }
 
 type Config struct {
+	Provider   bool
+	ModuleName string
+	BlockName  string
+
 	RootModuleName string
 	Vars           cache.Cache[vars.Variable]
 	Recorder       recorder.Recorder[record.Record]
+	// used for the provider DAG run + resources run to find the provider client
+	ProviderInstances cache.Cache[plugin.Provider]
+	// used for the provider DAG run only
+	ProviderInventory cache.Cache[types.Provider]
 }
 
 func NewMap(ctx context.Context, cfg *Config) Map {
@@ -40,6 +49,7 @@ func NewMap(ctx context.Context, cfg *Config) Map {
 			types.BlockTypeResource: NewResourceFn,
 			types.BlockTypeData:     NewResourceFn,
 			types.BlockTypeRoot:     NewRootFn,
+			types.BlockTypeProvider: NewProviderFn,
 		},
 	}
 }

@@ -14,13 +14,13 @@ import (
 )
 
 // TBD this need to be optimized
-func New(ctx context.Context, dag dag.DAG[*types.VertexContext]) (executor.Executor, error) {
+func New(ctx context.Context, dag dag.DAG[*types.VertexContext]) (executor.DAGExecutor, error) {
 	recorder := recorder.New[record.Record]()
 	vars := cache.New[vars.Variable]()
 
-	return executor.New[*types.VertexContext](ctx, dag, &executor.Config[*types.VertexContext]{
+	return executor.NewDAGExecutor[*types.VertexContext](ctx, dag, &executor.Config[*types.VertexContext]{
 		Name: "tbd",
-		Handler: fns.NewExecHandler(ctx, &fns.EHConfig{
+		Handler: fns.NewExecHandler(ctx, &fns.Config{
 			RootModuleName: "tbd",
 			ModuleName:     "tbd",
 			Vars:           vars,

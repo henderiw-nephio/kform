@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/render"
@@ -20,18 +21,25 @@ import (
 
 func NewModuleFn(cfg *Config) fn.BlockInstanceRunner {
 	return &module{
-		rootModuleName: cfg.RootModuleName,
-		vars:           cfg.Vars,
-		recorder:       cfg.Recorder,
+		provider:          cfg.Provider,
+		rootModuleName:    cfg.RootModuleName,
+		vars:              cfg.Vars,
+		recorder:          cfg.Recorder,
+		providerInventory: cfg.ProviderInventory,
+		providerInstances: cfg.ProviderInstances,
 	}
 }
 
 type module struct {
+	// inidctaes which dag to pick for the run (provider dag or regular dag)
+	provider bool
 	// initialized from the vertexContext
 	rootModuleName string
 	// dynamic injection required
-	vars     cache.Cache[vars.Variable]
-	recorder recorder.Recorder[record.Record]
+	vars              cache.Cache[vars.Variable]
+	recorder          recorder.Recorder[record.Record]
+	providerInventory cache.Cache[types.Provider]
+	providerInstances cache.Cache[plugin.Provider]
 }
 
 /*
@@ -51,7 +59,7 @@ Per execution instance (single or range (count/for_each))
 */
 
 func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
-	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
+	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx), "provider", r.provider)
 	log.Info("run instance")
 	// render the new vars input
 	newvars := cache.New[vars.Variable]()
@@ -80,15 +88,21 @@ func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars m
 			}
 		}
 	}
-	// prepare and execute the dag
-	e, err := executor.New[*types.VertexContext](ctx, vCtx.DAG, &executor.Config[*types.VertexContext]{
+	// prepare and execute the dag (provider or regular dag based on the provider flag)
+
+	// the vCtx.DAG is either the provider DAG or a regular DAG based on input
+	// provider DAG(s) dont run hierarchically, so no need to propagate
+	e, err := executor.NewDAGExecutor[*types.VertexContext](ctx, vCtx.DAG, &executor.Config[*types.VertexContext]{
 		Name: vCtx.BlockName,
 		From: dag.Root,
-		Handler: NewExecHandler(ctx, &EHConfig{
-			RootModuleName: r.rootModuleName,
-			ModuleName:     vCtx.BlockName,
-			Vars:           newvars,
-			Recorder:       r.recorder,
+		Handler: NewExecHandler(ctx, &Config{
+			// provider should not be set, since provider dag is not hierarchical
+			RootModuleName:    r.rootModuleName,
+			ModuleName:        vCtx.BlockName,
+			Vars:              newvars,
+			Recorder:          r.recorder,
+			ProviderInstances: r.providerInstances,
+			ProviderInventory: r.providerInventory,
 		}),
 	})
 	if err != nil {

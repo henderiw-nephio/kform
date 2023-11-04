@@ -110,7 +110,8 @@ func TestKformsExec(t *testing.T) {
 			if precorder.Get().HasError() {
 				assert.Error(t, precorder.Get().Error())
 			}
-			m.GenerateDAG(ctx)
+			// generate a module DAG
+			m.GenerateDAG(ctx, false, []string{})
 
 			rrecorder := recorder.New[record.Record]()
 			varsCache := cache.New[vars.Variable]()

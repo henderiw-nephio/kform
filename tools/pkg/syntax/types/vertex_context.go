@@ -34,7 +34,10 @@ type VertexContext struct {
 	// only relevaant for blocktype resource and data
 	Provider string
 	// only relevant for blocktype module
+	// can be either a regular DAG or a provider DAG
 	DAG dag.DAG[*VertexContext]
+	// only relevant for blocktype provider
+	//ProviderDAG dag.DAG[*VertexContext]
 }
 
 func (r *VertexContext) AddDAG(d dag.DAG[*VertexContext]) {

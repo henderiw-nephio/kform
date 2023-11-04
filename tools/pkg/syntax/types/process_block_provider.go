@@ -66,25 +66,11 @@ type ProviderConfig struct {
 	config
 
 	name string
-	//alias string
 }
 
 func (r *ProviderConfig) GetBlockName() string {
-	/*
-		if r.alias != "" {
-			return fmt.Sprintf("%s.%s", r.name, r.alias)
-		}
-	*/
 	return r.name
 }
-
-/*
-func (r *Provider) GetAlias(ctx context.Context) {
-	if r.KformBlockContext.Attributes != nil && r.KformBlockContext.Attributes.Alias != nil {
-		r.alias = *r.KformBlockContext.Attributes.Alias
-	}
-}
-*/
 
 func (r *ProviderConfig) GetName() string {
 	return r.name

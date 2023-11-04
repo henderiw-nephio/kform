@@ -25,7 +25,6 @@ type Module struct {
 
 	ProviderRequirements cache.Cache[kformpkgmetav1alpha1.Provider]
 	ProviderConfigs      cache.Cache[*ProviderConfig]
-	//Providers            map[string][]string
 
 	Inputs      cache.Cache[*Input]
 	Locals      cache.Cache[*Local]
@@ -33,7 +32,8 @@ type Module struct {
 	Resources   cache.Cache[*Resource]
 	ModuleCalls cache.Cache[*ModuleCall]
 
-	DAG dag.DAG[*VertexContext]
+	DAG         dag.DAG[*VertexContext]
+	ProviderDAG dag.DAG[*VertexContext]
 }
 
 func NewModule(nsn cache.NSN, kind ModuleKind, recorder recorder.Recorder[diag.Diagnostic]) *Module {
@@ -159,27 +159,33 @@ func (r *Module) ResolveResource2ProviderConfig(ctx context.Context) {
 	}
 }
 
-func (r *Module) GenerateDAG(ctx context.Context) {
+func (r *Module) GenerateDAG(ctx context.Context, provider bool, unrefed []string) {
 	// add the vertices with the right VertexContext to the dag
-	r.DAG = r.generateDAG(ctx)
+	d := r.generateDAG(ctx, provider, unrefed)
 	// connect the dag based on the depdenencies
-	for n, v := range r.DAG.GetVertices() {
+	for n, v := range d.GetVertices() {
 		deps := v.GetBlockDependencies()
 		//fmt.Println("block dependencies", n, deps)
 		for dep := range deps {
-			r.DAG.Connect(ctx, dep, n)
+			d.Connect(ctx, dep, n)
 		}
 		if n != dag.Root {
 			if len(deps) == 0 {
-				r.DAG.Connect(ctx, dag.Root, n)
+				d.Connect(ctx, dag.Root, n)
 			}
 		}
 	}
 	// optimize the dag by removing the transitive connection in the dag
-	r.DAG.TransitiveReduction(ctx)
+	d.TransitiveReduction(ctx)
+
+	if provider {
+		r.ProviderDAG = d
+	} else {
+		r.DAG = d
+	}
 }
 
-func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
+func (r *Module) generateDAG(ctx context.Context, provider bool, unrefed []string) dag.DAG[*VertexContext] {
 	d := dag.New[*VertexContext]()
 
 	d.AddVertex(ctx, dag.Root, &VertexContext{
@@ -202,55 +208,87 @@ func (r *Module) generateDAG(ctx context.Context) dag.DAG[*VertexContext] {
 			ModDependencies: x.modDependencies,
 		})
 	}
-	for nsn, x := range r.Outputs.List() {
+	if provider {
+		for nsn, x := range r.ProviderConfigs.List() {
+			// unreferenced provider configs should not be added to the dag
+			found := false
+			for _, name := range unrefed {
+				if name == nsn.Name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				d.AddVertex(ctx, nsn.Name, &VertexContext{
+					FileName:        x.fileName,
+					ModuleName:      x.moduleName.Name,
+					BlockName:       nsn.Name,
+					BlockType:       x.blockType,
+					GVK:             x.gvk,
+					BlockContext:    x.KformBlockContext,
+					Dependencies:    x.dependencies,
+					ModDependencies: x.modDependencies,
+				})
+			}
 
-		d.AddVertex(ctx, nsn.Name, &VertexContext{
-			FileName:        x.fileName,
-			ModuleName:      x.moduleName.Name,
-			BlockName:       nsn.Name,
-			BlockType:       x.blockType,
-			GVK:             x.gvk,
-			BlockContext:    x.KformBlockContext,
-			Dependencies:    x.dependencies,
-			ModDependencies: x.modDependencies,
-		})
-	}
-	for nsn, x := range r.Locals.List() {
-		d.AddVertex(ctx, nsn.Name, &VertexContext{
-			FileName:        x.fileName,
-			ModuleName:      x.moduleName.Name,
-			BlockName:       nsn.Name,
-			BlockType:       x.blockType,
-			GVK:             x.gvk,
-			BlockContext:    x.KformBlockContext,
-			Dependencies:    x.dependencies,
-			ModDependencies: x.modDependencies,
-		})
-	}
-	for nsn, x := range r.ModuleCalls.List() {
-		d.AddVertex(ctx, nsn.Name, &VertexContext{
-			FileName:        x.fileName,
-			ModuleName:      x.moduleName.Name,
-			BlockName:       nsn.Name,
-			BlockType:       x.blockType,
-			GVK:             x.gvk,
-			BlockContext:    x.KformBlockContext,
-			Dependencies:    x.dependencies,
-			ModDependencies: x.modDependencies,
-		})
-	}
-	for nsn, x := range r.Resources.List() {
-		d.AddVertex(ctx, nsn.Name, &VertexContext{
-			FileName:        x.fileName,
-			ModuleName:      x.moduleName.Name,
-			BlockName:       nsn.Name,
-			BlockType:       x.blockType,
-			GVK:             x.gvk,
-			BlockContext:    x.KformBlockContext,
-			Dependencies:    x.dependencies,
-			ModDependencies: x.modDependencies,
-			Provider:        x.provider,
-		})
+		}
+	} else {
+		// this is NOT a provider DAG
+		// for non provider DAGs we add the following blocktypes to the resources
+		// blocktypes:
+		// - outputs
+		// - locals
+		// - modules
+		// - resources
+		for nsn, x := range r.Outputs.List() {
+			d.AddVertex(ctx, nsn.Name, &VertexContext{
+				FileName:        x.fileName,
+				ModuleName:      x.moduleName.Name,
+				BlockName:       nsn.Name,
+				BlockType:       x.blockType,
+				GVK:             x.gvk,
+				BlockContext:    x.KformBlockContext,
+				Dependencies:    x.dependencies,
+				ModDependencies: x.modDependencies,
+			})
+		}
+		for nsn, x := range r.Locals.List() {
+			d.AddVertex(ctx, nsn.Name, &VertexContext{
+				FileName:        x.fileName,
+				ModuleName:      x.moduleName.Name,
+				BlockName:       nsn.Name,
+				BlockType:       x.blockType,
+				GVK:             x.gvk,
+				BlockContext:    x.KformBlockContext,
+				Dependencies:    x.dependencies,
+				ModDependencies: x.modDependencies,
+			})
+		}
+		for nsn, x := range r.ModuleCalls.List() {
+			d.AddVertex(ctx, nsn.Name, &VertexContext{
+				FileName:        x.fileName,
+				ModuleName:      x.moduleName.Name,
+				BlockName:       nsn.Name,
+				BlockType:       x.blockType,
+				GVK:             x.gvk,
+				BlockContext:    x.KformBlockContext,
+				Dependencies:    x.dependencies,
+				ModDependencies: x.modDependencies,
+			})
+		}
+		for nsn, x := range r.Resources.List() {
+			d.AddVertex(ctx, nsn.Name, &VertexContext{
+				FileName:        x.fileName,
+				ModuleName:      x.moduleName.Name,
+				BlockName:       nsn.Name,
+				BlockType:       x.blockType,
+				GVK:             x.gvk,
+				BlockContext:    x.KformBlockContext,
+				Dependencies:    x.dependencies,
+				ModDependencies: x.modDependencies,
+				Provider:        x.provider,
+			})
+		}
 	}
 	return d
 }

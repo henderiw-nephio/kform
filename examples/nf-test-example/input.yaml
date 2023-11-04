@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: input
+  annotations:
+    kform/config: true
+data:
+  spec:
+  - input:
+      context:
+        attributes:
+          schema:
+            apiVersion: v1
+            kind: ConfigMap
+        default:
+        - metadata:
+            name: context
+          data:
+            clusterName: dummy
+  - input:
+      interface:
+        attributes:
+          schema:
+            apiVersion: req.nephio.org/v1alpha1
+            kind: Interface
+        default:
+        - metadata:
+            name: n3
+          spec:
+            networkInstance:
+              name: vpc-ran
+            cniType: sriov
+            attachmentType: vlan
+            ipFamilyPolicy: dualstack

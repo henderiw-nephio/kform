@@ -26,7 +26,7 @@ import (
 	"github.com/henderiw/logger/log"
 )
 
-type Executor interface {
+type DAGExecutor interface {
 	Run(ctx context.Context) bool
 }
 
@@ -44,7 +44,7 @@ type Config[T any] struct {
 	Handler ExecHandler[T]
 }
 
-func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (Executor, error) {
+func NewDAGExecutor[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (DAGExecutor, error) {
 	log := log.FromContext(ctx).With("name", cfg.Name)
 	if d == nil {
 		log.Error("cannot create executor w/o a DAG")
@@ -59,7 +59,7 @@ func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (Executor, er
 		return nil, fmt.Errorf("cannot create executor w/o a defined From")
 	}
 
-	s := &executor[T]{
+	r := &dagExecutor[T]{
 		cfg:       *cfg,
 		d:         d,
 		m:         sync.RWMutex{},
@@ -68,11 +68,11 @@ func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (Executor, er
 	}
 
 	// initialize the initial data in the executor
-	s.init(ctx)
-	return s, nil
+	r.init(ctx)
+	return r, nil
 }
 
-type executor[T any] struct {
+type dagExecutor[T any] struct {
 	d   dag.DAG[T]
 	cfg Config[T]
 
@@ -87,7 +87,7 @@ type executor[T any] struct {
 
 // init initializes the executor with channels and cancel context
 // so it is prepaared to execute the dependency map
-func (r *executor[T]) init(ctx context.Context) {
+func (r *dagExecutor[T]) init(ctx context.Context) {
 	log := log.FromContext(ctx)
 	if r.d == nil {
 		log.Error("init failed, no DAG supplied")
@@ -132,7 +132,7 @@ func (r *executor[T]) init(ctx context.Context) {
 }
 
 // Run
-func (r *executor[T]) Run(ctx context.Context) bool {
+func (r *dagExecutor[T]) Run(ctx context.Context) bool {
 	from := r.cfg.From
 	start := time.Now()
 	ctx, cancelFn := context.WithCancel(ctx)
@@ -147,7 +147,7 @@ func (r *executor[T]) Run(ctx context.Context) bool {
 	return success
 }
 
-func (r *executor[T]) execute(ctx context.Context, from string, init bool) bool {
+func (r *dagExecutor[T]) execute(ctx context.Context, from string, init bool) bool {
 	log := log.FromContext(ctx)
 	log.Info("execute", "from", from, "init", init)
 	//fmt.Printf("execute from: %s init: %t\n", from, init)
@@ -185,13 +185,13 @@ func (r *executor[T]) execute(ctx context.Context, from string, init bool) bool 
 	return true
 }
 
-func (r *executor[T]) getExecContext(s string) *execContext[T] {
+func (r *dagExecutor[T]) getExecContext(s string) *execContext[T] {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return r.execMap[s]
 }
 
-func (r *executor[T]) dependenciesFinished(dep map[string]chan bool) bool {
+func (r *dagExecutor[T]) dependenciesFinished(dep map[string]chan bool) bool {
 	for vertexName := range dep {
 		if !r.getExecContext(vertexName).isFinished() {
 			return false
@@ -200,7 +200,7 @@ func (r *executor[T]) dependenciesFinished(dep map[string]chan bool) bool {
 	return true
 }
 
-func (r *executor[T]) waitFunctionCompletion(ctx context.Context) bool {
+func (r *dagExecutor[T]) waitFunctionCompletion(ctx context.Context) bool {
 	//fmt.Printf("main walk wait waiting for function completion...\n")
 	log := log.FromContext(ctx)
 	log.Info("main walk wait waiting for function completion...")
