@@ -30,8 +30,8 @@ func (r *localOrOutput) Run(ctx context.Context, vCtx *types.VertexContext, loca
 	// if the BlockContext Value is defined we render the expected output
 	// the syntax parser should validate this, meaning the value should always be defined
 	if vCtx.BlockContext.Value != nil {
-		renderer := &renderer{vars: r.vars}
-		if err := renderer.renderData(ctx, vCtx.BlockName, vCtx.BlockContext.Value, localVars); err != nil {
+		renderer := &Renderer{Vars: r.vars}
+		if err := renderer.RenderData(ctx, vCtx.BlockName, vCtx.BlockContext.Value, localVars); err != nil {
 			return err
 		}
 	}

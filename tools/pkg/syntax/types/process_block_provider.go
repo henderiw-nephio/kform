@@ -16,11 +16,11 @@ func newProvider(ctx context.Context, n string) Block {
 			level:     1,
 			blockType: GetBlockType(n),
 			expectedKeywords: map[BlockContextKey]bool{
-				BlockContextKeyAttributes: optional,
-				BlockContextKeyConfig:     optional,
+				BlockContextKeyAttributes: mandatory,
+				BlockContextKeyConfig:     mandatory,
 			},
 			expectedAttributes: map[string]bool{
-				//string(MetaArgumentAlias):  optional,  // optional
+				string(MetaArgumentSchema): mandatory,
 			},
 			recorder: cctx.GetContextValue[recorder.Recorder[diag.Diagnostic]](ctx, CtxKeyRecorder),
 		},

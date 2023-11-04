@@ -8,11 +8,34 @@ data:
   spec:
   - provider:
       kubernetes:
-        config: {}
+        attributes:
+          schema:
+            apiVersion: kubernetes.provider.kform.io
+            kind: ProviderConfig
+        config: 
+          metadata:
+            name: kubernetes
+          spec:
+            kind: package
+            directory: ./examples/out       
   - provider:
       resourcebackend:
-        config: {}
+        attributes:
+          schema:
+            apiVersion: resourcebackend.provider.kform.io
+            kind: ProviderConfig
+        config: 
+          metadata:
+            name: resourcebackend
+          spec:
+            kind: mock
   - provider:
       test:
-        config: {}
+        attributes:
+          schema:
+            apiVersion: dummy.provider.kform.io
+            kind: ProviderConfig
+        config: 
+          metadata:
+            name: dummy
         

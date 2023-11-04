@@ -10,8 +10,6 @@ import (
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
-	k8sv1alpha1 "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api/v1alpha1"
-	rbev1alpha1 "github.com/henderiw-nephio/kform/providers/provider-resourcebackend/resourcebackend/api/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
@@ -109,7 +107,13 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	// initialize the provider instances
 	for nsn, provConfig := range p.GetProviderConfigs(ctx) {
 		log := log.With("nsn", nsn)
-		log.Info("provider config", "config", provConfig.Config)
+
+		/*
+			if provConfig.Attributes != nil {
+				log.Info("provider config", "attributes", provConfig.Attributes.Schema)
+			}
+			log.Info("provider config", "config", provConfig.Config)
+		*/
 
 		p, err := providerInventory.Get(nsn)
 		if err != nil {
@@ -121,18 +125,27 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 			return err
 		}
 		defer provider.Close(ctx)
-		if nsn.Name == "kubernetes" {
-			providerConfig := k8sv1alpha1.BuildProviderConfig(
-				metav1.ObjectMeta{Name: "test"},
-				k8sv1alpha1.ProviderConfigSpec{
-					Kind: k8sv1alpha1.ProviderKindPackage,
-				})
-			providerConfigByte, err := json.Marshal(providerConfig)
-			if err != nil {
-				log.Error("cannot json marshal config", "error", err.Error())
-				return err
-			}
 
+		renderer := &fns.Renderer{Vars: cache.New[vars.Variable]()}
+		d, err := renderer.RenderConfig(ctx, nsn.Name, provConfig.Config, map[string]any{})
+		if err != nil {
+			return err
+		}
+		if provConfig.Attributes != nil && provConfig.Attributes.Schema == nil {
+			return fmt.Errorf("cannot add type meta without a schema for %s", nsn.Name)
+		}
+		d, err = fns.AddTypeMeta(ctx, *provConfig.Attributes.Schema, d)
+		if err != nil {
+			return fmt.Errorf("cannot add type meta for %s, err: %s", nsn.Name, err.Error())
+		}
+		providerConfigByte, err := json.Marshal(d)
+		if err != nil {
+			log.Error("cannot json marshal config", "error", err.Error())
+			return err
+		}
+		log.Info("providerConfig", "config", string(providerConfigByte))
+
+		if nsn.Name == "kubernetes" {
 			cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
 				Config: providerConfigByte,
 			})
@@ -142,17 +155,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 			}
 			log.Info("configure response", "nsn", nsn, "diag", cfgresp.Diagnostics)
 		} else {
-			providerConfig := rbev1alpha1.BuildProviderConfig(
-				metav1.ObjectMeta{Name: "test"},
-				rbev1alpha1.ProviderConfigSpec{
-					Kind: rbev1alpha1.ProviderKindMock,
-				})
-			providerConfigByte, err := json.Marshal(providerConfig)
-			if err != nil {
-				log.Error("cannot json marshal config", "error", err.Error())
-				return err
-			}
-
 			cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
 				Config: providerConfigByte,
 			})

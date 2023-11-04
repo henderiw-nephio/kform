@@ -38,7 +38,7 @@ func (r *input) Run(ctx context.Context, vCtx *types.VertexContext, localVars ma
 					if vCtx.BlockContext.Attributes.Schema == nil {
 						return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
 					}
-					d[idx], err = addTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, v)
+					d[idx], err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, v)
 					if err != nil {
 						return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
 					}

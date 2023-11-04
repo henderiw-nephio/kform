@@ -11,21 +11,21 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 )
 
-type renderer struct {
-	vars cache.Cache[vars.Variable]
+type Renderer struct {
+	Vars cache.Cache[vars.Variable]
 }
 
-func (r *renderer) renderConfig(ctx context.Context, blockName string, x any, localVars map[string]any) (any, error) {
+func (r *Renderer) RenderConfig(ctx context.Context, blockName string, x any, localVars map[string]any) (any, error) {
 	renderer := render.Renderer{
-		Vars:      r.vars,
+		Vars:      r.Vars,
 		LocalVars: localVars,
 	}
 	return renderer.Render(ctx, x)
 }
 
-func (r *renderer) renderData(ctx context.Context, blockName string, x any, localVars map[string]any) error {
+func (r *Renderer) RenderData(ctx context.Context, blockName string, x any, localVars map[string]any) error {
 	renderer := render.Renderer{
-		Vars:      r.vars,
+		Vars:      r.Vars,
 		LocalVars: localVars,
 	}
 	d, err := renderer.Render(ctx, x)
@@ -55,13 +55,13 @@ func (r *renderer) renderData(ctx context.Context, blockName string, x any, loca
 	}
 
 	// if the data already exists we can add the content to it
-	v, err := r.vars.Get(cache.NSN{Name: blockName})
+	v, err := r.Vars.Get(cache.NSN{Name: blockName})
 	if err != nil {
 		// variable does not exist in the varCache
 		v := vars.Variable{}
 		v.Data = map[string][]any{vars.DummyKey: make([]any, totalInt)}
 		v.Data[vars.DummyKey] = r.insert(v.Data[vars.DummyKey], indexInt, d)
-		r.vars.Add(ctx, cache.NSN{Name: blockName}, v)
+		r.Vars.Add(ctx, cache.NSN{Name: blockName}, v)
 	} else {
 		// variable exists in the varCache
 		if len(v.Data) == 0 {
@@ -80,13 +80,13 @@ func (r *renderer) renderData(ctx context.Context, blockName string, x any, loca
 				}
 			}
 		}
-		r.vars.Upsert(ctx, cache.NSN{Name: blockName}, v)
+		r.Vars.Upsert(ctx, cache.NSN{Name: blockName}, v)
 	}
 
 	return nil
 }
 
-func (r *renderer) insert(slice []any, pos int, value any) []any {
+func (r *Renderer) insert(slice []any, pos int, value any) []any {
 	// Check if the position is out of bounds
 	if pos < 0 || pos > len(slice) {
 		// Should never happen
@@ -96,7 +96,7 @@ func (r *renderer) insert(slice []any, pos int, value any) []any {
 	return slice
 }
 
-func addTypeMeta(ctx context.Context, schema types.KformBlockSchema, d any) (any, error) {
+func AddTypeMeta(ctx context.Context, schema types.KformBlockSchema, d any) (any, error) {
 	switch d := d.(type) {
 	case map[any]any:
 		d["apiVersion"] = schema.ApiVersion

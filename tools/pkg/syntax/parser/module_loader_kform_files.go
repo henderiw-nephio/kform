@@ -13,7 +13,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw/logger/log"
 	koe "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 )
 

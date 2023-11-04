@@ -35,15 +35,15 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 		// Pressence of the config should be checked in the syntax validation
 		return fmt.Errorf("cannot run without config for %s", vctx.GetContext(vCtx))
 	}
-	renderer := &renderer{vars: r.vars}
-	d, err := renderer.renderConfig(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
+	renderer := &Renderer{Vars: r.vars}
+	d, err := renderer.RenderConfig(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
 	if err != nil {
 		return fmt.Errorf("cannot render config for %s", vctx.GetContext(vCtx))
 	}
 	if vCtx.BlockContext.Attributes.Schema == nil {
 		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(vCtx))
 	}
-	d, err = addTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
+	d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
 	if err != nil {
 		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
 	}
