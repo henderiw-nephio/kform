@@ -2,12 +2,16 @@ package apply
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
+	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	k8sapi "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api"
+	rbeapi "github.com/henderiw-nephio/kform/providers/provider-resourcebackend/resourcebackend/api"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
@@ -19,7 +23,11 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 )
 
 // NewRunner returns a command runner.
@@ -85,7 +93,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return parserecorder.Get().Error()
 	}
 	parserecorder.Print()
-	
+
 	rm := p.GetRootModule(ctx)
 	if rm == nil {
 		log.Error("failed parsing no root module found")
@@ -93,12 +101,98 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 
 	// initialize the providers -> provider factory
-	_, err = providers.Initialize(ctx, r.rootPath, p.GetProviderRequirements(ctx))
+	providerInventory, err := providers.Initialize(ctx, r.rootPath, p.GetProviderRequirements(ctx))
 	if err != nil {
 		log.Error("failed initializing providers", "err", err)
 		return fmt.Errorf("failed initializing providers err: %s", err.Error())
 	}
 
+	// initialize the provider instances
+	for nsn, provConfig := range p.GetProviderConfigs(ctx) {
+		log := log.With("nsn", nsn)
+		log.Info("provider config", "config", provConfig.Config)
+
+		p, err := providerInventory.Get(nsn)
+		if err != nil {
+			log.Error("provider not found", "nsn", nsn, "err", err)
+			return fmt.Errorf("provider not found nsn: %s err: %s", nsn, err.Error())
+		}
+		provider, err := p.Initializer()
+		if err != nil {
+			return err
+		}
+		defer provider.Close(ctx)
+		if nsn.Name == "kubernetes" {
+			conf := &k8sapi.ProviderAPI{
+				Kind:      k8sapi.ProviderKindPackage,
+				Directory: ptr.To("./examples/crd"),
+			}
+			confByte, err := json.Marshal(conf)
+			if err != nil {
+				log.Error("cannot json marshal config", "error", err.Error())
+				return err
+			}
+
+			confResp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
+				Config: confByte,
+			})
+			if err != nil {
+				log.Error("failed to configure provider", "error", err.Error())
+				panic(err)
+			}
+			log.Info("configure response", "nsn", nsn, "diag", confResp.Diagnostics)
+		} else {
+			conf := &rbeapi.ProviderAPI{
+				Kind: rbeapi.ProviderKindMock,
+			}
+			confByte, err := json.Marshal(conf)
+			if err != nil {
+				log.Error("cannot json marshal config", "error", err.Error())
+				return err
+			}
+
+			confResp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
+				Config: confByte,
+			})
+			if err != nil {
+				log.Error("failed to configure provider", "error", err.Error())
+				panic(err)
+			}
+			log.Info("configure response", "nsn", nsn, "diag", confResp.Diagnostics)
+
+			ipClaim := ipamv1alpha1.BuildIPClaim(metav1.ObjectMeta{Name: "test"}, ipamv1alpha1.IPClaimSpec{
+				Kind:            ipamv1alpha1.PrefixKindNetwork,
+				NetworkInstance: corev1.ObjectReference{Name: "test"},
+			}, ipamv1alpha1.IPClaimStatus{})
+			readByte, err := json.Marshal(ipClaim)
+			if err != nil {
+				log.Error("cannot json marshal list", "error", err.Error())
+				return err
+			}
+			log.Info("data", "req", string(readByte))
+
+			resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
+				Name: "resourcebackend_ipclaim",
+				Data: readByte,
+			})
+			if err != nil {
+				log.Error("cannot read resource", "error", err.Error())
+				return err
+			}
+			if diag.Diagnostics(resp.Diagnostics).HasError() {
+				log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
+				return err
+			}
+
+			if err := json.Unmarshal(resp.Data, ipClaim); err != nil {
+				log.Error("cannot unmarshal read resp", "error", err.Error())
+				return err
+			}
+			log.Info("response", "ipClaim", ipClaim)
+		}
+	}
+
+	os.Exit(1)
 	// execute the dag
 
 	runrecorder := recorder.New[record.Record]()

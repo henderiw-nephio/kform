@@ -7,8 +7,8 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
+	ipamv1alpha1 "github.com/nokia/k8s-ipam/apis/resource/ipam/v1alpha1"
 	"github.com/nokia/k8s-ipam/pkg/proxy/beclient"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 func resourceResourceBackendIPClaim() *schema.Resource {
@@ -27,7 +27,7 @@ func resourceResourceBackendIPClaim() *schema.Resource {
 func resourceResourceBackendIPClaimCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
-	u := &unstructured.Unstructured{}
+	u := &ipamv1alpha1.IPClaim{}
 	if err := json.Unmarshal(d.GetData(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -47,7 +47,7 @@ func resourceResourceBackendIPClaimCreate(ctx context.Context, d *schema.Resourc
 func resourceResourceBackendIPClaimRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
-	u := &unstructured.Unstructured{}
+	u := &ipamv1alpha1.IPClaim{}
 	if err := json.Unmarshal(d.GetData(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}

@@ -44,7 +44,7 @@ func providerConfigure(ctx context.Context, d []byte, version string) (any, diag
 	}
 
 	if providerAPIConfig.Kind == api.ProviderKindMock {
-		return beclient.New(ctx, providerAPIConfig.Address), diag.Diagnostics{}
+		return beclient.NewMock(), diag.Diagnostics{}
 	}
 
 	return beclient.New(ctx, providerAPIConfig.Address), diag.Diagnostics{}

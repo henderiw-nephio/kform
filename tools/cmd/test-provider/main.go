@@ -29,7 +29,7 @@ func main() {
 		//AutoMTLS:         enableProviderAutoMTLS,
 		//SyncStdout:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stdout", meta.Name)),
 		//SyncStderr:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stderr", meta.Name)),
-		Cmd:        exec.Command("./bin/provider-resourcebackend"),
+		Cmd: exec.Command("./bin/provider-resourcebackend"),
 		//Cmd:        exec.Command("./bin/provider-kubernetes"),
 		SyncStdout: PluginOutputMonitor(fmt.Sprintf("%s:stdout", "test")),
 		SyncStderr: PluginOutputMonitor(fmt.Sprintf("%s:stderr", "test")),

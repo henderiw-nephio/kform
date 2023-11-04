@@ -58,7 +58,7 @@ func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (Executor, er
 		log.Error("cannot create executor w/o a defined From")
 		return nil, fmt.Errorf("cannot create executor w/o a defined From")
 	}
-	
+
 	s := &executor[T]{
 		cfg:       *cfg,
 		d:         d,

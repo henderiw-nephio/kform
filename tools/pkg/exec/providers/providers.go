@@ -57,6 +57,7 @@ func Initialize(ctx context.Context, rootPath string, provReqs map[cache.NSN][]v
 			log.Info("list data sources", "nsn", nsn, "resources", capResp.ListDataSources)
 			p.Resources.Insert(capResp.ListDataSources...)
 		}
+		providers.Add(ctx, nsn, p)
 	}
 	return providers, nil
 }
@@ -83,8 +84,6 @@ func ProviderInitializer(execPath string) Initializer {
 			HandshakeConfig:  kfplugin.Handshake,
 			VersionedPlugins: kfplugin.VersionedPlugins,
 			//AutoMTLS:         enableProviderAutoMTLS,
-			//SyncStdout:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stdout", meta.Name)),
-			//SyncStderr:       logging.PluginOutputMonitor(fmt.Sprintf("%s:stderr", meta.Name)),
 			Cmd: exec.Command(execPath),
 			//Cmd:        exec.Command("./bin/provider-kubernetes"),
 			SyncStdout: logging.PluginOutputMonitor(fmt.Sprintf("%s:stdout", "test")),
