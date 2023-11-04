@@ -11,7 +11,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/schema"
-	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api"
+	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api/v1alpha1"
 	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/k8sclient"
 	"github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/client/pkgclient"
 	"github.com/mitchellh/go-homedir"
@@ -67,19 +67,19 @@ func providerConfigure(ctx context.Context, d []byte, version string) (any, diag
 			return nil, diag.FromErr(err)
 		}
 	*/
-	providerAPIConfig := &api.ProviderAPI{}
-	if err := json.Unmarshal(d, providerAPIConfig); err != nil {
+	providerConfig := &v1alpha1.ProviderConfig{}
+	if err := json.Unmarshal(d, providerConfig); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
-	if !providerAPIConfig.IsKindValid() {
-		return nil, diag.Errorf("invalid provider kind, got: %s, expected: %v", providerAPIConfig.Kind, api.ExpectedProviderKinds)
+	if !providerConfig.Spec.IsKindValid() {
+		return nil, diag.Errorf("invalid provider kind, got: %s, expected: %v", providerConfig.Kind, v1alpha1.ExpectedProviderKinds)
 	}
 
-	if providerAPIConfig.Kind == api.ProviderKindPackage {
+	if providerConfig.Spec.Kind == v1alpha1.ProviderKindPackage {
 		dir := "./out"
-		if providerAPIConfig.Directory != nil {
-			dir = *providerAPIConfig.Directory
+		if providerConfig.Spec.Directory != nil {
+			dir = *providerConfig.Spec.Directory
 		}
 
 		c, err := pkgclient.New(pkgclient.Config{
@@ -93,7 +93,7 @@ func providerConfigure(ctx context.Context, d []byte, version string) (any, diag
 		return c, diag.Diagnostics{}
 	}
 
-	cfg, err := initializeConfiguration(ctx, providerAPIConfig)
+	cfg, err := initializeConfiguration(ctx, providerConfig)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}
@@ -116,20 +116,20 @@ func providerConfigure(ctx context.Context, d []byte, version string) (any, diag
 	return c, diag.Diagnostics{}
 }
 
-func initializeConfiguration(ctx context.Context, providerAPIConfig *api.ProviderAPI) (*rest.Config, error) {
+func initializeConfiguration(ctx context.Context, providerConfig *v1alpha1.ProviderConfig) (*rest.Config, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
 	configPaths := []string{}
-	if providerAPIConfig.ConfigPath != nil {
-		configPaths = []string{*providerAPIConfig.ConfigPath}
-	} else if len(providerAPIConfig.ConfigPaths) > 0 {
-		configPaths = append(configPaths, providerAPIConfig.ConfigPaths...)
+	if providerConfig.Spec.ConfigPath != nil {
+		configPaths = []string{*providerConfig.Spec.ConfigPath}
+	} else if len(providerConfig.Spec.ConfigPaths) > 0 {
+		configPaths = append(configPaths, providerConfig.Spec.ConfigPaths...)
 	} else if v := os.Getenv("KUBE_CONFIG_PATHS"); v != "" {
 		configPaths = filepath.SplitList(v)
 	}
 
-	if len(configPaths) > 0 && providerAPIConfig.UseConfigFile != nil && *providerAPIConfig.UseConfigFile {
+	if len(configPaths) > 0 && providerConfig.Spec.UseConfigFile != nil && *providerConfig.Spec.UseConfigFile {
 		expandedPaths := []string{}
 		for _, p := range configPaths {
 			path, err := homedir.Expand(p)
@@ -147,22 +147,22 @@ func initializeConfiguration(ctx context.Context, providerAPIConfig *api.Provide
 		}
 		ctxSuffix := "; default context"
 
-		if providerAPIConfig.ConfigContext != nil ||
-			providerAPIConfig.ConfigContextAuthInfo != nil ||
-			providerAPIConfig.ConfigContextCluster != nil {
+		if providerConfig.Spec.ConfigContext != nil ||
+			providerConfig.Spec.ConfigContextAuthInfo != nil ||
+			providerConfig.Spec.ConfigContextCluster != nil {
 			ctxSuffix = "; overridden context"
-			if providerAPIConfig.ConfigContext != nil {
-				overrides.CurrentContext = *providerAPIConfig.ConfigContext
+			if providerConfig.Spec.ConfigContext != nil {
+				overrides.CurrentContext = *providerConfig.Spec.ConfigContext
 				ctxSuffix += fmt.Sprintf("; config ctx: %s", overrides.CurrentContext)
 				slog.Debug("using custom current context", "context", overrides.CurrentContext)
 			}
 			overrides.Context = clientcmdapi.Context{}
-			if providerAPIConfig.ConfigContextAuthInfo != nil {
-				overrides.Context.AuthInfo = *providerAPIConfig.ConfigContextAuthInfo
+			if providerConfig.Spec.ConfigContextAuthInfo != nil {
+				overrides.Context.AuthInfo = *providerConfig.Spec.ConfigContextAuthInfo
 				ctxSuffix += fmt.Sprintf("; auth_info: %s", overrides.Context.AuthInfo)
 			}
-			if providerAPIConfig.ConfigContextCluster != nil {
-				overrides.Context.Cluster = *providerAPIConfig.ConfigContextCluster
+			if providerConfig.Spec.ConfigContextCluster != nil {
+				overrides.Context.Cluster = *providerConfig.Spec.ConfigContextCluster
 				ctxSuffix += fmt.Sprintf("; cluster: %s", overrides.Context.Cluster)
 			}
 			slog.Debug("using overridden context", "context", overrides.Context)
@@ -170,19 +170,19 @@ func initializeConfiguration(ctx context.Context, providerAPIConfig *api.Provide
 	}
 
 	// Overriding with static configuration
-	if providerAPIConfig.Insecure != nil {
-		overrides.ClusterInfo.InsecureSkipTLSVerify = *providerAPIConfig.Insecure
+	if providerConfig.Spec.Insecure != nil {
+		overrides.ClusterInfo.InsecureSkipTLSVerify = *providerConfig.Spec.Insecure
 	}
-	if providerAPIConfig.TLSServerName != nil {
-		overrides.ClusterInfo.TLSServerName = *providerAPIConfig.TLSServerName
+	if providerConfig.Spec.TLSServerName != nil {
+		overrides.ClusterInfo.TLSServerName = *providerConfig.Spec.TLSServerName
 	}
-	if providerAPIConfig.ClusterCACertificate != nil {
-		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(*providerAPIConfig.ClusterCACertificate).Bytes()
+	if providerConfig.Spec.ClusterCACertificate != nil {
+		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(*providerConfig.Spec.ClusterCACertificate).Bytes()
 	}
-	if providerAPIConfig.ClientCertificate != nil {
-		overrides.AuthInfo.ClientCertificateData = bytes.NewBufferString(*providerAPIConfig.ClientCertificate).Bytes()
+	if providerConfig.Spec.ClientCertificate != nil {
+		overrides.AuthInfo.ClientCertificateData = bytes.NewBufferString(*providerConfig.Spec.ClientCertificate).Bytes()
 	}
-	if providerAPIConfig.Host != nil {
+	if providerConfig.Spec.Host != nil {
 		// Server has to be the complete address of the kubernetes cluster (scheme://hostname:port), not just the hostname,
 		// because `overrides` are processed too late to be taken into account by `defaultServerUrlFor()`.
 		// This basically replicates what defaultServerUrlFor() does with config but for overrides,
@@ -190,40 +190,40 @@ func initializeConfiguration(ctx context.Context, providerAPIConfig *api.Provide
 		hasCA := len(overrides.ClusterInfo.CertificateAuthorityData) != 0
 		hasCert := len(overrides.AuthInfo.ClientCertificateData) != 0
 		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
-		host, _, err := rest.DefaultServerURL(*providerAPIConfig.Host, "", apimachineryschema.GroupVersion{}, defaultTLS)
+		host, _, err := rest.DefaultServerURL(*providerConfig.Spec.Host, "", apimachineryschema.GroupVersion{}, defaultTLS)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse host: %s", err)
 		}
 
 		overrides.ClusterInfo.Server = host.String()
 	}
-	if providerAPIConfig.Username != nil {
-		overrides.AuthInfo.Username = *providerAPIConfig.Username
+	if providerConfig.Spec.Username != nil {
+		overrides.AuthInfo.Username = *providerConfig.Spec.Username
 	}
-	if providerAPIConfig.Password != nil {
-		overrides.AuthInfo.Password = *providerAPIConfig.Password
+	if providerConfig.Spec.Password != nil {
+		overrides.AuthInfo.Password = *providerConfig.Spec.Password
 	}
-	if providerAPIConfig.ClientKey != nil {
-		overrides.AuthInfo.ClientKeyData = bytes.NewBufferString(*providerAPIConfig.ClientKey).Bytes()
+	if providerConfig.Spec.ClientKey != nil {
+		overrides.AuthInfo.ClientKeyData = bytes.NewBufferString(*providerConfig.Spec.ClientKey).Bytes()
 	}
-	if providerAPIConfig.Token != nil {
-		overrides.AuthInfo.Token = *providerAPIConfig.Token
+	if providerConfig.Spec.Token != nil {
+		overrides.AuthInfo.Token = *providerConfig.Spec.Token
 	}
 
-	if providerAPIConfig.Exec != nil {
+	if providerConfig.Spec.Exec != nil {
 		exec := &clientcmdapi.ExecConfig{
-			APIVersion: providerAPIConfig.Exec.APIVersion,
-			Command:    providerAPIConfig.Exec.Command,
-			Args:       providerAPIConfig.Exec.Args,
+			APIVersion: providerConfig.Spec.Exec.APIVersion,
+			Command:    providerConfig.Spec.Exec.Command,
+			Args:       providerConfig.Spec.Exec.Args,
 		}
-		for k, v := range providerAPIConfig.Exec.Env {
+		for k, v := range providerConfig.Spec.Exec.Env {
 			exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v})
 		}
 		overrides.AuthInfo.Exec = exec
 	}
 
-	if providerAPIConfig.ProxyURL != nil {
-		overrides.ClusterDefaults.ProxyURL = *providerAPIConfig.ProxyURL
+	if providerConfig.Spec.ProxyURL != nil {
+		overrides.ClusterDefaults.ProxyURL = *providerConfig.Spec.ProxyURL
 	}
 
 	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)

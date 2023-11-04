@@ -10,8 +10,8 @@ import (
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
-	k8sapi "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api"
-	rbeapi "github.com/henderiw-nephio/kform/providers/provider-resourcebackend/resourcebackend/api"
+	k8sv1alpha1 "github.com/henderiw-nephio/kform/providers/provider-kubernetes/kubernetes/api/v1alpha1"
+	rbev1alpha1 "github.com/henderiw-nephio/kform/providers/provider-resourcebackend/resourcebackend/api/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 // NewRunner returns a command runner.
@@ -123,42 +122,45 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		}
 		defer provider.Close(ctx)
 		if nsn.Name == "kubernetes" {
-			conf := &k8sapi.ProviderAPI{
-				Kind:      k8sapi.ProviderKindPackage,
-				Directory: ptr.To("./examples/crd"),
-			}
-			confByte, err := json.Marshal(conf)
+			providerConfig := k8sv1alpha1.BuildProviderConfig(
+				metav1.ObjectMeta{Name: "test"},
+				k8sv1alpha1.ProviderConfigSpec{
+					Kind: k8sv1alpha1.ProviderKindPackage,
+				})
+			providerConfigByte, err := json.Marshal(providerConfig)
 			if err != nil {
 				log.Error("cannot json marshal config", "error", err.Error())
 				return err
 			}
 
-			confResp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
-				Config: confByte,
+			cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
+				Config: providerConfigByte,
 			})
 			if err != nil {
 				log.Error("failed to configure provider", "error", err.Error())
 				panic(err)
 			}
-			log.Info("configure response", "nsn", nsn, "diag", confResp.Diagnostics)
+			log.Info("configure response", "nsn", nsn, "diag", cfgresp.Diagnostics)
 		} else {
-			conf := &rbeapi.ProviderAPI{
-				Kind: rbeapi.ProviderKindMock,
-			}
-			confByte, err := json.Marshal(conf)
+			providerConfig := rbev1alpha1.BuildProviderConfig(
+				metav1.ObjectMeta{Name: "test"},
+				rbev1alpha1.ProviderConfigSpec{
+					Kind: rbev1alpha1.ProviderKindMock,
+				})
+			providerConfigByte, err := json.Marshal(providerConfig)
 			if err != nil {
 				log.Error("cannot json marshal config", "error", err.Error())
 				return err
 			}
 
-			confResp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
-				Config: confByte,
+			cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
+				Config: providerConfigByte,
 			})
 			if err != nil {
 				log.Error("failed to configure provider", "error", err.Error())
 				panic(err)
 			}
-			log.Info("configure response", "nsn", nsn, "diag", confResp.Diagnostics)
+			log.Info("configure response", "nsn", nsn, "diag", cfgresp.Diagnostics)
 
 			ipClaim := ipamv1alpha1.BuildIPClaim(metav1.ObjectMeta{Name: "test"}, ipamv1alpha1.IPClaimSpec{
 				Kind:            ipamv1alpha1.PrefixKindNetwork,

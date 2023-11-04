@@ -1,10 +1,12 @@
-package api
+package v1alpha1
 
-//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	"reflect"
 
-// +kubebuilder:validation:Required
-// +kubebuilder:validation:MaxLength=64
-type ProviderAPI struct {
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+type ProviderConfigSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=api,package
 	// +kubebuilder:default:=api
@@ -105,15 +107,13 @@ const (
 	ProviderKindAPI     ProviderKind = "api"
 )
 
-func (r *ProviderAPI) IsKindValid() bool {
-	switch r.Kind {
-	case ProviderKindPackage:
-		return true
-	case ProviderKindAPI:
-		return true
-	default:
-		return false
-	}
+type ProviderConfig struct {
+	metav1.TypeMeta   `json:",inline" yaml:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+
+	Spec ProviderConfigSpec `json:"spec,omitempty" yaml:"spec,omitempty"`
 }
 
-var ExpectedProviderKinds = []string{string(ProviderKindPackage), string(ProviderKindAPI)}
+var (
+	ProviderConfigKind = reflect.TypeOf(ProviderConfig{}).Name()
+)
