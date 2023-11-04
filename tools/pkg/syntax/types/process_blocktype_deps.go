@@ -129,7 +129,7 @@ func ParseReferenceString(inputString string) string {
 	} else {
 		for matchIdx, match := range matches {
 			start, end := match[0], match[1]
-			fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
+			//fmt.Printf("Special character found at positions %d to %d: %s\n", start, end-1, inputString[start:end])
 			// if the special char is a lowercase/upercase letter or - or _ we continue
 			re := regexp.MustCompile(`^[a-zA-Z]+[a-zA-Z0-9_-]*$`)
 			if re.Match([]byte(inputString[start:end])) {

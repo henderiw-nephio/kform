@@ -4,14 +4,20 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/record"
+	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
+	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 	"github.com/spf13/cobra"
 )
@@ -79,7 +85,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return parserecorder.Get().Error()
 	}
 	parserecorder.Print()
-	log.Info("generate dag(s)")
+	
 	rm := p.GetRootModule(ctx)
 	if rm == nil {
 		log.Error("failed parsing no root module found")
@@ -94,31 +100,31 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 
 	// execute the dag
-	/*
-		runrecorder := recorder.New[record.Record]()
-		varsCache := cache.New[vars.Variable]()
 
-		rmfn := fns.NewModuleFn(&fns.Config{RootModuleName: rm.NSN.Name, Vars: varsCache, Recorder: runrecorder})
+	runrecorder := recorder.New[record.Record]()
+	varsCache := cache.New[vars.Variable]()
 
-		log.Info("executing module")
-		if err := rmfn.Run(ctx, &types.VertexContext{
-			FileName:     filepath.Join(r.rootPath, pkgio.PkgFileMatch[0]),
-			ModuleName:   rm.NSN.Name,
-			BlockType:    types.BlockTypeModule,
-			BlockName:    rm.NSN.Name,
-			DAG:          rm.DAG,
-			BlockContext: types.KformBlockContext{},
-		}, map[string]any{}); err != nil {
-			log.Error("failed executing module", "err", err)
-			return err
-		}
-		log.Info("success executing module")
+	rmfn := fns.NewModuleFn(&fns.Config{RootModuleName: rm.NSN.Name, Vars: varsCache, Recorder: runrecorder})
 
-		for nsn, v := range varsCache.List() {
-			fmt.Println("nsn", nsn)
-			fmt.Println("vars", v)
-		}
-	*/
+	log.Info("executing module")
+	if err := rmfn.Run(ctx, &types.VertexContext{
+		FileName:     filepath.Join(r.rootPath, pkgio.PkgFileMatch[0]),
+		ModuleName:   rm.NSN.Name,
+		BlockType:    types.BlockTypeModule,
+		BlockName:    rm.NSN.Name,
+		DAG:          rm.DAG,
+		BlockContext: types.KformBlockContext{},
+	}, map[string]any{}); err != nil {
+		log.Error("failed executing module", "err", err)
+		return err
+	}
+	log.Info("success executing module")
+
+	for nsn, v := range varsCache.List() {
+		fmt.Println("nsn", nsn)
+		fmt.Println("vars", v)
+	}
+
 	// auto-apply -> depends on the flag if we approve the change or not.
 	return nil
 }

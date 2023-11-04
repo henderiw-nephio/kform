@@ -13,6 +13,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
+	"github.com/henderiw/logger/log"
 )
 
 type KformParser interface {
@@ -133,8 +134,30 @@ func (r *kformparser) GetProviderRequirements(ctx context.Context) map[cache.NSN
 }
 
 func (r *kformparser) generateDAG(ctx context.Context) {
-	for _, m := range r.modules.List() {
+	log := log.FromContext(ctx)
+	log.Info("generating DAG")
+	for nsn, m := range r.modules.List() {
 		m.GenerateDAG(ctx)
+		// update the module with the DAG in the cache
+		r.modules.Upsert(ctx, nsn, m)
+	}
+	// since we call a DAG in hierarchy we need to update the DAGs with the calling DAG
+	// This is done after all the DAG(s) are generated
+	// We walk over all the modules -> they all should have a DAG now
+	// We walk over the DAG vertices of each module and walk over the modules again since the modules call eachother
+	// so the DAG(s) need to be updated in the calling module vertex (an adajacent module)
+	// for each vertex where the name matches with the module name we update the vertexCtx
+	// with the DAG
+	for _, m := range r.modules.List() {
+		for vertexName, vCtx := range m.DAG.GetVertices() {
+			for nsn, m := range r.modules.List() {
+				if vertexName == nsn.Name {
+					//fmt.Println("vertexName", vertexName, "nsn", nsn.Name, "module nsn", m.NSN.Name)
+					vCtx.DAG = m.DAG
+					m.DAG.UpdateVertex(ctx, vertexName, vCtx)
+				}
+			}
+		}
 	}
 }
 

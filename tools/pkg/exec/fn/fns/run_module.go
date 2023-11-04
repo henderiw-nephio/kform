@@ -81,7 +81,7 @@ func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars m
 		}
 	}
 	// prepare and execute the dag
-	e := executor.New[*types.VertexContext](ctx, vCtx.DAG, &executor.Config[*types.VertexContext]{
+	e, err := executor.New[*types.VertexContext](ctx, vCtx.DAG, &executor.Config[*types.VertexContext]{
 		Name: vCtx.BlockName,
 		From: dag.Root,
 		Handler: NewExecHandler(ctx, &EHConfig{
@@ -91,6 +91,9 @@ func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars m
 			Recorder:       r.recorder,
 		}),
 	})
+	if err != nil {
+		return err
+	}
 	success := e.Run(ctx)
 	if success {
 		// copy the output to the newvars to the original var

@@ -14,11 +14,11 @@ import (
 )
 
 // TBD this need to be optimized
-func New(ctx context.Context, dag dag.DAG[*types.VertexContext]) executor.Executor {
+func New(ctx context.Context, dag dag.DAG[*types.VertexContext]) (executor.Executor, error) {
 	recorder := recorder.New[record.Record]()
 	vars := cache.New[vars.Variable]()
 
-	e := executor.New[*types.VertexContext](ctx, dag, &executor.Config[*types.VertexContext]{
+	return executor.New[*types.VertexContext](ctx, dag, &executor.Config[*types.VertexContext]{
 		Name: "tbd",
 		Handler: fns.NewExecHandler(ctx, &fns.EHConfig{
 			RootModuleName: "tbd",
@@ -27,5 +27,4 @@ func New(ctx context.Context, dag dag.DAG[*types.VertexContext]) executor.Execut
 			Recorder:       recorder,
 		}),
 	})
-	return e
 }

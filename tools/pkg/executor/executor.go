@@ -18,6 +18,7 @@ package executor
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -43,7 +44,21 @@ type Config[T any] struct {
 	Handler ExecHandler[T]
 }
 
-func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) Executor {
+func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) (Executor, error) {
+	log := log.FromContext(ctx).With("name", cfg.Name)
+	if d == nil {
+		log.Error("cannot create executor w/o a DAG")
+		return nil, fmt.Errorf("cannot create executor w/o a DAG")
+	}
+	if cfg.Handler == nil {
+		log.Error("cannot create executor w/o a Handler")
+		return nil, fmt.Errorf("cannot create executor w/o a Handler")
+	}
+	if cfg.From == "" {
+		log.Error("cannot create executor w/o a defined From")
+		return nil, fmt.Errorf("cannot create executor w/o a defined From")
+	}
+	
 	s := &executor[T]{
 		cfg:       *cfg,
 		d:         d,
@@ -54,7 +69,7 @@ func New[T any](ctx context.Context, d dag.DAG[T], cfg *Config[T]) Executor {
 
 	// initialize the initial data in the executor
 	s.init(ctx)
-	return s
+	return s, nil
 }
 
 type executor[T any] struct {
@@ -74,6 +89,10 @@ type executor[T any] struct {
 // so it is prepaared to execute the dependency map
 func (r *executor[T]) init(ctx context.Context) {
 	log := log.FromContext(ctx)
+	if r.d == nil {
+		log.Error("init failed, no DAG supplied")
+		return
+	}
 	//r.execMap = map[string]*execContext{}
 	for vertexName, v := range r.d.GetVertices() {
 		//fmt.Printf("executor init vertexName: %s\n", vertexName)

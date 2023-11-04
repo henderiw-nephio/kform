@@ -2,7 +2,6 @@ package types
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -166,7 +165,7 @@ func (r *Module) GenerateDAG(ctx context.Context) {
 	// connect the dag based on the depdenencies
 	for n, v := range r.DAG.GetVertices() {
 		deps := v.GetBlockDependencies()
-		fmt.Println("block dependencies", n, deps)
+		//fmt.Println("block dependencies", n, deps)
 		for dep := range deps {
 			r.DAG.Connect(ctx, dep, n)
 		}

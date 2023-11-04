@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/render"
@@ -14,7 +15,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
-	"github.com/henderiw-nephio/kform/tools/pkg/util/sets"
+	"github.com/henderiw/logger/log"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -84,7 +85,7 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *types.VertexContex
 		return err
 	}
 	g, ctx := errgroup.WithContext(ctx)
-	for idx, item := range items.UnsortedList() {
+	for idx, item := range items.List() {
 		localVars := map[string]any{}
 		item := item
 		localVars[render.LoopKeyItemsTotal] = items.Len()
@@ -121,12 +122,14 @@ type item struct {
 	val any
 }
 
-func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockAttributes) (bool, sets.Set[item], error) {
+func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockAttributes) (bool, *items, error) {
+	log := log.FromContext(ctx)
+	log.Info("getLoopItems", "attrs", attrs)
 	renderer := &render.Renderer{
 		Vars: r.Vars,
 	}
 	isForEach := false
-	items := sets.New[item]()
+	items := &items{}
 	// forEach and count cannot be used together
 	if attrs != nil && attrs.ForEach != nil {
 		isForEach = true
@@ -134,20 +137,24 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 		if err != nil {
 			return isForEach, items, errors.Wrap(err, "render loop forEach failed")
 		}
+		log.Info("getLoopItems forEach render output", "value type", reflect.TypeOf(v), "value", v)
 		switch v := v.(type) {
 		case []any:
 			// in a list we return key = int, val = any
 			for k, v := range v {
-				sets.Insert[item](items, item{key: k, val: v})
+				log.Info("getLoopItems forEach insert item", "k", k, "v", v)
+				items.Add(k, item{key: k, val: v})
 			}
 		case map[any]any:
 			// in a list we return key = any, val = any
+			idx := 0
 			for k, v := range v {
-				sets.Insert[item](items, item{key: k, val: v})
+				items.Add(idx, item{key: k, val: v})
+				idx++
 			}
 		default:
 			// in a regular value we return key = int, val = any
-			sets.Insert[item](items, item{key: 0, val: v})
+			items.Add(0, item{key: 0, val: v})
 		}
 		return isForEach, items, nil
 
@@ -177,10 +184,38 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 	return isForEach, items, nil
 }
 
-func getSetWithInt(i int) sets.Set[item] {
-	items := sets.New[item]()
+func getSetWithInt(i int) *items {
+	items := &items{}
 	for idx := 0; idx < i; idx++ {
-		sets.Insert[item](items, item{key: idx, val: idx})
+		items.Add(idx, item{key: idx, val: idx})
+
 	}
 	return items
+}
+
+type items struct {
+	m     sync.RWMutex
+	items map[any]item
+}
+
+func (r *items) Add(k any, v item) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.items[k] = v
+}
+
+func (r *items) List() map[any]item {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	x := map[any]item{}
+	for k, v := range r.items {
+		x[k] = v
+	}
+	return x
+}
+
+func (r *items) Len() int {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	return len(r.items)
 }

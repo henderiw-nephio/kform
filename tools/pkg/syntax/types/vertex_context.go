@@ -1,8 +1,6 @@
 package types
 
 import (
-	"fmt"
-
 	"github.com/henderiw-nephio/kform/tools/pkg/dag"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -49,7 +47,7 @@ func (r *VertexContext) GetDependencies() map[string]string {
 
 func (r *VertexContext) GetBlockDependencies() map[string]string {
 	blockDeps := map[string]string{}
-	fmt.Println("block dependencies", r.BlockType, r.Dependencies)
+	//fmt.Println("block dependencies", r.BlockType, r.Dependencies)
 	for k, v := range r.Dependencies {
 		// filter out the dependencies that refer to loop variables
 		if _, ok := LocalVars[k]; !ok {
