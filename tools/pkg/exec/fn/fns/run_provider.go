@@ -39,7 +39,7 @@ type provider struct {
 }
 
 func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
-	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
+	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
 	log.Info("run provider")
 
 	// render the config
@@ -49,11 +49,11 @@ func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 		return err
 	}
 	if vCtx.BlockContext.Attributes != nil && vCtx.BlockContext.Attributes.Schema == nil {
-		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(vCtx))
+		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
 	d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
 	if err != nil {
-		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
+		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
 	}
 	providerConfigByte, err := json.Marshal(d)
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	p, err := r.providerInventory.Get(cache.NSN{Name: vCtx.BlockName})
 	if err != nil {
 		log.Error("provider not found in inventory", "err", err)
-		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(vCtx), err.Error())
+		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
 	}
 	provider, err := p.Initializer()
 	if err != nil {
@@ -81,11 +81,11 @@ func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	})
 	if err != nil {
 		log.Error("failed to configure provider", "error", err.Error())
-		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(vCtx), err.Error())
+		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
 	}
 	if diag.Diagnostics(cfgresp.Diagnostics).HasError() {
 		log.Error("failed to configure provider", "error", err.Error())
-		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(vCtx), err.Error())
+		return fmt.Errorf("provider %s not found in inventory err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
 	}
 	log.Info("configure response", "diag", cfgresp.Diagnostics)
 

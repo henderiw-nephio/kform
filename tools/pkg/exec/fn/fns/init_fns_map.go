@@ -61,8 +61,7 @@ type fnMap struct {
 }
 
 func (r *fnMap) getInitializedBlockTypes() []string {
-	//r.m.Lock()
-	//defer r.m.Unlock()
+	// No RLock needed since this is called only from Run
 	rfns := make([]string, 0, len(r.fns))
 	for blockType := range r.fns {
 		rfns = append(rfns, string(blockType))
@@ -72,8 +71,7 @@ func (r *fnMap) getInitializedBlockTypes() []string {
 }
 
 func (r *fnMap) init(blockType types.BlockType) (fn.BlockInstanceRunner, error) {
-	//r.m.RLock()
-	//defer r.m.RUnlock()
+	// No RLock needed since this is called only from Run
 	initFn, ok := r.fns[blockType]
 	if !ok {
 		return nil, fmt.Errorf("blockType not initialized, got %s, initialized blocktypes: %v", blockType, r.getInitializedBlockTypes())

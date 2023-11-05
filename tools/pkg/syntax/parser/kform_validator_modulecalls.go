@@ -110,12 +110,10 @@ func (r *kformparser) getUnReferencedProviderConfigs(ctx context.Context) []stri
 	rootProviderConfigs := rootModule.ProviderConfigs.List()
 
 	for _, m := range r.modules.List() {
-		if m.Kind != types.ModuleKindRoot {
-			for _, provider := range m.GetProvidersFromResources(ctx).UnsortedList() {
-				delete(rootProviderConfigs, provider)
-				if len(rootProviderConfigs) == 0 {
-					return unreferenceProviderConfigs
-				}
+		for _, provider := range m.GetProvidersFromResources(ctx).UnsortedList() {
+			delete(rootProviderConfigs, provider)
+			if len(rootProviderConfigs) == 0 {
+				return unreferenceProviderConfigs
 			}
 		}
 	}

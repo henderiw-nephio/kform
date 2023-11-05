@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
+	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
+	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
+	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vars"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/vctx"
@@ -15,12 +19,16 @@ import (
 
 func NewResourceFn(cfg *Config) fn.BlockInstanceRunner {
 	return &resource{
-		vars: cfg.Vars,
+		rootModuleName:    cfg.RootModuleName,
+		vars:              cfg.Vars,
+		providerInstances: cfg.ProviderInstances,
 	}
 }
 
 type resource struct {
-	vars cache.Cache[vars.Variable]
+	rootModuleName    string
+	vars              cache.Cache[vars.Variable]
+	providerInstances cache.Cache[plugin.Provider]
 }
 
 func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
@@ -28,34 +36,34 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	// ForEach: each.key/value
 	// Count: count.index
 
-	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
+	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
 	log.Info("run instance")
 
 	// 1. render the config of the resource with variable subtitution
 	if vCtx.BlockContext.Config == nil {
 		// Pressence of the config should be checked in the syntax validation
-		return fmt.Errorf("cannot run without config for %s", vctx.GetContext(vCtx))
+		return fmt.Errorf("cannot run without config for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
 	renderer := &Renderer{Vars: r.vars}
 	d, err := renderer.RenderConfig(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
 	if err != nil {
-		return fmt.Errorf("cannot render config for %s", vctx.GetContext(vCtx))
+		return fmt.Errorf("cannot render config for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
 	if vCtx.BlockContext.Attributes.Schema == nil {
-		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(vCtx))
+		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
 	d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
 	if err != nil {
-		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(vCtx), err.Error())
+		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
 	}
-	fmt.Println(d)
+	log.Info("data raw", "req", d)
 
 	b, err := json.Marshal(d)
 	if err != nil {
 		log.Error("cannot json marshal list", "error", err.Error())
 		return err
 	}
-	log.Info("data", "req", string(b))
+	log.Info("data json", "req", string(b))
 
 	// 2. run provider
 	// lookup the provider in the provider instances
@@ -63,11 +71,17 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	// add the data in the variable
 	fmt.Println("provider", vCtx.Provider)
 
-	/*
-		
-		resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
-			Name: "resourcebackend_ipclaim",
-			Data: readByte,
+	provider, err := r.providerInstances.Get(cache.NSN{Name: vCtx.Provider})
+	if err != nil {
+		log.Info("cannot get provider", "error", err.Error())
+		return err
+	}
+
+	switch vCtx.BlockType {
+	case types.BlockTypeData:
+		resp, err := provider.ReadDataSource(ctx, &kfplugin1.ReadDataSource_Request{
+			Name: strings.Split(vCtx.BlockName, ".")[0],
+			Data: b,
 		})
 		if err != nil {
 			log.Error("cannot read resource", "error", err.Error())
@@ -77,13 +91,49 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
 			return err
 		}
-
-		if err := json.Unmarshal(resp.Data, ipClaim); err != nil {
-			log.Error("cannot unmarshal read resp", "error", err.Error())
+		b = resp.Data
+	case types.BlockTypeResource:
+		resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
+			Name: strings.Split(vCtx.BlockName, ".")[0],
+			Data: b,
+		})
+		if err != nil {
+			log.Error("cannot read resource", "error", err.Error())
 			return err
 		}
-		log.Info("response", "ipClaim", ipClaim)
-	*/
+		if diag.Diagnostics(resp.Diagnostics).HasError() {
+			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
+			return err
+		}
+		b = resp.Data
+	case types.BlockTypeList:
+		// TBD how do we deal with a list
+		resp, err := provider.ListDataSource(ctx, &kfplugin1.ListDataSource_Request{
+			Name: strings.Split(vCtx.BlockName, ".")[0],
+			Data: b,
+		})
+		if err != nil {
+			log.Error("cannot read resource", "error", err.Error())
+			return err
+		}
+		if diag.Diagnostics(resp.Diagnostics).HasError() {
+			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
+			return err
+		}
+		b = resp.Data
+	default:
+		return fmt.Errorf("unexpected blockType, expected %v, got %s", types.ResourceBlockTypes, vCtx.BlockType)
+	}
+
+	if err := json.Unmarshal(b, &d); err != nil {
+		log.Error("cannot unmarshal resp", "error", err.Error())
+		return err
+	}
+	log.Info("data response", "resp", string(b))
+
+	if err := renderer.updateVars(ctx, vCtx.BlockName, d, localVars); err != nil {
+		return err
+	}
 
 	return nil
 }

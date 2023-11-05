@@ -65,11 +65,12 @@ type ExecHandler struct {
 
 // PostRun records the overall result of the module
 func (r *ExecHandler) PostRun(ctx context.Context, start, stop time.Time, success bool) {
+	recordCtx := fmt.Sprintf("total run rootModuleName/moduleName=%s/%s", r.RootModuleName, r.ModuleName)
 	recorder := r.Recorder
 	if success {
-		recorder.Record(record.Success(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, stop))
+		recorder.Record(record.Success(recordCtx, start, stop))
 	} else {
-		recorder.Record(record.FromErr(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, stop, fmt.Errorf("failed module execution")))
+		recorder.Record(record.FromErr(recordCtx, start, stop, fmt.Errorf("failed module execution")))
 	}
 }
 
@@ -79,10 +80,10 @@ func (r *ExecHandler) BlockRun(ctx context.Context, vertexName string, vCtx *typ
 	start := time.Now()
 	success := true
 	if err := r.runInstances(ctx, vCtx); err != nil {
-		recorder.Record(record.FromErr(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), fmt.Errorf("failed module instances execution")))
+		recorder.Record(record.FromErr(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), fmt.Errorf("failed block total run err: %s", err.Error())))
 		return !success
 	}
-	recorder.Record(record.Success(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now()))
+	recorder.Record(record.Success(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), "block total run"))
 	return success
 }
 
@@ -109,10 +110,10 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *types.VertexContex
 			start := time.Now()
 			// lookup the blockType in the map
 			if err := r.fnsMap.Run(ctx, vCtx, localVars); err != nil {
-				recorder.Record(record.FromErr(vctx.GetContextFromName(r.BlockName), start, time.Now(), err))
+				recorder.Record(record.FromErr(vctx.GetContextFromName(r.BlockName), start, time.Now(), err, "block instance run"))
 				return err
 			}
-			recorder.Record(record.Success(vctx.GetContext(vCtx), start, time.Now()))
+			recorder.Record(record.Success(vctx.GetContext(r.RootModuleName, vCtx), start, time.Now(), "block instance run"))
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -120,7 +121,6 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *types.VertexContex
 				return nil
 			}
 		})
-
 	}
 	return g.Wait()
 }
@@ -165,7 +165,6 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 			items.Add(0, item{key: 0, val: v})
 		}
 		return isForEach, items, nil
-
 	}
 	if attrs != nil && attrs.Count != nil {
 		v, err := renderer.Render(ctx, *attrs.Count)

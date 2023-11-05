@@ -19,9 +19,9 @@ data:
               name: test-ipv4
             spec:
               kind: "$input.interface[0].spec.cniType == '' ? 'loopback' : 'network'"
+              addressFamily: ipv4
               selector:
                 matchLabels:
-                  nephio.org/address-family: ipv4
                   nephio.org/cluster-name: $input.context[0].data.clusterName
                   nephio.org/network-name: $input.interface[0].metadata.name
               networkInstance:
@@ -39,6 +39,7 @@ data:
               name: test-ipv6
             spec:
               kind: "$input.interface[0].spec.cniType == '' ? 'loopback' : 'network'"
+              addressFamily: ipv6
               selector:
                 matchLabels:
                   nephio.org/address-family: ipv6

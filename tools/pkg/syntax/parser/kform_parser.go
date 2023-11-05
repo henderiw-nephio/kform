@@ -63,7 +63,6 @@ func (r *kformparser) Parse(ctx context.Context) {
 
 	r.generateProviderDAG(ctx, r.getUnReferencedProviderConfigs(ctx))
 	r.generateDAG(ctx)
-
 }
 
 func (r *kformparser) parseModule(ctx context.Context, nsn cache.NSN, path string) {

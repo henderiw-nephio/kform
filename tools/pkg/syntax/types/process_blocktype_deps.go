@@ -98,13 +98,13 @@ func (r *renderer) getRefsFromExpr(ctx context.Context, expr string) error {
 			return fmt.Errorf("a dependency always need <namespace>.<name>, got: %s", dep)
 		}
 
-		r.addDependency(ParseReferenceString(strings.Join(depSplit[:2], ".")), GetContext(ctx))
+		r.addDependency(false, ParseReferenceString(strings.Join(depSplit[:2], ".")), GetContext(ctx))
 
 		if depSplit[0] == "module" {
 			if len(depSplit) < 3 {
 				return fmt.Errorf("a module dependency always need <namespace>.<name>.<output>, got: %s", dep)
 			}
-			r.addModDependency(ParseReferenceString(strings.Join(depSplit[:3], ".")), GetContext(ctx))
+			r.addDependency(true, ParseReferenceString(strings.Join(depSplit[:3], ".")), GetContext(ctx))
 			//r.modDeps = append(r.modDeps, parsedependencyString(strings.Join(depSplit[:3], ".")))
 		}
 	}
@@ -143,14 +143,12 @@ func ParseReferenceString(inputString string) string {
 	}
 }
 
-func (r *renderer) addDependency(k string, v string) {
+func (r *renderer) addDependency(mod bool, k string, v string) {
 	r.m.Lock()
 	defer r.m.Unlock()
-	r.deps[k] = v
-}
-
-func (r *renderer) addModDependency(k string, v string) {
-	r.m.Lock()
-	defer r.m.Unlock()
-	r.modDeps[k] = v
+	if mod {
+		r.modDeps[k] = v
+	} else {
+		r.deps[k] = v
+	}
 }

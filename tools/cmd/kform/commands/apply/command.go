@@ -84,6 +84,8 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return parserecorder.Get().Error()
 	}
 	parserecorder.Print()
+	fmt.Println("provider requirements", p.GetProviderRequirements(ctx))
+	fmt.Println("provider configs", p.GetProviderConfigs(ctx))
 	providerInventory, err := p.InitProviderInventory(ctx)
 	if err != nil {
 		log.Error("failed initializing provider inventory", "error", err)
@@ -95,6 +97,10 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	if err != nil {
 		log.Error("failed parsing no root module found")
 		return fmt.Errorf("failed parsing no root module found")
+	}
+
+	for nsn := range providerInstances.List() {
+		fmt.Println("provider instance", nsn.Name)
 	}
 
 	runrecorder := recorder.New[record.Record]()
@@ -130,111 +136,18 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		<-ctx.Done()
 		fmt.Println("context Done")
 		for nsn, provider := range providerInstances.List() {
-			log.Info("closing provider", "nsn", nsn)
 			if provider != nil {
 				log.Info("closing provider", "nsn", nsn)
 				provider.Close(ctx)
 			}
 		}
-
 	}()
 
-	/*
-		// initialize the providers -> provider factory
-		providerInventory, err := providers.Initialize(ctx, r.rootPath, p.GetProviderRequirements(ctx))
-		if err != nil {
-			log.Error("failed initializing providers", "err", err)
-			return fmt.Errorf("failed initializing providers err: %s", err.Error())
-		}
+	runrecorder.Print()
 
-		// initialize the provider instances
-		for nsn, provConfig := range p.GetProviderConfigs(ctx) {
-			log := log.With("nsn", nsn)
-
-
-
-			p, err := providerInventory.Get(nsn)
-			if err != nil {
-				log.Error("provider not found", "nsn", nsn, "err", err)
-				return fmt.Errorf("provider not found nsn: %s err: %s", nsn, err.Error())
-			}
-			provider, err := p.Initializer()
-			if err != nil {
-				return err
-			}
-			defer provider.Close(ctx)
-
-			renderer := &fns.Renderer{Vars: cache.New[vars.Variable]()}
-			d, err := renderer.RenderConfig(ctx, nsn.Name, provConfig.Config, map[string]any{})
-			if err != nil {
-				return err
-			}
-			if provConfig.Attributes != nil && provConfig.Attributes.Schema == nil {
-				return fmt.Errorf("cannot add type meta without a schema for %s", nsn.Name)
-			}
-			d, err = fns.AddTypeMeta(ctx, *provConfig.Attributes.Schema, d)
-			if err != nil {
-				return fmt.Errorf("cannot add type meta for %s, err: %s", nsn.Name, err.Error())
-			}
-			providerConfigByte, err := json.Marshal(d)
-			if err != nil {
-				log.Error("cannot json marshal config", "error", err.Error())
-				return err
-			}
-			log.Info("providerConfig", "config", string(providerConfigByte))
-
-			if nsn.Name == "kubernetes" {
-				cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
-					Config: providerConfigByte,
-				})
-				if err != nil {
-					log.Error("failed to configure provider", "error", err.Error())
-					panic(err)
-				}
-				log.Info("configure response", "nsn", nsn, "diag", cfgresp.Diagnostics)
-			} else {
-				cfgresp, err := provider.Configure(ctx, &kfplugin1.Configure_Request{
-					Config: providerConfigByte,
-				})
-				if err != nil {
-					log.Error("failed to configure provider", "error", err.Error())
-					panic(err)
-				}
-				log.Info("configure response", "nsn", nsn, "diag", cfgresp.Diagnostics)
-
-				ipClaim := ipamv1alpha1.BuildIPClaim(metav1.ObjectMeta{Name: "test"}, ipamv1alpha1.IPClaimSpec{
-					Kind:            ipamv1alpha1.PrefixKindNetwork,
-					NetworkInstance: corev1.ObjectReference{Name: "test"},
-				}, ipamv1alpha1.IPClaimStatus{})
-				readByte, err := json.Marshal(ipClaim)
-				if err != nil {
-					log.Error("cannot json marshal list", "error", err.Error())
-					return err
-				}
-				log.Info("data", "req", string(readByte))
-
-				resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
-					Name: "resourcebackend_ipclaim",
-					Data: readByte,
-				})
-				if err != nil {
-					log.Error("cannot read resource", "error", err.Error())
-					return err
-				}
-				if diag.Diagnostics(resp.Diagnostics).HasError() {
-					log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
-					return err
-				}
-
-				if err := json.Unmarshal(resp.Data, ipClaim); err != nil {
-					log.Error("cannot unmarshal read resp", "error", err.Error())
-					return err
-				}
-				log.Info("response", "ipClaim", ipClaim)
-			}
-		}
-	*/
-	// execute the dag
+	for nsn := range providerInstances.List() {
+		fmt.Println("provider instance", nsn.Name)
+	}
 
 	runrecorder = recorder.New[record.Record]()
 	varsCache = cache.New[vars.Variable]()
@@ -266,6 +179,8 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		fmt.Println("vars", v)
 	}
 
+	runrecorder.Print()
 	// auto-apply -> depends on the flag if we approve the change or not.
+	cancel()
 	return nil
 }

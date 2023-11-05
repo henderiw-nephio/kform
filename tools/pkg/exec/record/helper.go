@@ -7,13 +7,18 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 )
 
-func FromErr(ctx string, start, stop time.Time, err error) Record {
+func FromErr(ctx string, start, stop time.Time, err error, d ...string) Record {
 	if err == nil {
+		detail := ""
+		if len(d) > 0 {
+			detail = d[0]
+		}
 		return Record{
 			Start: start,
 			Stop:  stop,
 			Diagnostic: &kfplugin1.Diagnostic{
 				Context: ctx,
+				Detail:  detail,
 			},
 		}
 	}
@@ -40,12 +45,17 @@ func Errorf(ctx string, start, stop time.Time, format string, a ...interface{}) 
 	}
 }
 
-func Success(ctx string, start, stop time.Time) Record {
+func Success(ctx string, start, stop time.Time, d ...string) Record {
+	detail := ""
+	if len(d) > 0 {
+		detail = d[0]
+	}
 	return Record{
 		Start: start,
 		Stop:  stop,
 		Diagnostic: &kfplugin1.Diagnostic{
 			Context: ctx,
+			Detail:  detail,
 		},
 	}
 }

@@ -2,6 +2,7 @@ package diag
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 )
@@ -43,4 +44,16 @@ func (r Diagnostic) Validate() error {
 		return fmt.Errorf("invalid severity: %v", r.Severity)
 	}
 	return nil
+}
+
+func (r Diagnostic) GetDetails() string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf(", severity=%s", r.Severity))
+	sb.WriteString(fmt.Sprintf(", context=%s", r.Context))
+	if r.Detail != "" {
+		sb.WriteString(fmt.Sprintf(", detail=%s", r.Detail))
+	}
+
+	return sb.String()
 }

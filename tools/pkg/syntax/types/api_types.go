@@ -62,6 +62,7 @@ const (
 	BlockTypeLocal             BlockType = "local"
 	BlockTypeResource          BlockType = "resource"
 	BlockTypeData              BlockType = "data"
+	BlockTypeList              BlockType = "list"
 	BlockTypeRoot              BlockType = dag.Root
 )
 
@@ -85,6 +86,8 @@ func GetBlockType(n string) BlockType {
 		return BlockTypeResource
 	case "data":
 		return BlockTypeData
+	case "list":
+		return BlockTypeList
 	default:
 		return BlockTypeUnknown
 	}

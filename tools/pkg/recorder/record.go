@@ -6,4 +6,5 @@ type Record interface {
 	GetSeverity() kfplugin1.Severity
 	GetDetail() string
 	GetContext() string
+	GetDetails() string
 }

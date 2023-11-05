@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var ResourceBlockTypes = []string{string(BlockTypeResource), string(BlockTypeData), string(BlockTypeList)}
+
 var BlockTypes = map[BlockType]BlockInitializer{
 	BlockTypeBackend:  newBackend,
 	BlockTypeProvider: newProvider,
@@ -14,6 +16,7 @@ var BlockTypes = map[BlockType]BlockInitializer{
 	BlockTypeLocal:    newLocal,
 	BlockTypeResource: newResource,
 	BlockTypeData:     newResource,
+	BlockTypeList:     newResource,
 }
 
 type BlockInitializer func(ctx context.Context, n string) Block

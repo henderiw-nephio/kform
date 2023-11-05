@@ -23,16 +23,23 @@ func (r *Renderer) RenderConfig(ctx context.Context, blockName string, x any, lo
 	return renderer.Render(ctx, x)
 }
 
-func (r *Renderer) RenderData(ctx context.Context, blockName string, x any, localVars map[string]any) error {
+func (r *Renderer) RenderData(ctx context.Context, blockName string, d any, localVars map[string]any) error {
 	renderer := render.Renderer{
 		Vars:      r.Vars,
 		LocalVars: localVars,
 	}
-	d, err := renderer.Render(ctx, x)
+	d, err := renderer.Render(ctx, d)
 	if err != nil {
 		return fmt.Errorf("render failed for blockName %s, err: %s", blockName, err.Error())
 	}
+	if err := r.updateVars(ctx, blockName, d, localVars); err != nil {
+		return fmt.Errorf("update vars failed failed for blockName %s, err: %s", blockName, err.Error())
+	}
 
+	return nil
+}
+
+func (r *Renderer) updateVars(ctx context.Context, blockName string, d any, localVars map[string]any) error {
 	total, ok := localVars[render.LoopKeyItemsTotal]
 	if !ok {
 		total = 1
@@ -82,7 +89,6 @@ func (r *Renderer) RenderData(ctx context.Context, blockName string, x any, loca
 		}
 		r.Vars.Upsert(ctx, cache.NSN{Name: blockName}, v)
 	}
-
 	return nil
 }
 

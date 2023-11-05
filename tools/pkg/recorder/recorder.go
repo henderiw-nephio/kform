@@ -43,7 +43,9 @@ func (r *recorder[T]) Get() Records {
 }
 
 func (r *recorder[T]) Print() {
+	r.m.RLock()
+	defer r.m.RUnlock()
 	for _, d := range r.records {
-		fmt.Println(d)
+		fmt.Println(d.GetDetails())
 	}
 }

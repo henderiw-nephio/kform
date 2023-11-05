@@ -10,14 +10,17 @@ import (
 )
 
 func NewRootFn(cfg *Config) fn.BlockInstanceRunner {
-	return &root{}
+	return &root{
+		rootModuleName:    cfg.RootModuleName,
+	}
 }
 
 type root struct {
+	rootModuleName string
 }
 
 func (r *root) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
-	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx))
+	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
 	log.Info("run instance")
 	return nil
 }

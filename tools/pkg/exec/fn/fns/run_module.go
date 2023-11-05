@@ -59,7 +59,7 @@ Per execution instance (single or range (count/for_each))
 */
 
 func (r *module) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
-	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(vCtx), "provider", r.provider)
+	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx), "provider", r.provider)
 	log.Info("run instance")
 	// render the new vars input
 	newvars := cache.New[vars.Variable]()

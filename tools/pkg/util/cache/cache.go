@@ -109,7 +109,6 @@ func (r *cache[T1]) Upsert(ctx context.Context, nsn NSN, newd T1) {
 			cb(ctx, AddAction, nsn, newd)
 		}
 	}
-
 }
 
 func (r *cache[T1]) update(nsn NSN, newd T1) {
