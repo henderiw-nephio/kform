@@ -37,25 +37,31 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	// Count: count.index
 
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
-	log.Info("run instance")
+	log.Info("run block instance start...")
 
 	// 1. render the config of the resource with variable subtitution
 	if vCtx.BlockContext.Config == nil {
 		// Pressence of the config should be checked in the syntax validation
 		return fmt.Errorf("cannot run without config for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
-	renderer := &Renderer{Vars: r.vars}
-	d, err := renderer.RenderConfig(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
+	if vCtx.BlockContext.Attributes != nil && vCtx.BlockContext.Attributes.Schema == nil {
+		return fmt.Errorf("cannot run without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
+	}
+	// adds the metaType to the config
+	renderer := &Renderer{
+		Vars:   r.vars,
+		Schema: *vCtx.BlockContext.Attributes.Schema,
+	}
+	d, err := renderer.RenderConfigOrValue(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
 	if err != nil {
 		return fmt.Errorf("cannot render config for %s", vctx.GetContext(r.rootModuleName, vCtx))
 	}
-	if vCtx.BlockContext.Attributes.Schema == nil {
-		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
-	}
-	d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
-	if err != nil {
-		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
-	}
+	/*
+		d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
+		if err != nil {
+			return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
+		}
+	*/
 	log.Info("data raw", "req", d)
 
 	b, err := json.Marshal(d)
@@ -135,5 +141,6 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 		return err
 	}
 
+	log.Info("run block instance finished...")
 	return nil
 }

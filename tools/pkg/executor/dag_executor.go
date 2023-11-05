@@ -148,15 +148,15 @@ func (r *dagExecutor[T]) Run(ctx context.Context) bool {
 }
 
 func (r *dagExecutor[T]) execute(ctx context.Context, from string, init bool) bool {
-	log := log.FromContext(ctx)
-	log.Info("execute", "from", from, "init", init)
+	log := log.FromContext(ctx).With("from", from, "init", init)
+	log.Info("execute")
 	//fmt.Printf("execute from: %s init: %t\n", from, init)
 	execCtx := r.getExecContext(from)
 	//fmt.Printf("execute getExecContext from: %s init: %t, wCtx: %#v\n", from, init, wCtx)
 	// avoid scheduling a vertex that is already visted
 	if !execCtx.isVisted() {
 		// updated the exec context with the visited time
-		execCtx.Visted()
+		execCtx.updateVisted()
 		// execute the vertex function
 		log.Info("execute scheduled vertex", "vertexname", execCtx.vertexName)
 		//fmt.Printf("execute scheduled vertex: %s\n", wCtx.vertexName)

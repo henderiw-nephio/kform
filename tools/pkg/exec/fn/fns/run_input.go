@@ -16,24 +16,23 @@ import (
 func NewInputFn(cfg *Config) fn.BlockInstanceRunner {
 	return &input{
 		rootModuleName: cfg.RootModuleName,
-		vars: cfg.Vars,
+		vars:           cfg.Vars,
 	}
 }
 
 type input struct {
 	rootModuleName string
-	vars cache.Cache[vars.Variable]
+	vars           cache.Cache[vars.Variable]
 }
 
 func (r *input) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	// NOTE: No forEach or count expected
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
-	log.Info("run instance")
+	log.Info("run block instance start...")
 	// check if the blockName (aka input variable) exists in the variable
 	// if not copy the default parameters to the variable cache if default is defined
 	if _, err := r.vars.Get(cache.NSN{Name: vCtx.BlockName}); err != nil {
 		if len(vCtx.BlockContext.Default) > 0 {
-
 			d := vCtx.BlockContext.Default
 			if len(d) > 0 {
 				for idx, v := range d {
@@ -46,12 +45,11 @@ func (r *input) Run(ctx context.Context, vCtx *types.VertexContext, localVars ma
 					}
 				}
 			}
-
 			r.vars.Upsert(ctx, cache.NSN{Name: vCtx.BlockName}, vars.Variable{Data: map[string][]any{
 				vars.DummyKey: d,
 			}})
 		}
 	}
-
+	log.Info("run block instance finished...")
 	return nil
 }

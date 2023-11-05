@@ -105,7 +105,13 @@ func (s *server) StopProvider(ctx context.Context, in *kfplugin1.StopProvider_Re
 		log.Error(rpc, "error", err)
 		return nil, err
 	}
+	s.stop()
 	return resp, nil
+}
+
+func (s *server) stop() {
+	close(s.stopCh)
+	s.stopCh = make(chan struct{})
 }
 
 func (s *server) ReadDataSource(ctx context.Context, in *kfplugin1.ReadDataSource_Request) (*kfplugin1.ReadDataSource_Response, error) {

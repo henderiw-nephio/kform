@@ -2,6 +2,7 @@ package render
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/google/cel-go/cel"
@@ -22,32 +23,52 @@ func (r *Renderer) Render(ctx context.Context, v any) (any, error) {
 		for k, v := range x {
 			x[k], err = r.Render(ctx, v)
 			if err != nil {
-				return nil, err
+				fmt.Println("render map[string]any", err.Error())
+				if strings.Contains(err.Error(), "no such key") || strings.Contains(err.Error(), "not found") {
+					delete(x, k)
+					continue
+				} else {
+					return nil, err
+				}
 			}
 		}
-		return v, err
+		return v, nil
 	case map[any]any:
 		for k, v := range x {
 			if x, ok := k.(string); ok {
 				k, err = r.handleString(ctx, x)
 				if err != nil {
+					fmt.Println("render map[any]any", err.Error())
 					return nil, err
 				}
 			}
 			x[k], err = r.Render(ctx, v)
 			if err != nil {
-				return nil, err
+				if strings.Contains(err.Error(), "no such key") || strings.Contains(err.Error(), "not found") {
+					delete(x, k)
+				} else {
+					return nil, err
+				}
 			}
 		}
-		return v, err
+		return v, nil
 	case []any:
+		newv := []any{}
 		for i, v := range x {
-			x[i], err = r.Render(ctx, v)
+			// rather then deleting the entry when the rendering failed harmlessly
+			// -> add the entry to a new list (newx)
+			newx, err := r.Render(ctx, v)
 			if err != nil {
-				return nil, err
+				if strings.Contains(err.Error(), "no such key") || strings.Contains(err.Error(), "not found") {
+					x[i] = nil
+					continue
+				} else {
+					return nil, err
+				}
 			}
+			newv = append(newv, newx)
 		}
-		return v, err
+		return newv, nil
 	case string:
 		return r.handleString(ctx, x)
 	default:

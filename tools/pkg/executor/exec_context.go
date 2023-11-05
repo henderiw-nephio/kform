@@ -61,6 +61,16 @@ type VertexResult struct {
 	Output  any
 }
 
+func (r *execContext[T]) ListDoneCh() map[string]chan bool {
+	r.m.RLock()
+	defer r.m.RUnlock()
+	doneChs := make(map[string]chan bool, len(r.doneChs))
+	for k, v := range r.doneChs {
+		doneChs[k] = v
+	}
+	return doneChs
+}
+
 func (r *execContext[T]) AddDoneCh(n string, c chan bool) {
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -79,33 +89,44 @@ func (r *execContext[T]) isFinished() bool {
 	return !r.finished.IsZero()
 }
 
+func (r *execContext[T]) updateFinished() {
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.finished = time.Now()
+}
+
 func (r *execContext[T]) isVisted() bool {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return !r.visited.IsZero()
 }
 
-func (r *execContext[T]) Visted() {
+func (r *execContext[T]) updateVisted() {
 	r.m.Lock()
 	defer r.m.Unlock()
 	r.visited = time.Now()
 }
 
+// run is executed in a go routine
 func (r *execContext[T]) run(ctx context.Context) {
-	log := log.FromContext(ctx)
-	//r.l.WithValues("execName", r.execName, "vertexName", r.vertexName)
+	log := log.FromContext(ctx).With("vertexName", r.vertexName)
 	// execute the handler that runs the function
 	success := r.handler.BlockRun(ctx, r.vertexName, r.vertexContext)
-	r.finished = time.Now()
+	//r.finished = time.Now()
+	r.updateFinished()
+	doneChs := r.ListDoneCh()
+	downVertices := []string{}
+	for k := range doneChs {
+		downVertices = append(downVertices, k)
+	}
+	log.Info("block run finished", "downVertices", downVertices)
 	// signal to the dependent function the result of the vertex fn execution
-	r.m.RLock()
-	for vertexName, doneCh := range r.doneChs {
+	for vertexName, doneCh := range doneChs {
 		doneCh <- success
 		close(doneCh)
 		log.Info("sent done", "from", r.vertexName, "to", vertexName)
 		//fmt.Printf("execContext execName %s vertexName: %s -> %s send done\n", r.execName, r.vertexName, vertexName)
 	}
-	r.m.RUnlock()
 	// signal the result of the vertex execution to the main walk
 	r.doneFnCh <- success
 	close(r.doneFnCh)
@@ -116,7 +137,7 @@ func (r *execContext[T]) run(ctx context.Context) {
 func (r *execContext[T]) waitDependencies(ctx context.Context) bool {
 	// for each dependency wait till a it completed, either through
 	// the dependency Channel or cancel or
-	log := log.FromContext(ctx)
+	log := log.FromContext(ctx).With("vertexName", r.vertexName)
 	log.Info("wait dependencies", "deps", r.deps)
 	//fmt.Printf("execContext execName %s vertexName: %s wait dependencies: %v\n", r.execName, r.vertexName, r.depChs)
 DepSatisfied:

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -75,15 +76,18 @@ func (r *ExecHandler) PostRun(ctx context.Context, start, stop time.Time, succes
 }
 
 func (r *ExecHandler) BlockRun(ctx context.Context, vertexName string, vCtx *types.VertexContext) bool {
-	//log := log.FromContext(ctx).With("rootModuleName", r.RootModuleName, "moduleName", r.ModuleName, "blockName", vertexName)
+	log := log.FromContext(ctx).With("moduleName", vCtx.ModuleName, "blockName", vCtx.BlockName, "blockType", vCtx.BlockType)
+	log.Info("run block start...")
 	recorder := r.Recorder
 	start := time.Now()
 	success := true
 	if err := r.runInstances(ctx, vCtx); err != nil {
 		recorder.Record(record.FromErr(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), fmt.Errorf("failed block total run err: %s", err.Error())))
-		return !success
+		success = false
+	} else {
+		recorder.Record(record.Success(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), "block total run"))
 	}
-	recorder.Record(record.Success(vctx.GetContextFromModule(r.RootModuleName, r.ModuleName), start, time.Now(), "block total run"))
+	log.Info("run block finished...", "success", success)
 	return success
 }
 
@@ -108,7 +112,7 @@ func (r *ExecHandler) runInstances(ctx context.Context, vCtx *types.VertexContex
 		}
 		g.Go(func() error {
 			start := time.Now()
-			// lookup the blockType in the map
+			// lookup the blockType in the map and run the block instance
 			if err := r.fnsMap.Run(ctx, vCtx, localVars); err != nil {
 				recorder.Record(record.FromErr(vctx.GetContextFromName(r.BlockName), start, time.Now(), err, "block instance run"))
 				return err
@@ -137,13 +141,19 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 		Vars: r.Vars,
 	}
 	isForEach := false
-	items := &items{}
+	items := &items{
+		items: map[any]item{},
+	}
 	// forEach and count cannot be used together
 	if attrs != nil && attrs.ForEach != nil {
 		isForEach = true
 		v, err := renderer.Render(ctx, *attrs.ForEach)
 		if err != nil {
-			return isForEach, items, errors.Wrap(err, "render loop forEach failed")
+			if strings.Contains(err.Error(), "no such key") || strings.Contains(err.Error(), "not found") {
+				v = nil
+			} else {
+				return isForEach, items, errors.Wrap(err, "render loop forEach failed")
+			}
 		}
 		log.Info("getLoopItems forEach render output", "value type", reflect.TypeOf(v), "value", v)
 		switch v := v.(type) {
@@ -169,7 +179,11 @@ func (r *ExecHandler) getLoopItems(ctx context.Context, attrs *types.KformBlockA
 	if attrs != nil && attrs.Count != nil {
 		v, err := renderer.Render(ctx, *attrs.Count)
 		if err != nil {
-			return isForEach, items, errors.Wrap(err, "render count failed")
+			if strings.Contains(err.Error(), "no such key") || strings.Contains(err.Error(), "not found") {
+				v = int64(0)
+			} else {
+				return isForEach, items, errors.Wrap(err, "render count failed")
+			}
 		}
 		switch v := v.(type) {
 		case string:

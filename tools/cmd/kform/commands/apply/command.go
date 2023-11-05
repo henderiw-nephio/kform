@@ -19,6 +19,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw/logger/log"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 // NewRunner returns a command runner.
@@ -134,12 +135,15 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	defer cancel()
 	go func() {
 		<-ctx.Done()
-		fmt.Println("context Done")
-		for nsn, provider := range providerInstances.List() {
+		providerInstances := providerInstances.List()
+		fmt.Println("context Done", len(providerInstances))
+		for nsn, provider := range providerInstances {
 			if provider != nil {
-				log.Info("closing provider", "nsn", nsn)
 				provider.Close(ctx)
+				log.Info("closing provider", "nsn", nsn)
+				continue
 			}
+			log.Info("closing provider nil", "nsn", nsn)
 		}
 	}()
 
@@ -174,9 +178,22 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 	log.Info("success executing module")
 
+	fsys := fsys.NewDiskFS(r.rootPath)
+	if err := fsys.MkdirAll("out"); err != nil {
+		return err
+	}
 	for nsn, v := range varsCache.List() {
-		fmt.Println("nsn", nsn)
-		fmt.Println("vars", v)
+		fmt.Println("nsn", nsn, "value", v.Data)
+		for outputVarName, instances := range v.Data {
+			for idx, instance := range instances {
+				b, err := yaml.Marshal(instance)
+				if err != nil {
+					return err
+				}
+				fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b)
+			}
+		}
+
 	}
 
 	runrecorder.Print()

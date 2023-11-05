@@ -12,25 +12,38 @@ import (
 )
 
 type Renderer struct {
-	Vars cache.Cache[vars.Variable]
+	Vars   cache.Cache[vars.Variable]
+	Schema types.KformBlockSchema
 }
 
-func (r *Renderer) RenderConfig(ctx context.Context, blockName string, x any, localVars map[string]any) (any, error) {
+func (r *Renderer) RenderConfigOrValue(ctx context.Context, blockName string, x any, localVars map[string]any) (any, error) {
 	renderer := render.Renderer{
 		Vars:      r.Vars,
 		LocalVars: localVars,
 	}
-	return renderer.Render(ctx, x)
+	d, err := renderer.Render(ctx, x)
+	if err != nil {
+		return nil, fmt.Errorf("render failed for blockName %s, err: %s", blockName, err.Error())
+	}
+	d, err = AddTypeMeta(ctx, r.Schema, d)
+	if err != nil {
+		return nil, fmt.Errorf("render failed to add metadata for blockName %s, err: %s", blockName, err.Error())
+	}
+	return d, nil
 }
 
-func (r *Renderer) RenderData(ctx context.Context, blockName string, d any, localVars map[string]any) error {
+func (r *Renderer) RenderValue(ctx context.Context, blockName string, d any, localVars map[string]any) error {
 	renderer := render.Renderer{
 		Vars:      r.Vars,
 		LocalVars: localVars,
 	}
 	d, err := renderer.Render(ctx, d)
 	if err != nil {
-		return fmt.Errorf("render failed for blockName %s, err: %s", blockName, err.Error())
+		return fmt.Errorf("render value failed for blockName %s, err: %s", blockName, err.Error())
+	}
+	d, err = AddTypeMeta(ctx, r.Schema, d)
+	if err != nil {
+		return fmt.Errorf("render value failed to add metadata for blockName %s, err: %s", blockName, err.Error())
 	}
 	if err := r.updateVars(ctx, blockName, d, localVars); err != nil {
 		return fmt.Errorf("update vars failed failed for blockName %s, err: %s", blockName, err.Error())

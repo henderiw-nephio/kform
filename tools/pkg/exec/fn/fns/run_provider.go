@@ -40,21 +40,26 @@ type provider struct {
 
 func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars map[string]any) error {
 	log := log.FromContext(ctx).With("vertexContext", vctx.GetContext(r.rootModuleName, vCtx))
-	log.Info("run provider")
+	log.Info("run block instance start...")
 
 	// render the config
-	renderer := &Renderer{Vars: cache.New[vars.Variable]()}
-	d, err := renderer.RenderConfig(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
+	if vCtx.BlockContext.Attributes != nil && vCtx.BlockContext.Attributes.Schema == nil {
+		return fmt.Errorf("cannot run without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
+	}
+	renderer := &Renderer{
+		Vars:   r.vars,
+		Schema: *vCtx.BlockContext.Attributes.Schema,
+	}
+	d, err := renderer.RenderConfigOrValue(ctx, vCtx.BlockName, vCtx.BlockContext.Config, localVars)
 	if err != nil {
 		return err
 	}
-	if vCtx.BlockContext.Attributes != nil && vCtx.BlockContext.Attributes.Schema == nil {
-		return fmt.Errorf("cannot add type meta without a schema for %s", vctx.GetContext(r.rootModuleName, vCtx))
-	}
-	d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
-	if err != nil {
-		return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
-	}
+	/*
+		d, err = AddTypeMeta(ctx, *vCtx.BlockContext.Attributes.Schema, d)
+		if err != nil {
+			return fmt.Errorf("cannot add type meta for %s, err: %s", vctx.GetContext(r.rootModuleName, vCtx), err.Error())
+		}
+	*/
 	providerConfigByte, err := json.Marshal(d)
 	if err != nil {
 		log.Error("cannot json marshal config", "error", err.Error())
@@ -89,5 +94,6 @@ func (r *provider) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	}
 	log.Info("configure response", "diag", cfgresp.Diagnostics)
 
+	log.Info("run block instance finished...")
 	return nil
 }
