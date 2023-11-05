@@ -14,16 +14,15 @@ data:
               apiVersion: ipam.resource.nephio.org/v1alpha1
               kind: IPClaim
             count: "$input.interface[0].spec.networkInstance.name != 'default' && (($input.interface[0].spec.ipFamilyPolicy == 'ipv4Only') || ($input.interface[0].spec.ipFamilyPolicy == 'dualstack')) ? 1 : 0"
-            #count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv4Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
           config:
             metadata:
-              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name, "ipv4"].concat("-")'
+              name: test-ipv4
             spec:
-              kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
+              kind: "$input.interface[0].spec.cniType == '' ? 'loopback' : 'network'"
               selector:
                 matchLabels:
                   nephio.org/address-family: ipv4
-                  nephio.org/cluster-name: cluster01
+                  nephio.org/cluster-name: $input.context[0].data.clusterName
                   nephio.org/network-name: $input.interface[0].metadata.name
               networkInstance:
                 name: $input.interface[0].spec.networkInstance.name
@@ -35,16 +34,15 @@ data:
               apiVersion: ipam.resource.nephio.org/v1alpha1
               kind: IPClaim
             count: "$input.interface[0].spec.networkInstance.name != 'default' && (($input.interface[0].spec.ipFamilyPolicy == 'ipv6Only') || ($input.interface[0].spec.ipFamilyPolicy == 'dualstack')) ? 1 : 0"
-            #count: $input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.ipFamilyPolicy == "ipv6Only") || ($input.interface[0].spec.ipFamilyPolicy == "dualstack")) ? 1 | 0
           config:
             metadata:
-              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name, "ipv6"].concat("-")'
+              name: test-ipv6
             spec:
-              kind: $input.interface[0].spec.cniType == "" ? "loopback" | "network"
+              kind: "$input.interface[0].spec.cniType == '' ? 'loopback' : 'network'"
               selector:
                 matchLabels:
                   nephio.org/address-family: ipv6
-                  nephio.org/cluster-name: cluster01
+                  nephio.org/cluster-name: $input.context[0].data.clusterName
                   nephio.org/network-name: $input.interface[0].metadata.name
               networkInstance:
                 name: $input.interface[0].spec.networkInstance.name
@@ -56,12 +54,11 @@ data:
               apiVersion: vlan.resource.nephio.org/v1alpha1
               kind: VLANClaim
             count: "$input.interface[0].spec.networkInstance.name != 'default' && $input.interface[0].spec.attachmentType == 'vlan' ? 1 : 0"
-            #count: '$input.interface[0].spec.networkInstance.name != "default" && (($input.interface[0].spec.attachmentType == "vlan") ? 1 | 0'
           config:
             metadata:
-              name: '[$input.context.data.clusterName, $input.interface[0].metadata.name].concat("-")'
+              name: test
             spec:
               vlanIndex:
-                name: $input.context.data.clusterName
+                name: $input.context[0].data.clusterName
 
         

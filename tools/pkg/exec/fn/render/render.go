@@ -99,7 +99,7 @@ func (r *Renderer) handleString(ctx context.Context, x string) (any, error) {
 			//cel.OptimizeRegex(library.ExtensionLibRegexOptimizations...),
 		)
 		if err != nil {
-			log.Error("env program failed", "error", iss.Err())
+			log.Error("env program failed", "expression", x, "error", err)
 			return nil, err
 		}
 
@@ -112,7 +112,7 @@ func (r *Renderer) handleString(ctx context.Context, x string) (any, error) {
 
 		val, _, err := prog.Eval(newVarsForExpr)
 		if err != nil {
-			log.Error("evaluate program failed", "error", iss.Err())
+			log.Error("evaluate program failed", "expression", x, "error", err)
 			return nil, err
 		}
 

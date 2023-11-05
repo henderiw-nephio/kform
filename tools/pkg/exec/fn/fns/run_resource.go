@@ -2,6 +2,7 @@ package fns
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn"
@@ -49,6 +50,40 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	}
 	fmt.Println(d)
 
+	b, err := json.Marshal(d)
+	if err != nil {
+		log.Error("cannot json marshal list", "error", err.Error())
+		return err
+	}
+	log.Info("data", "req", string(b))
+
 	// 2. run provider
+	// lookup the provider in the provider instances
+	// based on the blockType run either data or resource
+	// add the data in the variable
+	fmt.Println("provider", vCtx.Provider)
+
+	/*
+		
+		resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
+			Name: "resourcebackend_ipclaim",
+			Data: readByte,
+		})
+		if err != nil {
+			log.Error("cannot read resource", "error", err.Error())
+			return err
+		}
+		if diag.Diagnostics(resp.Diagnostics).HasError() {
+			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
+			return err
+		}
+
+		if err := json.Unmarshal(resp.Data, ipClaim); err != nil {
+			log.Error("cannot unmarshal read resp", "error", err.Error())
+			return err
+		}
+		log.Info("response", "ipClaim", ipClaim)
+	*/
+
 	return nil
 }
