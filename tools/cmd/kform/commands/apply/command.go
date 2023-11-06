@@ -200,6 +200,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 
 	runrecorder.Print()
+	cancel()
 	// auto-apply -> depends on the flag if we approve the change or not.
 	<-done
 	return nil
