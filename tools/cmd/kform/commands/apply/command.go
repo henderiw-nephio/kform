@@ -6,6 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/henderiw/logger/log"
+	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
+
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/applydocs"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/fn/fns"
@@ -17,9 +21,6 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/parser"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
-	"github.com/henderiw/logger/log"
-	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 // NewRunner returns a command runner.
@@ -133,7 +134,9 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		<-ctx.Done()
 		providerInstances := providerInstances.List()
 		fmt.Println("context Done", len(providerInstances))
@@ -198,6 +201,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 
 	runrecorder.Print()
 	// auto-apply -> depends on the flag if we approve the change or not.
-	cancel()
+	<-done
 	return nil
 }
