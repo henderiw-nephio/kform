@@ -93,6 +93,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		log.Error("failed initializing provider inventory", "error", err)
 		return err
 	}
+
 	providerInstances := p.InitProviderInstances(ctx)
 
 	rm, err := p.GetRootModule(ctx)
@@ -134,74 +135,86 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	done := make(chan struct{})
+
+	// doneCh := make(chan struct{})
+	errCh := make(chan error, 1)
+
 	go func() {
-		defer close(done)
-		<-ctx.Done()
-		providerInstances := providerInstances.List()
-		fmt.Println("context Done", len(providerInstances))
-		for nsn, provider := range providerInstances {
-			if provider != nil {
-				provider.Close(ctx)
-				log.Info("closing provider", "nsn", nsn)
-				continue
-			}
-			log.Info("closing provider nil", "nsn", nsn)
+		defer close(errCh)
+
+		runrecorder.Print()
+
+		for nsn := range providerInstances.List() {
+			fmt.Println("provider instance", nsn.Name)
 		}
+
+		runrecorder = recorder.New[record.Record]()
+		varsCache = cache.New[vars.Variable]()
+
+		rmfn = fns.NewModuleFn(&fns.Config{
+			RootModuleName:    rm.NSN.Name,
+			Vars:              varsCache,
+			Recorder:          runrecorder,
+			ProviderInstances: providerInstances,
+			ProviderInventory: providerInventory,
+		})
+
+		log.Info("executing module")
+		if err := rmfn.Run(ctx, &types.VertexContext{
+			FileName:     filepath.Join(r.rootPath, pkgio.PkgFileMatch[0]),
+			ModuleName:   rm.NSN.Name,
+			BlockType:    types.BlockTypeModule,
+			BlockName:    rm.NSN.Name,
+			DAG:          rm.DAG,
+			BlockContext: types.KformBlockContext{},
+		}, map[string]any{}); err != nil {
+			log.Error("failed executing module", "err", err)
+			errCh <- err
+			return
+		}
+
+		log.Info("success executing module")
+
+		fsys := fsys.NewDiskFS(r.rootPath)
+		if err := fsys.MkdirAll("out"); err != nil {
+			errCh <- err
+			return
+		}
+
+		for nsn, v := range varsCache.List() {
+			fmt.Println("nsn", nsn, "value", v.Data)
+			for outputVarName, instances := range v.Data {
+				for idx, instance := range instances {
+					b, err := yaml.Marshal(instance)
+					if err != nil {
+						errCh <- err
+						return
+					}
+					fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b)
+				}
+			}
+
+		}
+
+		runrecorder.Print()
+		// auto-apply -> depends on the flag if we approve the change or not.
 	}()
 
-	runrecorder.Print()
-
-	for nsn := range providerInstances.List() {
-		fmt.Println("provider instance", nsn.Name)
+	err = <-errCh
+	if err != nil {
+		log.Error("exec failed", "err", err)
 	}
 
-	runrecorder = recorder.New[record.Record]()
-	varsCache = cache.New[vars.Variable]()
-
-	rmfn = fns.NewModuleFn(&fns.Config{
-		RootModuleName:    rm.NSN.Name,
-		Vars:              varsCache,
-		Recorder:          runrecorder,
-		ProviderInstances: providerInstances,
-		ProviderInventory: providerInventory,
-	})
-
-	log.Info("executing module")
-	if err := rmfn.Run(ctx, &types.VertexContext{
-		FileName:     filepath.Join(r.rootPath, pkgio.PkgFileMatch[0]),
-		ModuleName:   rm.NSN.Name,
-		BlockType:    types.BlockTypeModule,
-		BlockName:    rm.NSN.Name,
-		DAG:          rm.DAG,
-		BlockContext: types.KformBlockContext{},
-	}, map[string]any{}); err != nil {
-		log.Error("failed executing module", "err", err)
-		return err
-	}
-	log.Info("success executing module")
-
-	fsys := fsys.NewDiskFS(r.rootPath)
-	if err := fsys.MkdirAll("out"); err != nil {
-		return err
-	}
-	for nsn, v := range varsCache.List() {
-		fmt.Println("nsn", nsn, "value", v.Data)
-		for outputVarName, instances := range v.Data {
-			for idx, instance := range instances {
-				b, err := yaml.Marshal(instance)
-				if err != nil {
-					return err
-				}
-				fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b)
-			}
+	providersList := providerInstances.List()
+	fmt.Println("exec Done", len(providersList))
+	for nsn, provider := range providersList {
+		if provider != nil {
+			provider.Close(ctx)
+			log.Info("closing provider", "nsn", nsn)
+			continue
 		}
-
+		log.Info("closing provider nil", "nsn", nsn)
 	}
 
-	runrecorder.Print()
-	cancel()
-	// auto-apply -> depends on the flag if we approve the change or not.
-	<-done
 	return nil
 }
