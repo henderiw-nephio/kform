@@ -3,8 +3,14 @@ kind: Interface
 metadata:
   name: n3
 spec:
+  attachmentType: vlan
   cniType: sriov
+  ipFamilyPolicy: ipv6Only
   networkInstance:
     name: vpc-ran
 status:
-  ipClaimStatus: []
+  ipClaimStatus:
+  - gateway: 1000::1
+    prefix: 1000::2/64
+  vlanClaimStatus:
+    vlanID: 10

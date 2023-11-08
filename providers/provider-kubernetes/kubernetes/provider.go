@@ -210,17 +210,19 @@ func initializeConfiguration(ctx context.Context, providerConfig *v1alpha1.Provi
 		overrides.AuthInfo.Token = *providerConfig.Spec.Token
 	}
 
-	if providerConfig.Spec.Exec != nil {
-		exec := &clientcmdapi.ExecConfig{
-			APIVersion: providerConfig.Spec.Exec.APIVersion,
-			Command:    providerConfig.Spec.Exec.Command,
-			Args:       providerConfig.Spec.Exec.Args,
+	/*
+		if providerConfig.Spec.Exec != nil {
+			exec := &clientcmdapi.ExecConfig{
+				APIVersion: providerConfig.Spec.Exec.APIVersion,
+				Command:    providerConfig.Spec.Exec.Command,
+				Args:       providerConfig.Spec.Exec.Args,
+			}
+			for k, v := range providerConfig.Spec.Exec.Env {
+				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v})
+			}
+			overrides.AuthInfo.Exec = exec
 		}
-		for k, v := range providerConfig.Spec.Exec.Env {
-			exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v})
-		}
-		overrides.AuthInfo.Exec = exec
-	}
+	*/
 
 	if providerConfig.Spec.ProxyURL != nil {
 		overrides.ClusterDefaults.ProxyURL = *providerConfig.Spec.ProxyURL

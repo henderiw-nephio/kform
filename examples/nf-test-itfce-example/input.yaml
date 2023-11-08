@@ -30,6 +30,6 @@ data:
             networkInstance:
               name: vpc-ran
             cniType: sriov
-            #attachmentType: vlan
-            #ipFamilyPolicy: dualstack
+            attachmentType: vlan
+            ipFamilyPolicy: ipv6Only
             #ipFamilyPolicy: ipv4Only

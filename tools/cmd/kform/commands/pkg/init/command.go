@@ -59,9 +59,9 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	r.pkgType = args[0]
 	switch r.pkgType {
 	case string(kformpkgmetav1alpha1.PkgKindProvider):
-		pkgrw = pkgio.NewPkgInitReadWriter(r.rootPath, kformpkgmetav1alpha1.PkgKindProvider)
+		pkgrw = pkgio.NewPkgInitReadWriter(r.rootPath, kformpkgmetav1alpha1.PkgKindProvider, []string{"image", "schemas/provider", "schemas/resources"})
 	case string(kformpkgmetav1alpha1.PkgKindModule):
-		pkgrw = pkgio.NewPkgInitReadWriter(r.rootPath, kformpkgmetav1alpha1.PkgKindModule)
+		pkgrw = pkgio.NewPkgInitReadWriter(r.rootPath, kformpkgmetav1alpha1.PkgKindModule, []string{})
 	default:
 		return fmt.Errorf("unsupported packageType, expecting %s or %s, got %s", kformpkgmetav1alpha1.PkgKindProvider, kformpkgmetav1alpha1.PkgKindModule, r.pkgType)
 	}

@@ -1,3 +1,5 @@
+// +kubebuilder:object:generate=true
+// +groupName=kubernetes.provider.kform.io
 package v1alpha1
 
 const (

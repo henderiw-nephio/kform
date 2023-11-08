@@ -8,7 +8,7 @@ import (
 
 type ProviderConfigSpec struct {
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=api,package
+	// +kubebuilder:validation:Enum:=api;package
 	// +kubebuilder:default:=api
 	Kind ProviderKind `json:"kind" yaml:"kind"`
 
@@ -90,7 +90,7 @@ type ProviderConfigSpec struct {
 	UseConfigFile *bool `json:"useConfigFile,omitempty" yaml:"useConfigFile,omitempty"`
 
 	// Exec executes a command to get the authentication context
-	Exec *ExecContext `json:"exec,omitempty" yaml:"exec,omitempty"`
+	//Exec *ExecContext `json:"exec,omitempty" yaml:"exec,omitempty"`
 }
 
 type ExecContext struct {
@@ -107,6 +107,7 @@ const (
 	ProviderKindAPI     ProviderKind = "api"
 )
 
+// +kubebuilder:object:root=true
 type ProviderConfig struct {
 	metav1.TypeMeta   `json:",inline" yaml:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`

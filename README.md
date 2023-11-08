@@ -92,18 +92,18 @@ spec:
     name: xxxx
 ```
 
-kerraform package init PACKAGE-TYPE DIR [flags]
+kform package init PACKAGE-TYPE DIR [flags]
 - type
 - description
 - icon
 - maintaianers
 - version
 
-kerraform package build PACKAGE-TYPE DIR [flags]
-kerraform package build module ./module-aws-vpc
-kerraform package build provider ./provider-k8s
+kform package build PACKAGE-TYPE DIR [flags]
+kform package build module ./module-aws-vpc
+kform package build provider ./provider-k8s
 
-kerraform package push [PACKAGE-NAME]
+kform package push [PACKAGE-NAME]
 
 
 module

@@ -18,7 +18,7 @@ type PkgInitReadWriter interface {
 	Writer
 }
 
-func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind) PkgInitReadWriter {
+func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind, dirs []string) PkgInitReadWriter {
 
 	// TBD do we add validation here
 	// Ignore file processing should be done here
@@ -37,6 +37,7 @@ func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind) Pkg
 			parentPkgPath: filepath.Dir(path),
 			pkgName:       filepath.Base(path),
 			pkgKind:       pkgKind,
+			dirs:          dirs,
 		},
 	}
 }
@@ -60,6 +61,7 @@ type pkgInitWriter struct {
 	parentPkgPath string
 	pkgName       string
 	pkgKind       kformpkgmetav1alpha1.PkgKind
+	dirs          []string
 }
 
 func (r *pkgInitWriter) Write(data *Data) error {
@@ -75,6 +77,11 @@ func (r *pkgInitWriter) Write(data *Data) error {
 	// write files that dont exist
 	for _, writeFn := range filesToWrite {
 		if err := writeFn(); err != nil {
+			return err
+		}
+	}
+	for _, path := range r.dirs {
+		if err := r.fsys.MkdirAll(path); err != nil {
 			return err
 		}
 	}

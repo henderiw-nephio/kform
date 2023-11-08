@@ -15,13 +15,14 @@ const (
 
 type ProviderConfigSpec struct {
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=api,mock
+	// +kubebuilder:validation:Enum:=api;mock
 	// +kubebuilder:default:=api
 	Kind ProviderKind `json:"kind" yaml:"kind"`
 
 	Address string `json:"address,omitempty" yaml:"address,omitempty"`
 }
 
+// +kubebuilder:object:root=true
 type ProviderConfig struct {
 	metav1.TypeMeta   `json:",inline" yaml:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
