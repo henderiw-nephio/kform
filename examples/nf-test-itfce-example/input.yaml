@@ -31,5 +31,5 @@ data:
               name: vpc-ran
             cniType: sriov
             attachmentType: vlan
-            ipFamilyPolicy: ipv6Only
+            ipFamilyPolicy: dualstack
             #ipFamilyPolicy: ipv4Only

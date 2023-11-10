@@ -6,7 +6,6 @@ import (
 	"io"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 )
@@ -41,5 +40,5 @@ func Build(files map[string]string) (v1.Image, error) {
 		return nil, err
 	}
 	// Append layer to empty image.
-	return mutate.AppendLayers(empty.Image, layer)
+	return mutate.AppendLayers(Image, layer)
 }

@@ -63,7 +63,6 @@ type pkgBuildWriter struct {
 func (r *pkgBuildWriter) Write(data *Data) error {
 	img, err := oci.Build(data.Get())
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
