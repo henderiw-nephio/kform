@@ -9,19 +9,19 @@ before:
 builds:
 - id: provider-kubernetes
   main: providers/provider-kubernetes/main.go
-  binary: 'provider-kubernetes_v{{ .Version }}'
+  binary: 'provider-kubernetes'
   env:
     - CGO_ENABLED=0
   goos:
     - darwin
-    - freebsd
+    #- freebsd
     - linux
-    - openbsd
+    #- openbsd
     #- windows
   goarch:
-    - '386'
+    #- '386'
     - amd64
-    - arm
+    #- arm
     - arm64
   ignore:
     - goarch: arm
@@ -35,19 +35,19 @@ builds:
   mod_timestamp: '{{ .CommitTimestamp }}'
 - id: provider-resourcebackend
   main: providers/provider-resourcebackend/main.go
-  binary: 'provider-resourcebackend{{ .Version }}'
+  binary: 'provider-resourcebackend'
   env:
     - CGO_ENABLED=0
   goos:
     - darwin
-    - freebsd
+    #- freebsd
     - linux
-    - openbsd
+    #- openbsd
     #- windows
   goarch:
-    - '386'
+    #- '386'
     - amd64
-    - arm
+    #- arm
     - arm64
   ignore:
     - goarch: arm
@@ -60,13 +60,16 @@ builds:
       goos: openbsd
   mod_timestamp: '{{ .CommitTimestamp }}'
 archives:
-  - format: tar.gz
-    # this name template makes the OS and Arch compatible with the results of `uname`.
-    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-    # use zip for windows archives
-    format_overrides:
-      - goos: windows
-        format: zip
+- #format: tar.gz
+  format: binary
+  # this name template makes the OS and Arch compatible with the results of `uname`.
+  #name_template: '{{ .Id }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  files:
+  - none*
+  # use zip for windows archives
+  format_overrides:
+  - goos: windows
+    format: zip
 
 changelog:
   sort: asc
