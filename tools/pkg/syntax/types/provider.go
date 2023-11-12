@@ -28,7 +28,8 @@ type Provider struct {
 
 type Initializer func() (kfplugin.Provider, error)
 
-func (r *Provider) Download(ctx context.Context, rootPath string, nsn cache.NSN, reqs []v1alpha1.Provider) error {
+func (r *Provider) Init(ctx context.Context, rootPath string, nsn cache.NSN, reqs []v1alpha1.Provider) error {
+	log := log.FromContext(ctx)
 	providerPath := filepath.Join(rootPath, ".kform", "providers")
 	p, err := address.GetPackage(nsn, reqs)
 	if err != nil {
@@ -40,12 +41,6 @@ func (r *Provider) Download(ctx context.Context, rootPath string, nsn cache.NSN,
 	r.Resources = sets.New[string]()
 	r.ReadDataSources = sets.New[string]()
 	r.ListDataSources = sets.New[string]()
-
-	return nil
-}
-
-func (r *Provider) Init(ctx context.Context) error {
-	log := log.FromContext(ctx)
 	// initialize the provider
 	provider, err := r.Initializer()
 	if err != nil {

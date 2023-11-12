@@ -239,3 +239,24 @@ func (r *pkgProviderWriter) Write(ctx context.Context, data *Data) error {
 	t.Stop()
 	return nil
 }
+
+type PkgValidator interface {
+	Writer
+}
+
+func NewPkgValidator() PkgValidator {
+	return &pkgValidator{}
+}
+
+type pkgValidator struct{}
+
+func (r *pkgValidator) Write(ctx context.Context, data *Data) error {
+	providers := []string{}
+	for path := range data.List() {
+		providers = append(providers, path)
+	}
+	if len(providers) > 0 {
+		return fmt.Errorf("please run init, the following providers are not up to date %v", providers)
+	}
+	return nil
+}

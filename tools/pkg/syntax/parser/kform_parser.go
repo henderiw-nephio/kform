@@ -10,9 +10,7 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
-	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
@@ -20,7 +18,7 @@ import (
 )
 
 type KformParser interface {
-	Parse(ctx context.Context)
+	Parse(ctx context.Context, init bool)
 	InitProviderInventory(ctx context.Context) (cache.Cache[types.Provider], error)
 	InitProviderInstances(ctx context.Context) cache.Cache[plugin.Provider]
 	GetRootModule(ctx context.Context) (*types.Module, error)
@@ -50,7 +48,7 @@ type kformparser struct {
 	modules cache.Cache[*types.Module]
 }
 
-func (r *kformparser) Parse(ctx context.Context) {
+func (r *kformparser) Parse(ctx context.Context, init bool) {
 	// we start by parsing the root module
 	// if there are child modules they will be resolved concurrently
 	r.rootModuleName = cache.NSN{Name: fmt.Sprintf("module.%s", filepath.Base(r.rootModulePath))}
@@ -64,24 +62,8 @@ func (r *kformparser) Parse(ctx context.Context) {
 	r.validateUnreferencedProviderRequirements(ctx)
 
 	// install providers
-	pkgs := []*address.Package{}
-	for nsn, reqs := range r.GetProviderRequirements(ctx) {
-		pkg, err := address.GetPackage(nsn, reqs)
-		if err != nil {
-			r.recorder.Record(diag.DiagFromErr(err))
-			return
-		}
-		pkgs = append(pkgs, pkg)
-	}
-
-	pkgrw := pkgio.NewPkgProviderReadWriter(r.rootModulePath, pkgs)
-	p := pkgio.Pipeline{
-		Inputs:     []pkgio.Reader{pkgrw},
-		Processors: []pkgio.Process{pkgrw},
-		Outputs:    []pkgio.Writer{pkgrw},
-	}
-	if err := p.Execute(ctx); err != nil {
-		r.recorder.Record(diag.DiagFromErr(err))
+	r.validateAndOrInstallProviders(ctx, init)
+	if r.recorder.Get().HasError() {
 		return
 	}
 
@@ -231,10 +213,7 @@ func (r *kformparser) InitProviderInventory(ctx context.Context) (cache.Cache[ty
 
 	for nsn, reqs := range r.GetProviderRequirements(ctx) {
 		p := types.Provider{}
-		if err := p.Download(ctx, r.rootModulePath, nsn, reqs); err != nil {
-			return nil, err
-		}
-		if err := p.Init(ctx); err != nil {
+		if err := p.Init(ctx, r.rootModulePath, nsn, reqs); err != nil {
 			return nil, err
 		}
 		inventory.Add(ctx, nsn, p)

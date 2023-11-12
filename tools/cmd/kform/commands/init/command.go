@@ -71,7 +71,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	p.Parse(ctx)
+	p.Parse(ctx, true)
 	if recorder.Get().HasError() {
 		recorder.Print()
 		log.Error("failed parsing modules", "error", recorder.Get().Error())
