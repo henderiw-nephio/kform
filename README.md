@@ -124,3 +124,15 @@ provider
     - resources
         - <crd>.yaml
         - <core>.json ??????
+
+
+# url for now
+
+https://github.com/henderiw-nephio/kform/releases/download/v0.0.1/provider-kubernetes_0.0.1_darwin_amd64
+
+europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-xxxx
+
+github.com/henderiw-nephio/kform/provider-xxxx
+
+source: 
+"hashicorp/aws"

@@ -58,6 +58,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},
 	}
-	return p.Execute()
+	return p.Execute(c.Context())
 
 }

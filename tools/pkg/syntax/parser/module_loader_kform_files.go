@@ -40,17 +40,18 @@ func (r *moduleparser) getKforms(ctx context.Context) (*kformpkgmetav1alpha1.Kfo
 	}
 	//defer f.Close()
 	reader := pkgio.PkgReader{
+		PathExists:     true,
 		Fsys:           r.fsys,
 		MatchFilesGlob: pkgio.YAMLMatch,
 		IgnoreRules:    ignoreRules,
 		SkipDir:        true,
 	}
-	d, err := reader.Read(pkgio.NewData())
+	d, err := reader.Read(ctx, pkgio.NewData())
 	if err != nil {
 		return kfile, kforms, err
 	}
 	// extracts kforms from the configmaps
-	for path, data := range d.Get() {
+	for path, data := range d.List() {
 		ko, err := fn.ParseKubeObject([]byte(data))
 		if err != nil {
 			log.Error("kubeObject parsing failed", "path", filepath.Join(r.path, path), "err", err.Error())

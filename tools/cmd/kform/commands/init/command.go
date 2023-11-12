@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/initdocs"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
@@ -46,7 +47,7 @@ type Runner struct {
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
 	ctx := c.Context()
-	log := log.FromContext(ctx)
+	log := log.FromContext(ctx).With("os", runtime.GOOS, "arch", runtime.GOARCH)
 
 	r.rootPath = args[0]
 	// validate the rootpath, so far we assume we run a directory calling the main function

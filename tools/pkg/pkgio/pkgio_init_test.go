@@ -1,6 +1,7 @@
 package pkgio
 
 import (
+	"context"
 	"io/fs"
 	"path/filepath"
 	"reflect"
@@ -78,12 +79,12 @@ func TestPkgReadInitRead(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-
+			ctx := context.Background()
 			p := Pipeline{
 				Inputs:  []Reader{tc.reader},
 				Outputs: []Writer{tc.writer},
 			}
-			err := p.Execute()
+			err := p.Execute(ctx)
 			assert.NoError(t, err)
 
 			got := map[string]string{}
@@ -112,8 +113,6 @@ func TestPkgReadInitRead(t *testing.T) {
 			if !reflect.DeepEqual(tc.expectedFiles, gotFiles) {
 				t.Errorf("want: %v, got: %v", tc.expectedFiles, gotFiles)
 			}
-
 		})
 	}
-
 }

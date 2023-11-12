@@ -1,6 +1,7 @@
 package pkgio
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ func NewPkgTreeReadWriter(path string) PkgTreeReadWriter {
 
 	return &pkgTreeReadWriter{
 		reader: &PkgReader{
+			PathExists:     true,
 			Fsys:           fsys.NewDiskFS(path),
 			MatchFilesGlob: YAMLMatch,
 			IgnoreRules:    ignoreRules,
@@ -52,12 +54,12 @@ type pkgTreeReadWriter struct {
 	writer *pkgTreeWriter
 }
 
-func (r *pkgTreeReadWriter) Read(data *Data) (*Data, error) {
-	return r.reader.Read(data)
+func (r *pkgTreeReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgTreeReadWriter) Write(data *Data) error {
-	return r.writer.Write(data)
+func (r *pkgTreeReadWriter) Write(ctx context.Context, data *Data) error {
+	return r.writer.Write(ctx, data)
 }
 
 const (
@@ -74,7 +76,7 @@ type pkgTreeWriter struct {
 	rootPath string
 }
 
-func (r *pkgTreeWriter) Write(data *Data) error {
+func (r *pkgTreeWriter) Write(ctx context.Context, data *Data) error {
 	indexByPkgDir := r.index(data)
 
 	// create the new tree
@@ -142,7 +144,7 @@ func branchName(fs fsys.FS, dirRelPath string) string {
 // index indexes the Resources by their package
 func (p pkgTreeWriter) index(data *Data) map[string][]*fn.KubeObject {
 	indexByPkgDir := map[string][]*fn.KubeObject{}
-	for path, data := range data.Get() {
+	for path, data := range data.List() {
 		ko, err := fn.ParseKubeObject([]byte(data))
 		if err != nil {
 			continue

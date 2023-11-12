@@ -1,6 +1,7 @@
 package pkgio
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -29,7 +30,8 @@ func NewPkgBuildReadWriter(path string) PkgBuildReadWriter {
 
 	return &pkgBuildReadWriter{
 		reader: &PkgReader{
-			Fsys: fsys.NewDiskFS(path),
+			PathExists: true,
+			Fsys:       fsys.NewDiskFS(path),
 			//matchFilesGlob: YAMLMatch,
 			IgnoreRules: ignoreRules,
 		},
@@ -46,12 +48,12 @@ type pkgBuildReadWriter struct {
 	writer *pkgBuildWriter
 }
 
-func (r *pkgBuildReadWriter) Read(data *Data) (*Data, error) {
-	return r.reader.Read(data)
+func (r *pkgBuildReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgBuildReadWriter) Write(data *Data) error {
-	return r.writer.Write(data)
+func (r *pkgBuildReadWriter) Write(ctx context.Context, data *Data) error {
+	return r.writer.Write(ctx, data)
 }
 
 type pkgBuildWriter struct {
@@ -60,8 +62,8 @@ type pkgBuildWriter struct {
 	pkgName  string
 }
 
-func (r *pkgBuildWriter) Write(data *Data) error {
-	img, err := oci.Build(data.Get())
+func (r *pkgBuildWriter) Write(ctx context.Context, data *Data) error {
+	img, err := oci.Build(data.List())
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,9 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/recorder"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cctx"
@@ -60,6 +62,28 @@ func (r *kformparser) Parse(ctx context.Context) {
 	r.validateModuleCalls(ctx)
 	r.validateUnreferencedProviderConfigs(ctx)
 	r.validateUnreferencedProviderRequirements(ctx)
+
+	// install providers
+	pkgs := []*address.Package{}
+	for nsn, reqs := range r.GetProviderRequirements(ctx) {
+		pkg, err := address.GetPackage(nsn, reqs)
+		if err != nil {
+			r.recorder.Record(diag.DiagFromErr(err))
+			return
+		}
+		pkgs = append(pkgs, pkg)
+	}
+
+	pkgrw := pkgio.NewPkgProviderReadWriter(r.rootModulePath, pkgs)
+	p := pkgio.Pipeline{
+		Inputs:     []pkgio.Reader{pkgrw},
+		Processors: []pkgio.Process{pkgrw},
+		Outputs:    []pkgio.Writer{pkgrw},
+	}
+	if err := p.Execute(ctx); err != nil {
+		r.recorder.Record(diag.DiagFromErr(err))
+		return
+	}
 
 	r.generateProviderDAG(ctx, r.getUnReferencedProviderConfigs(ctx))
 	r.generateDAG(ctx)

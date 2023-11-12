@@ -1,8 +1,8 @@
 package pkgio
 
 import (
+	"context"
 	"fmt"
-	"io/fs"
 )
 
 const kformOciPkgExt = "kformpkg"
@@ -16,35 +16,44 @@ var JSONMatch = []string{"*.json"}
 var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
 type Reader interface {
-	Read(*Data) (*Data, error)
+	Read(context.Context, *Data) (*Data, error)
 }
 
 type Writer interface {
-	Write(*Data) error
+	Write(context.Context, *Data) error
 }
 
-type FilterFn func(path string, d fs.DirEntry) (bool, error)
+type Process interface {
+	Process(context.Context, *Data) (*Data, error)
+}
 
 type Pipeline struct {
-	Inputs  []Reader `json:"inputs,omitempty" yaml:"inputs,omitempty"`
-	Outputs []Writer `json:"outputs,omitempty" yaml:"outputs,omitempty"`
+	Inputs     []Reader  `json:"inputs,omitempty" yaml:"inputs,omitempty"`
+	Processors []Process `json:"processors,omitempty" yaml:"processors,omitempty"`
+	Outputs    []Writer  `json:"outputs,omitempty" yaml:"outputs,omitempty"`
 }
 
-func (r Pipeline) Execute() error {
+func (r Pipeline) Execute(ctx context.Context) error {
 	data := NewData()
-
+	var err error
 	// read from the inputs
 	for _, i := range r.Inputs {
-		var err error
-		data, err = i.Read(data)
+		data, err = i.Read(ctx, data)
 		if err != nil {
 			return err
 		}
 	}
-	// TODO filter/processor
+	data.Print()
+	for _, p := range r.Processors {
+		data, err = p.Process(ctx, data)
+		if err != nil {
+			return err
+		}
+	}
+	data.Print()
 	// write to the outputs
 	for _, o := range r.Outputs {
-		if err := o.Write(data); err != nil {
+		if err := o.Write(ctx, data); err != nil {
 			return err
 		}
 	}

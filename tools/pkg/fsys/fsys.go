@@ -2,6 +2,8 @@ package fsys
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -14,6 +16,8 @@ import (
 type FS interface {
 	Open(path string) (fs.File, error)
 
+	OpenFile(name string, flag int, perm fs.FileMode) (*os.File, error)
+
 	Create(path string) (*os.File, error)
 
 	// Readfile returns the content of a given file
@@ -22,6 +26,9 @@ type FS interface {
 	// WriteFile writes the data to a file at the given path,
 	// it overwrites existing content
 	WriteFile(path string, data []byte) error
+
+	// Calculate a sha256 cheksum on the file
+	Sha256(path string) (string, error)
 
 	// Walk walks the file system with the given WalkDirFunc.
 	Walk(path string, walkFn fs.WalkDirFunc) error
@@ -44,6 +51,9 @@ type FS interface {
 
 	// RemoveAll removes path and any children it contains.
 	RemoveAll(path string) error
+
+	// RemoveAll removes path and any children it contains.
+	Remove(path string) error
 }
 
 func NewMemFS(rootpath string, fs fstest.MapFS) FS {
@@ -74,6 +84,10 @@ func (r *fsys) Open(path string) (fs.File, error) {
 	return r.fsys.Open(path)
 }
 
+func (r *fsys) OpenFile(path string, flag int, perm fs.FileMode) (*os.File, error) {
+	return os.OpenFile(filepath.Join(r.rootPath, path), flag, perm)
+}
+
 func (r *fsys) Create(path string) (*os.File, error) {
 	if filepath.Dir(path) != "" {
 		r.MkdirAll(filepath.Dir(path))
@@ -102,6 +116,29 @@ func (r *fsys) ReadFile(path string) ([]byte, error) {
 		buf.Write(buffer[:n])
 	}
 	return buf.Bytes(), nil
+}
+
+func (r *fsys) Sha256(path string) (string, error) {
+	f, err := r.fsys.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hash := sha256.New()
+	buffer := make([]byte, 1024*1024)
+
+	for {
+		n, err := f.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err
+		}
+		hash.Write(buffer[:n])
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 func (r *fsys) WriteFile(path string, data []byte) error {
@@ -160,4 +197,8 @@ func (r *fsys) MkdirAll(path string) error {
 
 func (r *fsys) RemoveAll(path string) error {
 	return os.RemoveAll(filepath.Join(r.rootPath, path))
+}
+
+func (r *fsys) Remove(path string) error {
+	return os.Remove(filepath.Join(r.rootPath, path))
 }

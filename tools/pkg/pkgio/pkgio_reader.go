@@ -1,6 +1,7 @@
 package pkgio
 
 import (
+	"context"
 	"io/fs"
 	"path/filepath"
 	"sync"
@@ -10,13 +11,18 @@ import (
 )
 
 type PkgReader struct {
+	PathExists     bool
 	Fsys           fsys.FS
 	MatchFilesGlob []string
 	IgnoreRules    *ignore.Rules
 	SkipDir        bool
+	Checksum       bool
 }
 
-func (r *PkgReader) Read(data *Data) (*Data, error) {
+func (r *PkgReader) Read(ctx context.Context, data *Data) (*Data, error) {
+	if !r.PathExists {
+		return data, nil
+	}
 	paths, err := r.getPaths()
 	if err != nil {
 		return data, err
@@ -69,9 +75,17 @@ func (r *PkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 		go func() {
 			defer wg.Done()
 			var d []byte
-			d, err = r.Fsys.ReadFile(path)
-			if err != nil {
-				return
+			if r.Checksum {
+				hash, err := r.Fsys.Sha256(path)
+				if err != nil {
+					return
+				}
+				d = []byte(hash)
+			} else {
+				d, err = r.Fsys.ReadFile(path)
+				if err != nil {
+					return
+				}
 			}
 			data.Add(path, d)
 		}()

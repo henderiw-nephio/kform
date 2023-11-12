@@ -42,7 +42,6 @@ type moduleparser struct {
 
 // Parse
 func (r *moduleparser) Parse(ctx context.Context) *types.Module {
-
 	kf, kforms, err := r.getKforms(ctx)
 	if err != nil {
 		r.recorder.Record(diag.DiagErrorf("cannot get kfile and/or kforms for this path: %s, err: %s", r.path, err.Error()))

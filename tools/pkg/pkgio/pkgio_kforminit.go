@@ -1,6 +1,8 @@
 package pkgio
 
 import (
+	"context"
+
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 )
@@ -22,6 +24,7 @@ func NewPkgKformInitReadWriter(path string) PkgKformInitReader {
 	defer f.Close()
 	return &pkgKformInitReader{
 		reader: &PkgReader{
+			PathExists:     true,
 			Fsys:           fs,
 			MatchFilesGlob: YAMLMatch,
 			IgnoreRules:    ignoreRules,
@@ -34,6 +37,6 @@ type pkgKformInitReader struct {
 	reader *PkgReader
 }
 
-func (r *pkgKformInitReader) Read(data *Data) (*Data, error) {
-	return r.reader.Read(data)
+func (r *pkgKformInitReader) Read(ctx context.Context, data *Data) (*Data, error) {
+	return r.reader.Read(ctx, data)
 }

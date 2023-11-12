@@ -1,6 +1,7 @@
 package pkgio
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -26,6 +27,7 @@ func NewPkgPushReadWriter(path, tag string) PkgPushReadWriter {
 
 	return &pkgPushReadWriter{
 		reader: &PkgReader{
+			PathExists:     true,
 			Fsys:           fsys.NewDiskFS(path),
 			MatchFilesGlob: PkgMatch,
 			IgnoreRules:    ignoreRules,
@@ -44,12 +46,12 @@ type pkgPushReadWriter struct {
 	writer *pkgPushWriter
 }
 
-func (r *pkgPushReadWriter) Read(data *Data) (*Data, error) {
-	return r.reader.Read(data)
+func (r *pkgPushReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgPushReadWriter) Write(data *Data) error {
-	return r.writer.Write(data)
+func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
+	return r.writer.Write(ctx, data)
 }
 
 type pkgPushWriter struct {
@@ -59,7 +61,7 @@ type pkgPushWriter struct {
 	tag      string
 }
 
-func (r *pkgPushWriter) Write(data *Data) error {
+func (r *pkgPushWriter) Write(ctx context.Context, data *Data) error {
 	tag, err := name.NewTag(r.tag)
 	if err != nil {
 		return err

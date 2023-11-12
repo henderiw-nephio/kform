@@ -2,6 +2,7 @@ package pkgio
 
 import (
 	"bytes"
+	"context"
 	"html/template"
 	"path/filepath"
 	"strings"
@@ -19,17 +20,16 @@ type PkgInitReadWriter interface {
 }
 
 func NewPkgInitReadWriter(path string, pkgKind kformpkgmetav1alpha1.PkgKind, dirs []string) PkgInitReadWriter {
-
 	// TBD do we add validation here
 	// Ignore file processing should be done here
 	fs := fsys.NewDiskFS(path)
-	ignoreRules := ignore.Empty("")
 	return &pkgInitReadWriter{
 		reader: &PkgReader{
+			PathExists:     true,
 			Fsys:           fs,
 			MatchFilesGlob: []string{IgnoreFileMatch[0], ReadmeFileMatch[0], PkgFileMatch[0]},
-			// no ignore rules are required for init
-			IgnoreRules: ignoreRules,
+			// ignore rules are notrequired for init
+			IgnoreRules: ignore.Empty(""),
 		},
 		writer: &pkgInitWriter{
 			fsys:          fs,
@@ -47,12 +47,12 @@ type pkgInitReadWriter struct {
 	writer *pkgInitWriter
 }
 
-func (r *pkgInitReadWriter) Read(data *Data) (*Data, error) {
-	return r.reader.Read(data)
+func (r *pkgInitReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgInitReadWriter) Write(data *Data) error {
-	return r.writer.Write(data)
+func (r *pkgInitReadWriter) Write(ctx context.Context, data *Data) error {
+	return r.writer.Write(ctx, data)
 }
 
 type pkgInitWriter struct {
@@ -64,14 +64,14 @@ type pkgInitWriter struct {
 	dirs          []string
 }
 
-func (r *pkgInitWriter) Write(data *Data) error {
+func (r *pkgInitWriter) Write(ctx context.Context, data *Data) error {
 	filesToWrite := map[string]func() error{
 		ReadmeFileMatch[0]: r.WriteReadmeFile,
 		PkgFileMatch[0]:    r.WriteKformFile,
 		IgnoreFileMatch[0]: r.WriteIgnoreFile,
 	}
 	// if the file already exists we dont need to write it
-	for fileName := range data.Get() {
+	for fileName := range data.List() {
 		delete(filesToWrite, fileName)
 	}
 	// write files that dont exist
