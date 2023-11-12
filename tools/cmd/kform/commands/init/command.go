@@ -79,20 +79,8 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	}
 	recorder.Print()
 
-	provReqs := p.GetProviderRequirements(ctx)
-	for nsn, reqs := range provReqs {
-		fmt.Printf("provider req: %s res: %v\n", nsn.Name, reqs)
-	}
-
-	provConfigs := p.GetProviderConfigs(ctx)
-	for nsn, reqs := range provConfigs {
-		fmt.Printf("provider config: %s res: %v\n", nsn.Name, reqs)
-	}
-
 	// init and/or restore backend (todo)
-	// syntax check config -> build the dag but dont use it (done)
 	// download module (todo for remote download)
-	// download providers (todo for remote and locla download)
 	// -> lock files
 
 	return nil

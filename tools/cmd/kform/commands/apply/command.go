@@ -86,8 +86,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return parserecorder.Get().Error()
 	}
 	parserecorder.Print()
-	fmt.Println("provider requirements", p.GetProviderRequirements(ctx))
-	fmt.Println("provider configs", p.GetProviderConfigs(ctx))
 	providerInventory, err := p.InitProviderInventory(ctx)
 	if err != nil {
 		log.Error("failed initializing provider inventory", "error", err)
@@ -144,10 +142,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 
 		runrecorder.Print()
 
-		for nsn := range providerInstances.List() {
-			fmt.Println("provider instance", nsn.Name)
-		}
-
 		runrecorder = recorder.New[record.Record]()
 		varsCache = cache.New[vars.Variable]()
 
@@ -181,8 +175,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 			return
 		}
 
-		for nsn, v := range varsCache.List() {
-			fmt.Println("nsn", nsn, "value", v.Data)
+		for _, v := range varsCache.List() {
 			for outputVarName, instances := range v.Data {
 				for idx, instance := range instances {
 					b, err := yaml.Marshal(instance)
@@ -193,7 +186,6 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 					fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b)
 				}
 			}
-
 		}
 
 		runrecorder.Print()
