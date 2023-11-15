@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
+	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 )
@@ -90,6 +91,23 @@ func (r *kformparser) validateProviderConfigs(ctx context.Context) {
 	}
 }
 
+// validateProviderRequirements validates if the source strings of all the provider
+// requirements are consistent
+// first we walk through all the provider requirements referenced by all modules
+// per provider we check the consistency of the source address
+func (r *kformparser) validateProviderRequirements(ctx context.Context) {
+	for providerNsn, nsnreqs := range r.getProviderRequirements(ctx) {
+		// per provider we check the consistency of the source address
+		source := ""
+		for _, req := range nsnreqs {
+			if source != "" && source !=  req.Source {
+				r.recorder.Record(diag.DiagErrorf("inconsistent provider requirements for %s source1: %s, source2: %s", providerNsn.Name, source, req.Source))
+			}
+			source = req.Source
+		}
+	}
+}
+
 // validateProviderConfigs validates if for each provider in a child resource
 // there is a provider config
 
@@ -151,4 +169,35 @@ func (r *kformparser) validateUnreferencedProviderRequirements(ctx context.Conte
 			r.recorder.Record(diag.DiagWarnf("%s module %s provider requirements are unreferenced: %v", m.Kind, cmNSN.Name, unreferenceProviderReqs))
 		}
 	}
+}
+
+func (r *kformparser) getProviderRequirements(ctx context.Context) map[cache.NSN][]kformpkgmetav1alpha1.Provider {
+	rootModule, err := r.modules.Get(r.rootModuleName)
+	if err != nil {
+		r.recorder.Record(diag.DiagErrorf("cannot validate provider requirements references, root module %s not found", r.rootModuleName.Name))
+	}
+
+	rootProviderConfigs := rootModule.ProviderConfigs.List()
+	// delete the unreferenced provider configs from the provider configs
+	unreferenceProviderConfigs := r.getUnReferencedProviderConfigs(ctx)
+	for _, name := range unreferenceProviderConfigs {
+		delete(rootProviderConfigs, cache.NSN{Name: name})
+	}
+
+	// we initialize all provider if they have aa req or not, if not the latest provider will be downloaded
+	allprovreqs := map[cache.NSN][]kformpkgmetav1alpha1.Provider{}
+	for nsn := range rootProviderConfigs {
+		allprovreqs[nsn] = []kformpkgmetav1alpha1.Provider{}
+	}
+
+	for _, m := range r.modules.List() {
+		provReqs := m.ProviderRequirements.List()
+		for provNSN, provReq := range provReqs {
+			if _, ok := rootProviderConfigs[provNSN]; ok {
+				// since we initialized allprovreqs we dont need to check if the list is initialized
+				allprovreqs[provNSN] = append(allprovreqs[provNSN], provReq)
+			}
+		}
+	}
+	return allprovreqs
 }

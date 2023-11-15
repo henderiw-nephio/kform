@@ -41,11 +41,11 @@ func TestPackage(t *testing.T) {
 			hostName:  "github.com",
 			namespace: "henderiw-nephio/kform",
 			name:      "kubernetes",
-			version:   "v0.0.1",
+			version:   "0.0.1",
 			local:     false,
-			url:       fmt.Sprintf("https://github.com/henderiw-nephio/kform/releases/download/v0.0.1/provider-kubernetes_0.0.1_%s", getPlatform().String()),
-			csurl:     "https://github.com/henderiw-nephio/kform/releases/download/v0.0.1/kform_0.0.1_checksums.txt",
-			path:      fmt.Sprintf("github.com/henderiw-nephio_kform/kubernetes/v0.0.1/%s/provider-kubernetes_0.0.1_%s", getPlatform().String(), getPlatform().String()),
+			url:       fmt.Sprintf("https://github.com/henderiw-nephio/kform/releases/download/0.0.1/provider-kubernetes_0.0.1_%s", getPlatform().String()),
+			csurl:     "https://github.com/henderiw-nephio/kform/releases/download/0.0.1/kform_0.0.1_checksums.txt",
+			path:      fmt.Sprintf("github.com/henderiw-nephio_kform/kubernetes/0.0.1/%s/provider-kubernetes_0.0.1_%s", getPlatform().String(), getPlatform().String()),
 		},
 		"Local": {
 			Type:      "provider",
@@ -67,25 +67,25 @@ func TestPackage(t *testing.T) {
 					Namespace: tc.namespace,
 					Name:      tc.name,
 				},
-				Version:  tc.version,
+				//Version:  tc.version,
 				Platform: getPlatform(),
 			}
 
 			if tc.local != p.IsLocal() {
 				t.Errorf("want: %v, got: %v", tc.local, p.IsLocal())
 			}
-			fmt.Println("path", p.Path())
-			if tc.path != p.Path() {
+			fmt.Println("path", p.FilePath(tc.version))
+			if tc.path != p.FilePath(tc.version) {
 				t.Errorf("want: %v, got: %v", tc.local, p.IsLocal())
 			}
 			if !p.IsLocal() {
-				fmt.Println("URL", p.URL())
-				if tc.url != p.URL() {
-					t.Errorf("want: %v, got: %v", tc.url, p.URL())
+				fmt.Println("URL", p.URL(tc.version))
+				if tc.url != p.URL(tc.version) {
+					t.Errorf("want: %v, got: %v", tc.url, p.URL(tc.version))
 				}
-				fmt.Println("checksumURL", p.ChecksumURL())
-				if tc.csurl != p.ChecksumURL() {
-					t.Errorf("want: %v, got: %v", tc.url, p.URL())
+				fmt.Println("checksumURL", p.ChecksumURL(tc.version))
+				if tc.csurl != p.ChecksumURL(tc.version) {
+					t.Errorf("want: %v, got: %v", tc.url, p.URL(tc.version))
 				}
 			}
 		})

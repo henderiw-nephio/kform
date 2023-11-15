@@ -4,22 +4,20 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	kfplugin "github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/plugin"
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers/logging"
-	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/sets"
 	"github.com/henderiw/logger/log"
 )
 
 type Provider struct {
-	NSN      cache.NSN
-	ExecPath string
+	NSN cache.NSN
+	//ExecPath string
 	Initializer
 	Resources       sets.Set[string]
 	ReadDataSources sets.Set[string]
@@ -28,16 +26,10 @@ type Provider struct {
 
 type Initializer func() (kfplugin.Provider, error)
 
-func (r *Provider) Init(ctx context.Context, rootPath string, nsn cache.NSN, reqs []v1alpha1.Provider) error {
+func (r *Provider) Init(ctx context.Context, execpath string, nsn cache.NSN, reqs []v1alpha1.Provider) error {
 	log := log.FromContext(ctx)
-	providerPath := filepath.Join(rootPath, ".kform", "providers")
-	p, err := address.GetPackage(nsn, reqs)
-	if err != nil {
-		return err
-	}
 	r.NSN = nsn
-	r.ExecPath = filepath.Join(providerPath, p.Path())
-	r.Initializer = ProviderInitializer(r.ExecPath)
+	r.Initializer = ProviderInitializer(execpath)
 	r.Resources = sets.New[string]()
 	r.ReadDataSources = sets.New[string]()
 	r.ListDataSources = sets.New[string]()

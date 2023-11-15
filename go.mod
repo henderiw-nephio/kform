@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/GoogleContainerTools/kpt-functions-sdk/go/fn v0.0.0-20230427202446-3255accc518d
+	github.com/apparentlymart/go-versions v1.0.2
 	github.com/docker/cli v24.0.0+incompatible
 	github.com/golang/protobuf v1.5.3
 	github.com/google/cel-go v0.16.1

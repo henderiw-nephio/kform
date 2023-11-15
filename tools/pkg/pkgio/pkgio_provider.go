@@ -1,10 +1,8 @@
 package pkgio
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +12,8 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/grabber"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
+	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
+	"github.com/henderiw/logger/log"
 )
 
 type PkgProviderReadWriter interface {
@@ -23,7 +23,7 @@ type PkgProviderReadWriter interface {
 	//ProcessProviderRequirements(context.Context, *Data) (*Data, error)
 }
 
-func NewPkgProviderReadWriter(rootPath string, pkgs []*address.Package) PkgProviderReadWriter {
+func NewPkgProviderReadWriter(rootPath string, providers cache.Cache[*address.Package]) PkgProviderReadWriter {
 	path := filepath.Join(rootPath, ".kform", "providers")
 	pathExists := true
 	if _, err := os.Stat(path); err != nil {
@@ -31,7 +31,7 @@ func NewPkgProviderReadWriter(rootPath string, pkgs []*address.Package) PkgProvi
 	}
 	fs := fsys.NewDiskFS(path)
 	return &pkgProviderReadWriter{
-		pkgs:              pkgs,
+		providers:         providers,
 		validateChecksums: map[string][]*address.Package{},
 		reader: &PkgReader{
 			PathExists:     pathExists,
@@ -39,9 +39,8 @@ func NewPkgProviderReadWriter(rootPath string, pkgs []*address.Package) PkgProvi
 			MatchFilesGlob: []string{"*"},
 			// ignore rules are not required since we want to match any file
 			IgnoreRules: ignore.Empty(""),
-			Checksum:    true,
+			Checksum:    true, // this flag reads the checksum
 		},
-
 		writer: &pkgProviderWriter{
 			PathExists: pathExists,
 			fsys:       fs,
@@ -51,7 +50,7 @@ func NewPkgProviderReadWriter(rootPath string, pkgs []*address.Package) PkgProvi
 }
 
 type pkgProviderReadWriter struct {
-	pkgs              []*address.Package
+	providers         cache.Cache[*address.Package]
 	validateChecksums map[string][]*address.Package
 	reader            *PkgReader
 	writer            *pkgProviderWriter
@@ -69,55 +68,106 @@ func (r *pkgProviderReadWriter) Process(ctx context.Context, data *Data) (*Data,
 	return r.processProviderRequirements(ctx, data)
 }
 
+// get versions from the installed providers -> right now we assume 1 provider has 1 version
+// check if it is part of the candidates
+// if not -> delete path/done; if yes -> check chechsum; if nok -> delete it
+//
+
 func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context, data *Data) (*Data, error) {
-	// delete the paths/files that should not be in the directory
-	// based on the requirements
-	for path := range data.List() {
-		found := false
-		for _, pkg := range r.pkgs {
-			if path == pkg.Path() {
-				found = true
+	log := log.FromContext(ctx)
+	// walk over the paths and delete the once that are not relevant
+	// based on the provider requirements/packages
+	for path, hash := range data.List() {
+		for _, pkg := range r.providers.List() {
+			if strings.HasPrefix(path, pkg.BasePath()) {
+				installedVersion := address.GetVersionFromPath(path)
+				log.Info("processProviderRequirements", "installedVersion", installedVersion)
+				if pkg.HasVersion(installedVersion) {
+					remoteHash, err := pkg.GetRemoteChecksum(installedVersion)
+					if err != nil {
+						return data, err
+					}
+					if string(hash) == remoteHash {
+						// found and valid
+						pkg.UpdateSelectedVersion(installedVersion)
+						data.Delete(path)
+					} else {
+						// remove the files from the fsys
+						if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
+							return data, err
+						}
+						data.Delete(path)
+						// update the path to install the latest
+						toBeInstalledVersion := pkg.Newest()
+						pkg.UpdateSelectedVersion(toBeInstalledVersion)
+						data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
+					}
+				} else {
+					// remove the files from the fsys
+					if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
+						return data, err
+					}
+					data.Delete(path)
+					// update the path to install the latest
+					toBeInstalledVersion := pkg.Newest()
+					pkg.UpdateSelectedVersion(toBeInstalledVersion)
+					data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
+				}
 				break
 			}
 		}
-		if !found {
-			// we could add diagnostics to this process, to indicate with a warning
-			// these files exists but should not be there
-			data.Delete(path)
+	}
+	// it might be that no files were found so we need to add this to the data
+	for _, pkg := range r.providers.List() {
+		if pkg.GetSelectedVersion() == "" {
+			// remove the files from the fsys
+			if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
+				return data, err
+			}
+			toBeInstalledVersion := pkg.Newest()
+			pkg.UpdateSelectedVersion(toBeInstalledVersion)
+			data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
 		}
 	}
 
-	for _, pkg := range r.pkgs {
-		if !data.Exists(pkg.Path()) {
-			data.Add(pkg.Path(), nil)
-		} else {
-			if !pkg.IsLocal() {
-				if _, ok := r.validateChecksums[pkg.ChecksumURL()]; !ok {
-					r.validateChecksums[pkg.ChecksumURL()] = []*address.Package{}
+	return data, nil
+
+	/*
+		// for all the providers
+		for _, pkg := range r.pkgs {
+			if !data.Exists(pkg.FilePath()) {
+				// if the path does not exist -> the path is added but the data is empty
+				data.Add(pkg.FilePath(), nil)
+			} else {
+				if !pkg.IsLocal() {
+					if _, ok := r.validateChecksums[pkg.ChecksumURL()]; !ok {
+						r.validateChecksums[pkg.ChecksumURL()] = []*address.Package{}
+					}
+					r.validateChecksums[pkg.ChecksumURL()] = append(r.validateChecksums[pkg.ChecksumURL()], pkg)
 				}
-				r.validateChecksums[pkg.ChecksumURL()] = append(r.validateChecksums[pkg.ChecksumURL()], pkg)
 			}
 		}
-	}
-	data, err := r.processChecksums(ctx, data)
-	if err != nil {
-		return data, err
-	}
-	return r.prepareWriter(ctx, data)
+		data, err := r.processChecksums(ctx, data)
+		if err != nil {
+			return data, err
+		}
+		return r.prepareWriter(ctx, data)
+	*/
 }
 
+/*
 // the remainingfiles in the data
 func (r *pkgProviderReadWriter) processChecksums(ctx context.Context, data *Data) (*Data, error) {
 	remoteCheckSums := map[string]string{}
 	for checksumURL, pkgs := range r.validateChecksums {
 		resp, err := http.Get(checksumURL)
 		if err != nil {
-			return data, err
+			return nil, err
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return data, fmt.Errorf("failed to download checksum file, status code: %d", resp.StatusCode)
+			return nil, fmt.Errorf("failed to download checksum file, status code: %d", resp.StatusCode)
 		}
 
 		s := bufio.NewScanner(resp.Body)
@@ -156,7 +206,9 @@ func (r *pkgProviderReadWriter) processChecksums(ctx context.Context, data *Data
 	}
 	return data, nil
 }
+*/
 
+/*
 // prepareWriter updates the data with the URL such that the writer
 // knows the file and
 func (r *pkgProviderReadWriter) prepareWriter(ctx context.Context, data *Data) (*Data, error) {
@@ -167,6 +219,7 @@ func (r *pkgProviderReadWriter) prepareWriter(ctx context.Context, data *Data) (
 	}
 	return data, nil
 }
+*/
 
 type pkgProviderWriter struct {
 	PathExists bool

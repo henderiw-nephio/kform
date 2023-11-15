@@ -57,6 +57,10 @@ func (r *moduleparser) Parse(ctx context.Context) *types.Module {
 		r.recorder)
 	// add the required providers in the module
 	for providerRawName, providerReq := range kf.Spec.ProviderRequirements {
+		if err := providerReq.Validate(); err != nil {
+			r.recorder.Record(diag.DiagErrorf("cannot parse module provider requiremen invalid for %s, err: %s", providerRawName, err.Error()))
+			return nil
+		}
 		if err := m.ProviderRequirements.Add(
 			ctx,
 			cache.NSN{Name: providerRawName},

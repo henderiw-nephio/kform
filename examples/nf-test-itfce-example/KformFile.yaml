@@ -7,10 +7,10 @@ spec:
   providerRequirements:
     kubernetes:
       source: github.com/henderiw-nephio/kform
-      version: v0.0.1
+      version: "0.0.1"
     resourcebackend:
       source: github.com/henderiw-nephio/kform
-      version: v0.0.1
+      version: "0.0.1"
     test:
       source: .
   info: {}

@@ -20,11 +20,11 @@ func TestPkgProviderRead(t *testing.T) {
 			reqs: map[string]kformpkgmetav1alpha1.Provider{
 				"kubernetes": {
 					Source:  "github.com/henderiw-nephio/kform",
-					Version: "v0.0.1",
+					Version: "0.0.1",
 				},
 				"resourcebackend": {
 					Source:  "github.com/henderiw-nephio/kform",
-					Version: "v0.0.1",
+					Version: "0.0.1",
 				},
 			},
 		},
@@ -33,14 +33,14 @@ func TestPkgProviderRead(t *testing.T) {
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			pkgs := []*address.Package{}
+			providers := cache.New[*address.Package]()
 			for name, req := range tc.reqs {
-				pkg, err := address.GetPackage(cache.NSN{Name: name}, []kformpkgmetav1alpha1.Provider{req})
+				pkg, err := address.GetPackage(cache.NSN{Name: name}, req.Source)
 				assert.NoError(t, err)
-				pkgs = append(pkgs, pkg)
+				providers.Add(ctx, cache.NSN{Name: name}, pkg)
 			}
 
-			rw := NewPkgProviderReadWriter(tc.rootPath, pkgs)
+			rw := NewPkgProviderReadWriter(tc.rootPath, providers)
 			data := NewData()
 			data, err := rw.Read(ctx, data)
 			assert.NoError(t, err)

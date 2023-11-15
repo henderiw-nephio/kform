@@ -12,7 +12,6 @@ data:
           schema:
             apiVersion: req.nephio.org/v1alpha1
             kind: Interface
-        #value: [$resourcebackend_ipclaim.ipv4, $resourcebackend_ipclaim.ipv6, $resourcebackend_vlanclaim.vlan]
         value:
           metadata: $input.interface[0].metadata
           spec: $input.interface[0].spec
