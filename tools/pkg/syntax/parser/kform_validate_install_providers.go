@@ -10,7 +10,7 @@ import (
 
 // validateAndOrInstallProviders looks at the provider requirements
 // 1. convert provider requirements to packages
-// 2.
+// 2. get the releases per provider (based in source <hostanme>/<namespace>)
 func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bool) {
 	for nsn, reqs := range r.GetProviderRequirements(ctx) {
 		// convert provider requirements to a package
@@ -21,41 +21,42 @@ func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bo
 			return
 		}
 		// retrieve the available releases/versions for this provider
-		if err := pkg.GetReleases(); err != nil {
-			r.recorder.Record(diag.DiagFromErr(err))
-			return
-		}
-		// append the requirements together
-		for _, req := range reqs {
-			pkg.AddConstraints(req.Version)
-		}
+		if !pkg.IsLocal() {
+			if err := pkg.GetReleases(); err != nil {
+				r.recorder.Record(diag.DiagFromErr(err))
+				return
+			}
+			// append the requirements together
+			for _, req := range reqs {
+				pkg.AddConstraints(req.Version)
+			}
 
-		// generate the candidate versions by looking at the available
-		// versions and applying the constraints on them
-		if err := pkg.GenerateCandidates(); err != nil {
-			r.recorder.Record(diag.DiagFromErr(err))
-			return
+			// generate the candidate versions by looking at the available
+			// versions and applying the constraints on them
+			if err := pkg.GenerateCandidates(); err != nil {
+				r.recorder.Record(diag.DiagFromErr(err))
+				return
+			}
 		}
 		r.providers.Add(ctx, nsn, pkg)
 	}
 
 	pkgrw := pkgio.NewPkgProviderReadWriter(r.rootModulePath, r.providers)
-	p := pkgio.Pipeline{}
-	if init {
-		p = pkgio.Pipeline{
-			Inputs:     []pkgio.Reader{pkgrw},
-			Processors: []pkgio.Process{pkgrw},
-			Outputs:    []pkgio.Writer{pkgrw},
-		}
-	} else {
-		p = pkgio.Pipeline{
+	pl := pkgio.Pipeline{
+		Inputs:     []pkgio.Reader{pkgrw},
+		Processors: []pkgio.Process{pkgrw},
+		Outputs:    []pkgio.Writer{pkgrw},
+	}
+	if !init {
+		// when doing kform apply we just want to validate the provider pkg(s)
+		pl = pkgio.Pipeline{
 			Inputs:     []pkgio.Reader{pkgrw},
 			Processors: []pkgio.Process{pkgrw},
 			Outputs:    []pkgio.Writer{pkgio.NewPkgValidator()},
 		}
 	}
 
-	if err := p.Execute(ctx); err != nil {
+	if err := pl.Execute(ctx); err != nil {
 		r.recorder.Record(diag.DiagFromErr(err))
 		return
 	}

@@ -22,12 +22,14 @@ func main() {
 	log := l
 
 	// We're a host. Start by launching the plugin process.
+	cmdStr := "docker run --network host europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-grpc-example:latest"
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: shared.Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{
 			1: shared.PluginMap,
 		},
-		Cmd: exec.Command("sh", "-c", os.Getenv("KV_PLUGIN")),
+		//Cmd: exec.Command("sh", "-c", os.Getenv("KV_PLUGIN")),
+		Cmd: exec.Command("/bin/sh", "-c", cmdStr),
 	})
 	defer client.Kill()
 

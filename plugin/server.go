@@ -101,6 +101,7 @@ func Serve(opts *ServeConfig) {
 		exitCode = 1
 		return
 	}
+	fmt.Fprintf(os.Stdout, "%s", os.Getenv(opts.MagicCookieKey))
 	if os.Getenv(opts.MagicCookieKey) != opts.MagicCookieValue {
 		fmt.Fprintf(os.Stderr,
 			`cannot execute this plugin direct, execute the plugin via the plugin loader`)
