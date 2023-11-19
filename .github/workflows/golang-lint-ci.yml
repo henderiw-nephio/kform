@@ -1,6 +1,8 @@
 name: golang-lint ci
+
 on:
   workflow_dispatch:
+  
 jobs:
   golangci:
     name: lint

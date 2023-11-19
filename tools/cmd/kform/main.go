@@ -32,13 +32,17 @@ import (
 	"github.com/henderiw/logger/log"
 )
 
+const (
+	defaultConfigFileSubDir = "kform"
+	defaultConfigFileName   = "kform.yaml"
+)
+
 func main() {
 	os.Exit(runMain())
 }
 
 // runMain does the initial setup to setup logging
 func runMain() int {
-
 	// init logging
 	l := log.NewLogger(&log.HandlerOptions{Name: "kform-logger", AddSource: false})
 	slog.SetDefault(l)
@@ -48,7 +52,7 @@ func runMain() int {
 	defer cancel()
 	ctx = log.IntoContext(ctx, l)
 
-	// init context
+	// init cmd context
 	cmd := commands.GetMain(ctx)
 
 	if err := cmd.ExecuteContext(ctx); err != nil {

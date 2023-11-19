@@ -1,0 +1,12 @@
+name: golang-lint ci
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: lint
+    runs-on: ubuntu-22.04
+    steps:
+    - name: github repo 
+      run: echo ${{ github.repository }}

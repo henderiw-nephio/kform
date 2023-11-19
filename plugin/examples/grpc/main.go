@@ -22,7 +22,7 @@ func main() {
 	log := l
 
 	// We're a host. Start by launching the plugin process.
-	cmdStr := "docker run --network host europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-grpc-example:latest"
+	cmdStr := "docker run -d -e BASIC_PLUGIN='hello' -e PLUGIN_PROTOCOL_VERSIONS='1' europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-grpc-example:latest"
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: shared.Handshake,
 		VersionedPlugins: map[int]plugin.PluginSet{

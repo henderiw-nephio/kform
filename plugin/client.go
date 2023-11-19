@@ -743,44 +743,48 @@ func (c *Client) Start() (addr net.Addr, err error) {
 		err = errors.New("timeout while waiting for plugin to start")
 	case <-c.doneCtx.Done():
 		err = errors.New("plugin exited before we could connect")
-	case line, ok := <-linesCh:
+	case line := <-linesCh:
 		// Trim the line and split by "|" in order to get the parts of
 		// the output.
 		line = strings.TrimSpace(line)
+		fmt.Println("line", line)
 		parts := strings.SplitN(line, "|", 6)
-		if len(parts) < 4 {
-			errText := fmt.Sprintf("Unrecognized remote plugin message: %s", line)
-			if !ok {
-				errText += "\n" + "Failed to read any lines from plugin's stdout"
-			}
-			additionalNotes := runner.Diagnose(context.Background())
-			if additionalNotes != "" {
-				errText += "\n" + additionalNotes
-			}
-			err = errors.New(errText)
-			return
-		}
-
-		// Check the core protocol. Wrapped in a {} for scoping.
-		{
-			var coreProtocol int
-			coreProtocol, err = strconv.Atoi(parts[0])
-			if err != nil {
-				err = fmt.Errorf("Error parsing core protocol version: %s", err)
+		//fmt.Println("line", line)
+		/*
+			if len(parts) < 4 {
+				errText := fmt.Sprintf("Unrecognized remote plugin message: %s", line)
+				if !ok {
+					errText += "\n" + "Failed to read any lines from plugin's stdout"
+				}
+				additionalNotes := runner.Diagnose(context.Background())
+				if additionalNotes != "" {
+					errText += "\n" + additionalNotes
+				}
+				err = errors.New(errText)
 				return
 			}
 
-			if coreProtocol != CoreProtocolVersion {
-				err = fmt.Errorf("Incompatible core API version with plugin. "+
-					"Plugin version: %s, Core version: %d\n\n"+
-					"To fix this, the plugin usually only needs to be recompiled.\n"+
-					"Please report this to the plugin author.", parts[0], CoreProtocolVersion)
-				return
+			// Check the core protocol. Wrapped in a {} for scoping.
+			{
+				var coreProtocol int
+				coreProtocol, err = strconv.Atoi(parts[0])
+				if err != nil {
+					err = fmt.Errorf("Error parsing core protocol version: %s", err)
+					return
+				}
+
+				if coreProtocol != CoreProtocolVersion {
+					err = fmt.Errorf("Incompatible core API version with plugin. "+
+						"Plugin version: %s, Core version: %d\n\n"+
+						"To fix this, the plugin usually only needs to be recompiled.\n"+
+						"Please report this to the plugin author.", parts[0], CoreProtocolVersion)
+					return
+				}
 			}
-		}
+		*/
 
 		// Test the API version
-		version, plugins, err := c.checkProtoVersion(parts[1])
+		version, plugins, err := c.checkProtoVersion("1")
 		if err != nil {
 			return addr, err
 		}
