@@ -1,11 +1,11 @@
-name: golang-lint ci
+name: test
 
 on:
   workflow_dispatch:
 
 jobs:
   test:
-    name: lint
+    name: test
     runs-on: ubuntu-22.04
     steps:
     - name: github repo 
