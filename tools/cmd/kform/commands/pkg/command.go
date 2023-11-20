@@ -7,6 +7,7 @@ import (
 	buildcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/build"
 	initcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/init"
 	pushcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/push"
+	pullcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/pull"
 	"github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/tree"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,7 @@ func NewCommand(ctx context.Context, version string) *cobra.Command {
 
 	cmd.AddCommand(buildcmd.NewCommand(ctx, version))
 	cmd.AddCommand(pushcmd.NewCommand(ctx, version))
+	cmd.AddCommand(pullcmd.NewCommand(ctx, version))
 	cmd.AddCommand(initcmd.NewCommand(ctx, version))
 	cmd.AddCommand(treecmd.NewCommand(ctx, version))
 	return cmd

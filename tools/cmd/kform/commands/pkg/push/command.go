@@ -14,7 +14,7 @@ import (
 func NewRunner(ctx context.Context, version string) *Runner {
 	r := &Runner{}
 	cmd := &cobra.Command{
-		Use:     "push DIR TAG [flags]",
+		Use:     "push REF DIR [flags]",
 		Args:    cobra.ExactArgs(2),
 		Short:   docs.PushShort,
 		Long:    docs.PushShort + "\n" + docs.PushLong,
@@ -36,24 +36,25 @@ func NewCommand(ctx context.Context, version string) *cobra.Command {
 
 type Runner struct {
 	Command  *cobra.Command
-	rootPath string
+	//rootPath string
 	//local    bool
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
-	r.rootPath = args[0]
-	if err := fsys.ValidateDirPath(r.rootPath); err != nil {
+	
+	rootPath := args[1]
+	if err := fsys.ValidateDirPath(rootPath); err != nil {
 		return err
 	}
 	fs := fsys.NewDiskFS(".")
-	f, err := fs.Stat(r.rootPath)
+	f, err := fs.Stat(rootPath)
 	if err != nil {
-		fs.MkdirAll(r.rootPath)
+		fs.MkdirAll(rootPath)
 	} else if !f.IsDir() {
-		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", r.rootPath)
+		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(r.rootPath, args[1])
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0])
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

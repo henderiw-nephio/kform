@@ -57,7 +57,7 @@ func GetMain(ctx context.Context) *cobra.Command {
 	cmd.AddCommand(apply.NewCommand(ctx, version))
 	cmd.AddCommand(auth.NewCommand(ctx, version))
 	cmd.AddCommand(pkg.NewCommand(ctx, version))
-	cmd.PersistentFlags().StringVar(&configFile, "config", "c", fmt.Sprintf("Default config file (%s/%s/%s.%s)", xdg.ConfigHome, defaultConfigFileSubDir, defaultConfigFileSubDir))
+	cmd.PersistentFlags().StringVar(&configFile, "config", "c", fmt.Sprintf("Default config file (%s/%s/%s.%s)", xdg.ConfigHome, defaultConfigFileSubDir, defaultConfigFileName, defaultConfigFileNameExt))
 
 	return cmd
 }
