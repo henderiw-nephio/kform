@@ -10,5 +10,7 @@ jobs:
     steps:
     - name: github repo 
       run: echo ${{ github.repository }}
-    - name: github tag
+    - name: github ref
       run: echo ${{ github.ref}}
+    - name: github ref
+      run: echo ${{ github.ref_name}}

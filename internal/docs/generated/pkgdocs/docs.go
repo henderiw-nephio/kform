@@ -51,24 +51,47 @@ var InitExamples = `
       --description "my hello-world provider implementation"
 `
 
+var PullShort = `Pull a provider/module package in OCI format.`
+var PullLong = `
+  kform pkg pull REF DIR [flags]
+
+Args:
+
+  DIR:
+    The directory of the package. Pull fails if DIR does not already exist.
+  REF:
+    The oci registry reference
+
+Flags:
+
+`
+var PullExamples = `
+
+  # Pulls a provider OCI package to the current directory
+  $ kform pkg pull ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 .
+`
+
 var PushShort = `Push a provider/module package in OCI format.`
 var PushLong = `
-  kform pkg push DIR TAG [flags]
+  kform pkg push REF DIR [flags]
 
 Args:
 
   DIR:
     The directory of the package. Push fails if DIR does not already exist.
-  TAG:
-    The oci registry tag
+  REF:
+    The oci registry reference
 
 Flags:
 
 `
 var PushExamples = `
 
-  # Pushes a new module-hello-world package to 
-  $ kform pkg push ./module-hello-world pkg.kform.io/module/module-hello-world:v0.1.0
+  # Pushes a OCI package from the directory ./provider-resourcebackend to ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 with 
+  # - registry: ghcr.io 
+  # - organization/owner: kformdev
+  # - tag: v0.0.1
+  $ kform pkg push ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 ./provider-resourcebackend
 `
 
 var TreeShort = `Display resources, files and packages in a tree structure.`

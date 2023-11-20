@@ -17,7 +17,7 @@ description: >
 <!--mdtogo:Long-->
 
 ```
-kform pkg push DIR TAG [flags]
+kform pkg push REF DIR [flags]
 ```
 
 #### Args
@@ -25,8 +25,8 @@ kform pkg push DIR TAG [flags]
 ```
 DIR:
   The directory of the package. Push fails if DIR does not already exist.
-TAG:
-  The oci registry tag
+REF:
+  The oci registry reference
 ```
 
 #### Flags
@@ -55,8 +55,11 @@ cd $TEST_HOME
 <!-- @pkgInit @verifyStaleExamples-->
 
 ```shell
-# Pushes a new module-hello-world package to 
-$ kform pkg push ./module-hello-world pkg.kform.io/module/module-hello-world:v0.1.0
+# Pushes a OCI package from the directory ./provider-resourcebackend to ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 with 
+# - registry: ghcr.io 
+# - organization/owner: kformdev
+# - tag: v0.0.1
+$ kform pkg push ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 ./provider-resourcebackend
 ```
 
 <!--mdtogo-->

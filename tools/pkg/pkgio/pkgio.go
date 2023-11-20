@@ -2,7 +2,6 @@ package pkgio
 
 import (
 	"context"
-	"fmt"
 )
 
 const kformOciPkgExt = "kformpkg"
@@ -13,7 +12,9 @@ var PkgFileMatch = []string{"KformFile.yaml"}
 var MarkdownMatch = []string{"*.md"}
 var YAMLMatch = []string{"*.yaml", "*.yml"}
 var JSONMatch = []string{"*.json"}
-var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
+var MatchAll = []string{"*"}
+//var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
+
 
 type Reader interface {
 	Read(context.Context, *Data) (*Data, error)

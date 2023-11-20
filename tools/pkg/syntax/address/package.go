@@ -66,15 +66,37 @@ func (r *Package) GetReleases() error {
 		}
 		r.AvailableVersions = append(r.AvailableVersions, v)
 	}
-	fmt.Println("available versions", r.AvailableVersions)
+
+	for _, availableRelease := range availableReleases {
+		fmt.Println("availableRelease", availableRelease.TagName)
+		for _, asset := range availableRelease.Assets {
+			fmt.Printf("  Name: %s, State: %s, type: %s DownloadURL: %s\n", asset.Name, asset.State, asset.ContentType ,asset.BrowserDownloadURL)
+
+		}
+	}
+	
 
 	return nil
 }
 
 type Release struct {
-	Name    string `json:"name"`
-	TagName string `json:"tag_name"`
+	Name    string  `json:"name"`
+	TagName string  `json:"tag_name"`
+	Assets  []Asset `json:"assets,omitempty"`
 }
+
+type Asset struct {
+	Name               string     `json:"name"`
+	ContentType        string     `json:"content_type"`
+	State              AssetState `json:"state"`
+	BrowserDownloadURL string     `json:"browser_download_url"`
+}
+
+type AssetState string
+
+const (
+	AssetStateUpLoaded AssetState = "uploaded"
+)
 
 func (r *Package) AddConstraints(constraint string) {
 	if r.VersionConstraints == "" {

@@ -136,3 +136,10 @@ github.com/henderiw-nephio/kform/provider-xxxx
 
 source: 
 "hashicorp/aws"
+
+
+manifest
+- config
+    digest
+- []layers
+    - digest
