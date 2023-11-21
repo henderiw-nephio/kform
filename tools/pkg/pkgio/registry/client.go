@@ -118,6 +118,15 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	return client, nil
 }
 
+// ClientOptResolver returns a function that sets the resolver setting on a client options set
+func ClientOptResolver(resolver remotes.Resolver) ClientOption {
+	return func(client *Client) {
+		client.resolver = func(ref registry.Reference) (remotes.Resolver, error) {
+			return resolver, nil
+		}
+	}
+}
+
 type Result struct {
 	Manifest *descriptorSummary `json:"manifest"`
 	Config   *descriptorSummary `json:"config"`

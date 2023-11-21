@@ -35,7 +35,7 @@ func NewCommand(ctx context.Context, version string) *cobra.Command {
 }
 
 type Runner struct {
-	Command  *cobra.Command
+	Command *cobra.Command
 	//rootPath string
 	//local    bool
 }
@@ -46,12 +46,12 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 	f, err := fs.Stat(rootPath)
 	if err != nil {
 		return fmt.Errorf("cannot create a pkg, rootpath %s does not exist", rootPath)
-	}  
+	}
 	if !f.IsDir() {
 		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0])
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0], nil)
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

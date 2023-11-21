@@ -13,8 +13,8 @@ var MarkdownMatch = []string{"*.md"}
 var YAMLMatch = []string{"*.yaml", "*.yml"}
 var JSONMatch = []string{"*.json"}
 var MatchAll = []string{"*"}
-//var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
+//var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
 type Reader interface {
 	Read(context.Context, *Data) (*Data, error)
@@ -44,14 +44,14 @@ func (r Pipeline) Execute(ctx context.Context) error {
 			return err
 		}
 	}
-	data.Print()
+	//data.Print()
 	for _, p := range r.Processors {
 		data, err = p.Process(ctx, data)
 		if err != nil {
 			return err
 		}
 	}
-	data.Print()
+	//data.Print()
 	// write to the outputs
 	for _, o := range r.Outputs {
 		if err := o.Write(ctx, data); err != nil {
