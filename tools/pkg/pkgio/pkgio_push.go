@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/containerd/containerd/remotes"
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
@@ -20,7 +19,7 @@ type PkgPushReadWriter interface {
 	Writer
 }
 
-func NewPkgPushReadWriter(path, ref string, resolver remotes.Resolver) PkgPushReadWriter {
+func NewPkgPushReadWriter(path, ref string) PkgPushReadWriter {
 
 	// TBD do we add validation here
 	// Ignore file processing should be done here
@@ -41,7 +40,6 @@ func NewPkgPushReadWriter(path, ref string, resolver remotes.Resolver) PkgPushRe
 			rootPath: path,
 			pkgName:  filepath.Base(path),
 			ref:      ref,
-			resolver: resolver,
 		},
 	}
 }
@@ -64,7 +62,6 @@ type pkgPushWriter struct {
 	rootPath string
 	pkgName  string
 	ref      string
-	resolver remotes.Resolver
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
@@ -95,16 +92,9 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 
 	// get a client to the registry
 	var c *registry.Client
-	if r.resolver != nil {
-		c, err = registry.NewClient(registry.ClientOptResolver(r.resolver))
-		if err != nil {
-			return err
-		}
-	} else {
-		c, err = registry.NewClient()
-		if err != nil {
-			return err
-		}
+	c, err = registry.NewClient()
+	if err != nil {
+		return err
 	}
 
 	result, err := c.Push(kformFile.Spec.Kind, r.ref, pkgData, imgData)
