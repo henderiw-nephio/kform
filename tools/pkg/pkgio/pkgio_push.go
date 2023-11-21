@@ -75,23 +75,32 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 	if err := yaml.Unmarshal([]byte(d), &kformFile); err != nil {
 		return err
 	}
-	log.Info("provider", "kind", kformFile.Spec.Kind)
-	return nil
+	if err := kformFile.Spec.Kind.Validate(); err != nil {
+		return err
+	}
 
-	schemaData, err := oci.BuildTgz(data.List())
+	// build a zipped tar bal from the data in the pkg
+	pkgData, err := oci.BuildTgz(data.List())
 	if err != nil {
 		return err
 	}
 
+	var imgData []byte
+	if kformFile.Spec.Kind == v1alpha1.PkgKindProvider {
+		// TODO get image
+	}
+
+	// get a client to the registry
 	c, err := registry.NewClient()
 	if err != nil {
 		return err
 	}
-	
-	result, err := c.Push(schemaData, r.ref)
+
+	result, err := c.Push(kformFile.Spec.Kind, r.ref, pkgData, imgData)
 	if err != nil {
 		return err
 	}
-	fmt.Println(result)
+	log.Info("push succeeded", "result", result)
+
 	return nil
 }

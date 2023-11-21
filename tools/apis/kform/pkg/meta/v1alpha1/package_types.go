@@ -22,3 +22,12 @@ func ValidatePackageType(pt string) error {
 		return fmt.Errorf("unsupported packageType, expecting %s or %s, got %s", PkgKindProvider, PkgKindModule, strings.ToLower(pt))
 	}
 }
+
+func (r PkgKind) Validate() error {
+	switch r {
+	case PkgKindProvider, PkgKindModule:
+		return nil
+	default:
+		return fmt.Errorf("unsupported packageType, expecting %s or %s, got %s", PkgKindProvider, PkgKindModule, strings.ToLower(string(r)))
+	}
+}

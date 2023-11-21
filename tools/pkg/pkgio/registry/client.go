@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/containerd/containerd/remotes"
+	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
@@ -18,9 +19,10 @@ import (
 )
 
 const (
-	ProviderSchemaLayerMediaType = "application/vnd.cncf.kform.provider.schemas.v1.tar+gzip"
-	ProviderImageLayerMediaType  = "application/vnd.cncf.kform.provider.image.v1.tar+gzip"
-	ProviderMediaType            = "application/vnd.cncf.kform.provider.v1+json"
+	PackageMetaLayerMediaType  = "application/vnd.cncf.kform.package.meta.v1.tar+gzip"
+	PackageImageLayerMediaType = "application/vnd.cncf.kform.package.image.v1.tar+gzip"
+	ModuleMediaType            = "application/vnd.cncf.kform.module.v1+json"
+	ProviderMediaType          = "application/vnd.cncf.kform.provider.v1+json"
 )
 
 type Client struct {
@@ -116,29 +118,21 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	return client, nil
 }
 
-type PushResult struct {
-	Manifest *descriptorPushSummary `json:"manifest"`
-	Config   *descriptorPushSummary `json:"config"`
-	Schemas  *descriptorPushSummary `json:"schemas"`
-	Image    *descriptorPushSummary `json:"image"`
+type Result struct {
+	Manifest *descriptorSummary `json:"manifest"`
+	Config   *descriptorSummary `json:"config"`
+	PkgMeta  *descriptorSummary `json:"pkgMeta"`
+	Image    *descriptorSummary `json:"image"`
 	Ref      string                 `json:"ref"`
 }
 
-type descriptorPushSummary struct {
+type descriptorSummary struct {
 	Digest string `json:"digest"`
 	Size   int64  `json:"size"`
+	Data   []byte `json:"-"`
 }
 
-// PullResult is the result returned upon successful pull.
-type PullResult struct {
-	Manifest *descriptorPullSummary `json:"manifest"`
-	Config   *descriptorPullSummary `json:"config"`
-	Schemas  *descriptorPullSummary `json:"schemas"`
-	Image    *descriptorPullSummary `json:"image"`
-	Ref      string                 `json:"ref"`
-}
-
-func (c *Client) Push(schemaData []byte, ref string) (*PushResult, error) {
+func (c *Client) Push(kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) (*Result, error) {
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return nil, err
@@ -146,29 +140,48 @@ func (c *Client) Push(schemaData []byte, ref string) (*PushResult, error) {
 
 	//fmt.Println("schemaData", schemaData)
 	memoryStore := content.NewMemory()
-	schemaDescriptor, err := memoryStore.Add("schemas", ProviderSchemaLayerMediaType, schemaData)
+	// collect layer descriptors
+	descriptors := []ocispecv1.Descriptor{}
+	pkgMetaDescriptor, err := memoryStore.Add("pkgMeta", PackageMetaLayerMediaType, pkgData)
 	if err != nil {
 		return nil, err
 	}
-	imageDescriptor, err := memoryStore.Add("image", ProviderImageLayerMediaType, []byte("image"))
-	if err != nil {
-		return nil, err
+	descriptors = append(descriptors, pkgMetaDescriptor)
+	if kind == v1alpha1.PkgKindProvider {
+		imageDescriptor, err := memoryStore.Add("image", PackageImageLayerMediaType, imgData)
+		if err != nil {
+			return nil, err
+		}
+		descriptors = append(descriptors, imageDescriptor)
 	}
-	descriptors := []ocispecv1.Descriptor{schemaDescriptor, imageDescriptor}
 
-	providerDescriptor, err := memoryStore.Add("", ProviderMediaType, []byte("config"))
-	if err != nil {
-		return nil, err
+	// collect config descriptors
+	var configDescriptor ocispecv1.Descriptor
+	if kind == v1alpha1.PkgKindProvider {
+		configDescriptor, err = memoryStore.Add("config", ProviderMediaType, []byte("config"))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// module
+		configDescriptor, err = memoryStore.Add("config", ModuleMediaType, []byte("config"))
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	ociAnnotations := map[string]string{}
 
-	manifestData, manifest, err := content.GenerateManifest(&providerDescriptor, ociAnnotations, descriptors...)
+	// generate manifest
+	manifestData, manifest, err := content.GenerateManifest(&configDescriptor, ociAnnotations, descriptors...)
 	if err != nil {
 		return nil, err
 	}
+	// store manifest in the memory store
 	if err := memoryStore.StoreManifest(parsedRef.String(), manifest, manifestData); err != nil {
 		return nil, err
 	}
+	// resolve the remote registry based on the ref
 	remotesResolver, err := c.resolver(parsedRef)
 	if err != nil {
 		return nil, err
@@ -179,23 +192,25 @@ func (c *Client) Push(schemaData []byte, ref string) (*PushResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := &PushResult{
-		Manifest: &descriptorPushSummary{
+	result := &Result{
+		Manifest: &descriptorSummary{
 			Digest: manifest.Digest.String(),
 			Size:   manifest.Size,
 		},
-		Config: &descriptorPushSummary{
-			Digest: providerDescriptor.Digest.String(),
-			Size:   providerDescriptor.Size,
+		Config: &descriptorSummary{
+			Digest: configDescriptor.Digest.String(),
+			Size:   configDescriptor.Size,
 		},
-		Schemas: &descriptorPushSummary{
-			Digest: schemaDescriptor.Digest.String(),
-			Size:   schemaDescriptor.Size,
+		PkgMeta: &descriptorSummary{
+			Digest: pkgMetaDescriptor.Digest.String(),
+			Size:   pkgMetaDescriptor.Size,
 		},
-		Image: &descriptorPushSummary{
-			Digest: imageDescriptor.Digest.String(),
-			Size:   imageDescriptor.Size,
-		},
+		/*
+			Image: &descriptorPushSummary{
+				Digest: imageDescriptor.Digest.String(),
+				Size:   imageDescriptor.Size,
+			},
+		*/
 		Ref: parsedRef.String(),
 	}
 	fmt.Fprintf(c.out, "Pushed: %s\n", result.Ref)
@@ -203,18 +218,19 @@ func (c *Client) Push(schemaData []byte, ref string) (*PushResult, error) {
 	return result, nil
 }
 
-func (c *Client) Pull(ref string) (*PullResult, error) {
+func (c *Client) Pull(ref string) (*Result, error) {
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return nil, err
 	}
 	memoryStore := content.NewMemory()
 	allowedMediaTypes := []string{
-		ProviderSchemaLayerMediaType,
-		ProviderImageLayerMediaType,
+		PackageMetaLayerMediaType,
+		PackageImageLayerMediaType,
 		ProviderMediaType,
+		ModuleMediaType,
 	}
-	minNumDescriptors := 3
+	minNumDescriptors := 2
 
 	descriptors := []ocispecv1.Descriptor{}
 	layers := []ocispecv1.Descriptor{}
@@ -242,18 +258,19 @@ func (c *Client) Pull(ref string) (*PullResult, error) {
 		return nil, fmt.Errorf("manifest does not contain minimum number of descriptors (%d), descriptors found: %d",
 			minNumDescriptors, len(descriptors))
 	}
-	var providerDescriptor *ocispecv1.Descriptor
-	var schemaDescriptor *ocispecv1.Descriptor
+	var configDescriptor *ocispecv1.Descriptor
+	var pkgMetaDescriptor *ocispecv1.Descriptor
 	var imageDescriptor *ocispecv1.Descriptor
 	for _, descriptor := range descriptors {
 		d := descriptor
 		switch d.MediaType {
-		case ProviderMediaType:
-			providerDescriptor = &d
-		case ProviderSchemaLayerMediaType:
-			schemaDescriptor = &d
-		case ProviderImageLayerMediaType:
+		case ProviderMediaType, ModuleMediaType:
+			configDescriptor = &d
+		case PackageMetaLayerMediaType:
+			pkgMetaDescriptor = &d
+		case PackageImageLayerMediaType:
 			imageDescriptor = &d
+		case manifest.MediaType:
 		default:
 			fmt.Println("unexpected descriptor", d.MediaType, d.Digest.String(), d.Size)
 			if _, data, ok := memoryStore.Get(d); !ok {
@@ -264,20 +281,20 @@ func (c *Client) Pull(ref string) (*PullResult, error) {
 		}
 	}
 	fmt.Println("ArtifactType:", manifest.ArtifactType)
-	result := &PullResult{
-		Manifest: &descriptorPullSummary{
+	result := &Result{
+		Manifest: &descriptorSummary{
 			Digest: manifest.Digest.String(),
 			Size:   manifest.Size,
 		},
-		Config: &descriptorPullSummary{
-			Digest: providerDescriptor.Digest.String(),
-			Size:   providerDescriptor.Size,
+		Config: &descriptorSummary{
+			Digest: configDescriptor.Digest.String(),
+			Size:   configDescriptor.Size,
 		},
-		Schemas: &descriptorPullSummary{
-			Digest: schemaDescriptor.Digest.String(),
-			Size:   schemaDescriptor.Size,
+		PkgMeta: &descriptorSummary{
+			Digest: pkgMetaDescriptor.Digest.String(),
+			Size:   pkgMetaDescriptor.Size,
 		},
-		Image: &descriptorPullSummary{
+		Image: &descriptorSummary{
 			Digest: imageDescriptor.Digest.String(),
 			Size:   imageDescriptor.Size,
 		},
@@ -286,21 +303,20 @@ func (c *Client) Pull(ref string) (*PullResult, error) {
 	fmt.Fprintf(c.out, "Pulled: %s\n", result.Ref)
 	fmt.Fprintf(c.out, "Digest: %s\n", result.Manifest.Digest)
 
-
 	if _, manifestData, ok := memoryStore.Get(manifest); !ok {
 		return nil, fmt.Errorf("unable to retrieve manifest blob with digest %s", manifest.Digest)
 	} else {
 		result.Manifest.Data = manifestData
 	}
-	if _, configData, ok := memoryStore.Get(*providerDescriptor); !ok {
-		return nil, fmt.Errorf("unable to retrieve config with digest %s", providerDescriptor.Digest)
+	if _, configData, ok := memoryStore.Get(*configDescriptor); !ok {
+		return nil, fmt.Errorf("unable to retrieve config with digest %s", configDescriptor.Digest)
 	} else {
 		result.Config.Data = configData
 	}
-	if _, schemaData, ok := memoryStore.Get(*schemaDescriptor); !ok {
-		return nil, fmt.Errorf("unable to retrieve schema with digest %s", schemaDescriptor.Digest)
+	if _, pkgMetaData, ok := memoryStore.Get(*pkgMetaDescriptor); !ok {
+		return nil, fmt.Errorf("unable to retrieve pkgMetaData with digest %s", pkgMetaDescriptor.Digest)
 	} else {
-		result.Schemas.Data = schemaData
+		result.PkgMeta.Data = pkgMetaData
 	}
 	if _, imageData, ok := memoryStore.Get(*imageDescriptor); !ok {
 		return nil, fmt.Errorf("unable to retrieve image with digest %s", imageDescriptor.Digest)
@@ -320,10 +336,4 @@ func (c *Client) Pull(ref string) (*PullResult, error) {
 		}
 	*/
 	return result, nil
-}
-
-type descriptorPullSummary struct {
-	Data   []byte `json:"-"`
-	Digest string `json:"digest"`
-	Size   int64  `json:"size"`
 }
