@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strings"
+	"net/http"
 
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
+	credentials "github.com/oras-project/oras-credentials-go"
 	"github.com/pkg/errors"
 
 	//"oras.land/oras-go/pkg/auth"
@@ -19,6 +20,7 @@ import (
 	//"oras.land/oras-go/v2/oras"
 	"oras.land/oras-go/v2/registry"
 	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
 )
 
 const (
@@ -27,6 +29,50 @@ const (
 	ModuleMediaType            = "application/vnd.cncf.kform.module.v1+json"
 	ProviderMediaType          = "application/vnd.cncf.kform.provider.v1+json"
 )
+
+func EmptyCredential(ctx context.Context, hostport string) (auth.Credential, error) {
+	return auth.EmptyCredential, nil
+}
+
+func DefaultCredential(registry string) auth.CredentialFunc {
+	store, err := credentials.NewStoreFromDocker(credentials.StoreOptions{})
+	if err != nil {
+		return EmptyCredential
+	}
+	return func(ctx context.Context, registry string) (auth.Credential, error) {
+		registry = credentials.ServerAddressFromHostname(registry)
+		if registry == "" {
+			return auth.EmptyCredential, nil
+		}
+		return store.Get(ctx, registry)
+	}
+}
+
+/*
+func DefaultCredFunc(ctx context.Context, reg string) (auth.Credential, error) {
+	dockerClient, ok := client.authorizer.(*dockerauth.Client)
+	if !ok {
+		return auth.EmptyCredential, errors.New("unable to obtain docker client")
+	}
+
+	username, password, err := dockerClient.Credential(reg)
+	if err != nil {
+		return auth.EmptyCredential, errors.New("unable to retrieve credentials")
+	}
+
+	// A blank returned username and password value is a bearer token
+	if username == "" && password != "" {
+		return auth.Credential{
+			RefreshToken: password,
+		}, nil
+	}
+
+	return auth.Credential{
+		Username: username,
+		Password: password,
+	}, nil
+}
+*/
 
 /*
 type Client struct {
@@ -152,7 +198,7 @@ type descriptorSummary struct {
 }
 */
 
-func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) error {
+func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte, credfunc auth.CredentialFunc) error {
 	// parse the reference
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
@@ -165,6 +211,16 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 	if err != nil {
 		return errors.Wrap(err, "cannot create registry")
 	}
+	if credfunc == nil {
+		credfunc = DefaultCredential(parsedRef.Registry)
+	}
+	reg.Client = &auth.Client{
+		Credential: credfunc,
+		Header: http.Header{
+			"User-Agent": {"kform"},
+		},
+	}
+
 	dst, err := reg.Repository(ctx, parsedRef.Repository)
 	if err != nil {
 		return errors.Wrap(err, "cannot get repository")
@@ -306,7 +362,7 @@ func (c *Client) Push(kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData
 }
 */
 
-func Pull(ctx context.Context, ref string) error {
+func Pull(ctx context.Context, ref string, credfunc auth.CredentialFunc) error {
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return err
@@ -319,12 +375,19 @@ func Pull(ctx context.Context, ref string) error {
 	reg, err := remote.NewRegistry(parsedRef.Registry)
 	if err != nil {
 		return errors.Wrap(err, "cannot get registry")
-	} 
-	split := strings.Split(parsedRef.Repository, "/")
-	if len(split) > 2 {
-		parsedRef.Repository = fmt.Sprintf("%s/%s", split[0], split[1]) 
 	}
-	fmt.Println("repository", parsedRef.Repository)
+	if credfunc == nil {
+		credfunc = DefaultCredential(parsedRef.Registry)
+	}
+	reg.Client = &auth.Client{
+		Credential: credfunc,
+		Header: http.Header{
+			"User-Agent": {"kform"},
+		},
+	}
+	if err := reg.Ping(ctx); err != nil {
+		return errors.Wrap(err, "registry v2 not implemented")
+	}
 	src, err := reg.Repository(ctx, parsedRef.Repository)
 	if err != nil {
 		return errors.Wrap(err, "cannot get repository")

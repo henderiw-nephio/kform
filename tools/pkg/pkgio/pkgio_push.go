@@ -102,7 +102,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 		}
 	*/
 
-	if err := oras.Push(ctx, kformFile.Spec.Kind, r.ref, pkgData, imgData); err != nil {
+	if err := oras.Push(ctx, kformFile.Spec.Kind, r.ref, pkgData, imgData, nil); err != nil {
 		return err
 	}
 	log.Info("push succeeded")

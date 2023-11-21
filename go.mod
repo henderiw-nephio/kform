@@ -17,12 +17,13 @@ require (
 	github.com/nokia/k8s-ipam v0.0.4-0.20231103105405-63791fa8bdcf
 	github.com/oklog/run v1.0.0
 	github.com/opencontainers/image-spec v1.1.0-rc5
+	github.com/oras-project/oras-credentials-go v0.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	github.com/xlab/treeprint v1.2.0
-	golang.org/x/sync v0.4.0
+	golang.org/x/sync v0.5.0
 	golang.org/x/text v0.13.0
 	golang.org/x/tools v0.13.0
 	google.golang.org/grpc v1.58.2
@@ -35,7 +36,7 @@ require (
 	k8s.io/client-go v0.28.2
 	k8s.io/kube-openapi v0.0.0-20230905202853-d090da108d2f
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	oras.land/oras-go/v2 v2.3.1
+	oras.land/oras-go/v2 v2.3.1-0.20231107064104-9febd7bde817
 	sigs.k8s.io/controller-runtime v0.16.2
 	sigs.k8s.io/kustomize/kyaml v0.14.3
 	sigs.k8s.io/yaml v1.3.0

@@ -41,7 +41,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 			return err
 		}
 	*/
-	if err := oras.Pull(c.Context(), args[0]); err != nil {
+	if err := oras.Pull(c.Context(), args[0], nil); err != nil {
 		return err
 	}
 
