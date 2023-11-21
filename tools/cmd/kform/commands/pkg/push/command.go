@@ -3,9 +3,9 @@ package pushcmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
-	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/spf13/cobra"
 )
@@ -42,8 +42,7 @@ type Runner struct {
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
 	rootPath := args[1]
-	fs := fsys.NewDiskFS(".")
-	f, err := fs.Stat(rootPath)
+	f, err := os.Stat(rootPath)
 	if err != nil {
 		return fmt.Errorf("cannot create a pkg, rootpath %s does not exist", rootPath)
 	}
@@ -51,7 +50,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0], nil)
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0])
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

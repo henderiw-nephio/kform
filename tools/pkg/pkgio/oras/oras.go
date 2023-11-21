@@ -1,21 +1,24 @@
-package registry
+package oras
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"strings"
 
-	"github.com/containerd/containerd/remotes"
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"oras.land/oras-go/pkg/auth"
-	dockerauth "oras.land/oras-go/pkg/auth/docker"
-	"oras.land/oras-go/pkg/content"
-	"oras.land/oras-go/pkg/oras"
-	registryauth "oras.land/oras-go/pkg/registry/remote/auth"
+	"github.com/pkg/errors"
+
+	//"oras.land/oras-go/pkg/auth"
+	//dockerauth "oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
+	"oras.land/oras-go/v2/content/memory"
+
+	//"oras.land/oras-go/v2/oras"
 	"oras.land/oras-go/v2/registry"
+	"oras.land/oras-go/v2/registry/remote"
 )
 
 const (
@@ -25,15 +28,16 @@ const (
 	ProviderMediaType          = "application/vnd.cncf.kform.provider.v1+json"
 )
 
+/*
 type Client struct {
-	debug              bool
-	enableCache        bool
-	out                io.Writer
-	authorizer         auth.Client
-	registryAuthorizer *registryauth.Client
-	resolver           func(ref registry.Reference) (remotes.Resolver, error)
-	httpClient         *http.Client
-	plainHTTP          bool
+	debug       bool
+	enableCache bool
+	out         io.Writer
+	authorizer  auth.Client
+	//registryAuthorizer *auth.Client
+	resolver   func(ref registry.Reference) (remotes.Resolver, error)
+	httpClient *http.Client
+	plainHTTP  bool
 }
 
 type ClientOption func(*Client)
@@ -47,7 +51,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		o(client)
 	}
 	if client.authorizer == nil {
-		authClient, err := dockerauth.NewClientWithDockerFallback()
+		authClient, err := auth.NewClientWithDockerFallback()
 		if err != nil {
 			return nil, err
 		}
@@ -79,11 +83,11 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 
 	// allocate a cache if option is set
-	var cache registryauth.Cache
+	var cache auth.Cache
 	if client.enableCache {
-		cache = registryauth.DefaultCache
+		cache = auth.DefaultCache
 	}
-	if client.registryAuthorizer == nil {
+	if client.authorizer == nil {
 		client.registryAuthorizer = &registryauth.Client{
 			Client: client.httpClient,
 			Header: http.Header{
@@ -146,17 +150,85 @@ type descriptorSummary struct {
 	Size   int64  `json:"size"`
 	Data   []byte `json:"-"`
 }
+*/
 
+func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) error {
+	// parse the reference
+	parsedRef, err := registry.ParseReference(ref)
+	if err != nil {
+		return errors.Wrap(err, "cannot parse reference")
+	}
+	// src -> memory
+	src := memory.New()
+	// dst -> registry
+	reg, err := remote.NewRegistry(parsedRef.Registry)
+	if err != nil {
+		return errors.Wrap(err, "cannot create registry")
+	}
+	dst, err := reg.Repository(ctx, parsedRef.Repository)
+	if err != nil {
+		return errors.Wrap(err, "cannot get repository")
+	}
+	// collect layer descriptors and artifact type based on package type (provider/module)
+	layerDescriptors := []ocispecv1.Descriptor{}
+	artifactType := ModuleMediaType
+	pkgMetaDescriptor, err := pushBlob(ctx, PackageMetaLayerMediaType, pkgData, src)
+	if err != nil {
+		return err
+	}
+	layerDescriptors = append(layerDescriptors, pkgMetaDescriptor)
+	if kind == v1alpha1.PkgKindProvider {
+		artifactType = ProviderMediaType
+		imageDescriptor, err := pushBlob(ctx, PackageImageLayerMediaType, imgData, src)
+		if err != nil {
+			return err
+		}
+		layerDescriptors = append(layerDescriptors, imageDescriptor)
+
+	}
+	// generate manifest and push from src (memory store) to dst (remote registry)
+	manifestDesc, err := oras.PackManifest(
+		ctx,
+		src,
+		oras.PackManifestVersion1_1_RC4,
+		artifactType,
+		oras.PackManifestOptions{
+			Layers:              layerDescriptors,
+			ManifestAnnotations: map[string]string{},
+		},
+	)
+	if err != nil {
+		return err
+	}
+	err = src.Tag(ctx, manifestDesc, parsedRef.Reference)
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := oras.Copy(ctx, src, parsedRef.Reference, dst, "", oras.DefaultCopyOptions); err != nil {
+		return err
+	}
+	//fmt.Fprintf(c.out, "Pushed: %s\n", parsedRef.String())
+	//fmt.Fprintf(c.out, "Digest: %s\n", desc.Digest)
+	return nil
+}
+
+func pushBlob(ctx context.Context, mediaType string, blob []byte, target oras.Target) (ocispecv1.Descriptor, error) {
+	desc := content.NewDescriptorFromBytes(mediaType, blob)
+	return desc, target.Push(ctx, desc, bytes.NewReader(blob)) // Push the blob to the registry target
+}
+
+/*
 func (c *Client) Push(kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) (*Result, error) {
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return nil, err
 	}
 
-	//fmt.Println("schemaData", schemaData)
-	memoryStore := content.NewMemory()
-	// collect layer descriptors
+	memoryStore := memory.New()
+
 	descriptors := []ocispecv1.Descriptor{}
+
 	pkgMetaDescriptor, err := memoryStore.Add("pkgMeta", PackageMetaLayerMediaType, pkgData)
 	if err != nil {
 		return nil, err
@@ -220,20 +292,56 @@ func (c *Client) Push(kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData
 			Digest: pkgMetaDescriptor.Digest.String(),
 			Size:   pkgMetaDescriptor.Size,
 		},
-		/*
-			Image: &descriptorPushSummary{
-				Digest: imageDescriptor.Digest.String(),
-				Size:   imageDescriptor.Size,
-			},
-		*/
+
+		//	Image: &descriptorPushSummary{
+		//		Digest: imageDescriptor.Digest.String(),
+		//		Size:   imageDescriptor.Size,
+		//	},
+
 		Ref: parsedRef.String(),
 	}
-	fmt.Fprintf(c.out, "Pushed: %s\n", result.Ref)
-	fmt.Fprintf(c.out, "Digest: %s\n", result.Manifest.Digest)
+	//fmt.Fprintf(c.out, "Pushed: %s\n", result.Ref)
+	//fmt.Fprintf(c.out, "Digest: %s\n", result.Manifest.Digest)
 	return result, nil
 }
+*/
 
-func (c *Client) Pull(ref string) (*Result, error) {
+func Pull(ctx context.Context, ref string) error {
+	parsedRef, err := registry.ParseReference(ref)
+	if err != nil {
+		return err
+	}
+	fmt.Println("ref", parsedRef.String())
+	// dst -> memory
+	dst := memory.New()
+	// dst -> registry
+	fmt.Println("registry", parsedRef.Registry)
+	reg, err := remote.NewRegistry(parsedRef.Registry)
+	if err != nil {
+		return errors.Wrap(err, "cannot get registry")
+	} 
+	split := strings.Split(parsedRef.Repository, "/")
+	if len(split) > 2 {
+		parsedRef.Repository = fmt.Sprintf("%s/%s", split[0], split[1]) 
+	}
+	fmt.Println("repository", parsedRef.Repository)
+	src, err := reg.Repository(ctx, parsedRef.Repository)
+	if err != nil {
+		return errors.Wrap(err, "cannot get repository")
+	}
+	desc, err := oras.Copy(ctx, src, parsedRef.String(), dst, "", oras.DefaultCopyOptions)
+	if err != nil {
+		return errors.Wrap(err, "cannot copy")
+	}
+
+	fmt.Println(desc)
+	return nil
+}
+
+//https://ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend/
+
+/*
+func (c *Client) Pull(ctx context.Context, ref string) (*Result, error) {
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return nil, err
@@ -345,10 +453,11 @@ func (c *Client) Pull(ref string) (*Result, error) {
 	//fmt.Println("schemas", string(result.Schemas.Data))
 	fmt.Println("image", string(result.Image.Data))
 
-	/*
-		if _, err := oci.ReadTgz(result.Schemas.Data); err != nil {
-			return nil, err
-		}
-	*/
+
+	//	if _, err := oci.ReadTgz(result.Schemas.Data); err != nil {
+	//		return nil, err
+	//	}
+
 	return result, nil
 }
+*/

@@ -2,17 +2,15 @@ package pkgio
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oci"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/registry"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
 	"github.com/henderiw/logger/log"
 	"gopkg.in/yaml.v2"
-	"oras.land/oras-go/pkg/auth"
 )
 
 type PkgPushReadWriter interface {
@@ -20,15 +18,12 @@ type PkgPushReadWriter interface {
 	Writer
 }
 
-func NewPkgPushReadWriter(path, ref string, authorizer auth.Client) PkgPushReadWriter {
+func NewPkgPushReadWriter(path, ref string) PkgPushReadWriter {
 
 	// TBD do we add validation here
 	// Ignore file processing should be done here
 	fs := fsys.NewDiskFS(path)
 	ignoreRules := ignore.Empty(IgnoreFileMatch[0])
-
-	fmt.Println("path", path)
-
 	return &pkgPushReadWriter{
 		reader: &PkgReader{
 			PathExists:     true,
@@ -37,11 +32,10 @@ func NewPkgPushReadWriter(path, ref string, authorizer auth.Client) PkgPushReadW
 			IgnoreRules:    ignoreRules,
 		},
 		writer: &pkgPushWriter{
-			fsys:       fs,
-			rootPath:   path,
-			pkgName:    filepath.Base(path),
-			ref:        ref,
-			authorizer: authorizer,
+			fsys:     fs,
+			rootPath: path,
+			pkgName:  filepath.Base(path),
+			ref:      ref,
 		},
 	}
 }
@@ -60,11 +54,10 @@ func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
 }
 
 type pkgPushWriter struct {
-	fsys       fsys.FS
-	rootPath   string
-	pkgName    string
-	ref        string
-	authorizer auth.Client
+	fsys     fsys.FS
+	rootPath string
+	pkgName  string
+	ref      string
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
@@ -94,24 +87,25 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 	}
 
 	// get a client to the registry
-	var c *registry.Client
-	if r.authorizer != nil {
-		c, err = registry.NewClient(registry.ClientOptAuth(r.authorizer))
-		if err != nil {
-			return err
+	/*
+		var c *registry.Client
+		if r.authorizer != nil {
+			c, err = registry.NewClient(registry.ClientOptAuth(r.authorizer))
+			if err != nil {
+				return err
+			}
+		} else {
+			c, err = registry.NewClient()
+			if err != nil {
+				return err
+			}
 		}
-	} else {
-		c, err = registry.NewClient()
-		if err != nil {
-			return err
-		}
-	}
+	*/
 
-	result, err := c.Push(kformFile.Spec.Kind, r.ref, pkgData, imgData)
-	if err != nil {
+	if err := oras.Push(ctx, kformFile.Spec.Kind, r.ref, pkgData, imgData); err != nil {
 		return err
 	}
-	log.Info("push succeeded", "result", result)
+	log.Info("push succeeded")
 
 	return nil
 }

@@ -2,10 +2,9 @@ package pullcmd
 
 import (
 	"context"
-	"fmt"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/registry"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
 	"github.com/spf13/cobra"
 )
 
@@ -36,16 +35,17 @@ type Runner struct {
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
 
-	client, err := registry.NewClient()
-	if err != nil {
-		return err
-	}
-	result, err := client.Pull(args[0])
-	if err != nil {
+	/*
+		client, err := registry.NewClient()
+		if err != nil {
+			return err
+		}
+	*/
+	if err := oras.Pull(c.Context(), args[0]); err != nil {
 		return err
 	}
 
-	fmt.Println(result)
+	//fmt.Println(result)
 
 	return nil
 
