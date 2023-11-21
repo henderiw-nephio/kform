@@ -41,16 +41,13 @@ type Runner struct {
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
-	
 	rootPath := args[1]
-	if err := fsys.ValidateDirPath(rootPath); err != nil {
-		return err
-	}
 	fs := fsys.NewDiskFS(".")
 	f, err := fs.Stat(rootPath)
 	if err != nil {
-		fs.MkdirAll(rootPath)
-	} else if !f.IsDir() {
+		return fmt.Errorf("cannot create a pkg, rootpath %s does not exist", rootPath)
+	}  
+	if !f.IsDir() {
 		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 

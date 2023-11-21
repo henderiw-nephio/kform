@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oci"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/registry"
+	"github.com/henderiw/logger/log"
+	"gopkg.in/yaml.v2"
 )
 
 type PkgPushReadWriter interface {
@@ -51,7 +54,7 @@ func (r *pkgPushReadWriter) Read(ctx context.Context, data *Data) (*Data, error)
 }
 
 func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
-	return r.writer.Write(ctx, data)
+	return r.writer.write(ctx, data)
 }
 
 type pkgPushWriter struct {
@@ -61,21 +64,20 @@ type pkgPushWriter struct {
 	ref      string
 }
 
-func (r *pkgPushWriter) Write(ctx context.Context, data *Data) error {
-	/*
-		tag, err := name.NewTag(r.tag)
-		if err != nil {
-			return err
-		}
+func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
+	log := log.FromContext(ctx)
+	// get the kform file to determine is this a provider or a module
+	d, err := data.Get(PkgFileMatch[0])
+	if err != nil {
+		return err
+	}
+	kformFile := v1alpha1.KformFile{}
+	if err := yaml.Unmarshal([]byte(d), &kformFile); err != nil {
+		return err
+	}
+	log.Info("provider", "kind", kformFile.Kind)
+	return nil
 
-		img, err := tarball.ImageFromPath(
-			filepath.Join(r.rootPath, fmt.Sprintf("%s.%s", r.pkgName, kformOciPkgExt)),
-			nil)
-		if err != nil {
-			return err
-		}
-		return remote.Write(tag, img, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-	*/
 	c, err := registry.NewClient()
 	if err != nil {
 		return err
