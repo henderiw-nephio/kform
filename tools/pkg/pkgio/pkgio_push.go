@@ -75,18 +75,19 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 	if err := yaml.Unmarshal([]byte(d), &kformFile); err != nil {
 		return err
 	}
-	log.Info("provider", "kind", kformFile.Kind)
+	log.Info("provider", "kind", kformFile.Spec.Kind)
 	return nil
 
-	c, err := registry.NewClient()
-	if err != nil {
-		return err
-	}
 	schemaData, err := oci.BuildTgz(data.List())
 	if err != nil {
 		return err
 	}
 
+	c, err := registry.NewClient()
+	if err != nil {
+		return err
+	}
+	
 	result, err := c.Push(schemaData, r.ref)
 	if err != nil {
 		return err
