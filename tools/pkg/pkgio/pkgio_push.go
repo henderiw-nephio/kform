@@ -12,6 +12,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/registry"
 	"github.com/henderiw/logger/log"
 	"gopkg.in/yaml.v2"
+	"oras.land/oras-go/pkg/auth"
 )
 
 type PkgPushReadWriter interface {
@@ -19,7 +20,7 @@ type PkgPushReadWriter interface {
 	Writer
 }
 
-func NewPkgPushReadWriter(path, ref string) PkgPushReadWriter {
+func NewPkgPushReadWriter(path, ref string, authorizer auth.Client) PkgPushReadWriter {
 
 	// TBD do we add validation here
 	// Ignore file processing should be done here
@@ -36,10 +37,11 @@ func NewPkgPushReadWriter(path, ref string) PkgPushReadWriter {
 			IgnoreRules:    ignoreRules,
 		},
 		writer: &pkgPushWriter{
-			fsys:     fs,
-			rootPath: path,
-			pkgName:  filepath.Base(path),
-			ref:      ref,
+			fsys:       fs,
+			rootPath:   path,
+			pkgName:    filepath.Base(path),
+			ref:        ref,
+			authorizer: authorizer,
 		},
 	}
 }
@@ -58,10 +60,11 @@ func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
 }
 
 type pkgPushWriter struct {
-	fsys     fsys.FS
-	rootPath string
-	pkgName  string
-	ref      string
+	fsys       fsys.FS
+	rootPath   string
+	pkgName    string
+	ref        string
+	authorizer auth.Client
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
@@ -92,9 +95,16 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 
 	// get a client to the registry
 	var c *registry.Client
-	c, err = registry.NewClient()
-	if err != nil {
-		return err
+	if r.authorizer != nil {
+		c, err = registry.NewClient(registry.ClientOptAuth(r.authorizer))
+		if err != nil {
+			return err
+		}
+	} else {
+		c, err = registry.NewClient()
+		if err != nil {
+			return err
+		}
 	}
 
 	result, err := c.Push(kformFile.Spec.Kind, r.ref, pkgData, imgData)

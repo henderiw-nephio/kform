@@ -127,12 +127,18 @@ func ClientOptResolver(resolver remotes.Resolver) ClientOption {
 	}
 }
 
+func ClientOptAuth(authorizer auth.Client) ClientOption {
+	return func(client *Client) {
+		client.authorizer = authorizer
+	}
+}
+
 type Result struct {
 	Manifest *descriptorSummary `json:"manifest"`
 	Config   *descriptorSummary `json:"config"`
 	PkgMeta  *descriptorSummary `json:"pkgMeta"`
 	Image    *descriptorSummary `json:"image"`
-	Ref      string                 `json:"ref"`
+	Ref      string             `json:"ref"`
 }
 
 type descriptorSummary struct {
