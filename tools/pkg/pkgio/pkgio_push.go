@@ -102,8 +102,10 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 					images++
 				}
 			}
-			r.pkg.Platform.OS = runtime.GOOS
-			r.pkg.Platform.Arch = runtime.GOARCH
+			r.pkg.Platform = &address.Platform{
+				OS:   runtime.GOOS,
+				Arch: runtime.GOARCH,
+			}
 
 			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, img)
 		} else {
@@ -129,8 +131,10 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 			}
 			for _, image := range images {
 				pkg := r.pkg
-				pkg.Platform.OS = image.Platform.OS
-				pkg.Platform.Arch = image.Platform.Arch
+				pkg.Platform = &address.Platform{
+					OS:   runtime.GOOS,
+					Arch: runtime.GOARCH,
+				}
 
 				fsys := fsys.NewDiskFS(".")
 				img, err := fsys.ReadFile(image.Name)

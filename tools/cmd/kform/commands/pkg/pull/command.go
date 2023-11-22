@@ -6,7 +6,7 @@ import (
 	"os"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -52,9 +52,11 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return errors.Wrap(err, "cannot get package from ref")
 	}
 
-
-	//fmt.Println(result)
-
-	return nil
+	pkgrw := pkgio.NewPkgPullReadWriter(rootPath, pkg)
+	p := pkgio.Pipeline{
+		Inputs:  []pkgio.Reader{pkgrw},
+		Outputs: []pkgio.Writer{pkgrw},
+	}
+	return p.Execute(c.Context())
 
 }

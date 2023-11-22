@@ -23,7 +23,7 @@ github.com/henderiw-nephio/kform/provider-xxxx
 
 func GetPackageFromRef(ref string) (*Package, error) {
 	pkg := &Package{}
-	versionSplit := strings.Split(ref, "/:")
+	versionSplit := strings.Split(ref, ":")
 	if len(versionSplit) != 2 {
 		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>:<version>, got: %s", ref)
 	}
@@ -33,9 +33,11 @@ func GetPackageFromRef(ref string) (*Package, error) {
 	if len(split) < 3 {
 		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>, got: %s", versionSplit[0])
 	}
-	pkg.Address.HostName = split[0]
-	pkg.Address.Namespace = filepath.Join(split[1:(len(split) - 2)]...)
-	pkg.Address.Name = split[len(split)-1]
+	pkg.Address = &Address{
+		HostName: split[0],
+		Namespace: filepath.Join(split[1:(len(split) - 2)]...),
+		Name: split[len(split)-1],
+	}
 	return pkg, nil
 }
 
