@@ -34,9 +34,9 @@ func GetPackageFromRef(ref string) (*Package, error) {
 		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>, got: %s", versionSplit[0])
 	}
 	pkg.Address = &Address{
-		HostName: split[0],
+		HostName:  split[0],
 		Namespace: filepath.Join(split[1:(len(split) - 2)]...),
-		Name: split[len(split)-1],
+		Name:      split[len(split)-1],
 	}
 	return pkg, nil
 }

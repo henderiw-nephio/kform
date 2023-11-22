@@ -100,7 +100,7 @@ func (r *kformparser) validateProviderRequirements(ctx context.Context) {
 		// per provider we check the consistency of the source address
 		source := ""
 		for _, req := range nsnreqs {
-			if source != "" && source !=  req.Source {
+			if source != "" && source != req.Source {
 				r.recorder.Record(diag.DiagErrorf("inconsistent provider requirements for %s source1: %s, source2: %s", providerNsn.Name, source, req.Source))
 			}
 			source = req.Source

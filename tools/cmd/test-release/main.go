@@ -43,6 +43,6 @@ func main() {
 	}
 	if _, err := pkg.GetReleases(ctx); err != nil {
 		log.Error("cannot get available releases", "err", err.Error())
-		os.Exit(1) 
+		os.Exit(1)
 	}
 }
