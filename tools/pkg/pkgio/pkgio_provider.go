@@ -83,7 +83,7 @@ func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context,
 				installedVersion := address.GetVersionFromPath(path)
 				log.Info("processProviderRequirements", "installedVersion", installedVersion)
 				if pkg.HasVersion(installedVersion) {
-					remoteHash, err := pkg.GetRemoteChecksum(installedVersion)
+					remoteHash, err := pkg.GetRemoteChecksum(ctx, installedVersion)
 					if err != nil {
 						return data, err
 					}

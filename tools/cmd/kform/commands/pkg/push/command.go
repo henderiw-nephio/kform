@@ -7,6 +7,8 @@ import (
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +52,12 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0])
+	pkg, err := address.GetPackageFromRef(args[0])
+	if err != nil {
+		return errors.Wrap(err, "cannot get package from ref")
+	}
+
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, pkg, true)
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

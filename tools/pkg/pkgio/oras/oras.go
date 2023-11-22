@@ -198,9 +198,9 @@ type descriptorSummary struct {
 }
 */
 
-func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte, credfunc auth.CredentialFunc) error {
+func Push(ctx context.Context, kind v1alpha1.PkgKind, fullRef string, pkgData []byte, imgData []byte) error {
 	// parse the reference
-	parsedRef, err := registry.ParseReference(ref)
+	parsedRef, err := registry.ParseReference(fullRef)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse reference")
 	}
@@ -211,11 +211,8 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 	if err != nil {
 		return errors.Wrap(err, "cannot create registry")
 	}
-	if credfunc == nil {
-		credfunc = DefaultCredential(parsedRef.Registry)
-	}
 	reg.Client = &auth.Client{
-		Credential: credfunc,
+		Credential: DefaultCredential(parsedRef.Registry),
 		Header: http.Header{
 			"User-Agent": {"kform"},
 		},
@@ -362,8 +359,8 @@ func (c *Client) Push(kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData
 }
 */
 
-func Pull(ctx context.Context, ref string, credfunc auth.CredentialFunc) error {
-	parsedRef, err := registry.ParseReference(ref)
+func Pull(ctx context.Context, fullRef string) error {
+	parsedRef, err := registry.ParseReference(fullRef)
 	if err != nil {
 		return err
 	}
@@ -376,11 +373,8 @@ func Pull(ctx context.Context, ref string, credfunc auth.CredentialFunc) error {
 	if err != nil {
 		return errors.Wrap(err, "cannot get registry")
 	}
-	if credfunc == nil {
-		credfunc = DefaultCredential(parsedRef.Registry)
-	}
 	reg.Client = &auth.Client{
-		Credential: credfunc,
+		Credential: DefaultCredential(parsedRef.Registry),
 		Header: http.Header{
 			"User-Agent": {"kform"},
 		},

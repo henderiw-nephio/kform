@@ -22,7 +22,7 @@ func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bo
 		}
 		// retrieve the available releases/versions for this provider
 		if !pkg.IsLocal() {
-			if err := pkg.GetReleases(); err != nil {
+			if _, err := pkg.GetReleases(ctx); err != nil {
 				r.recorder.Record(diag.DiagFromErr(err))
 				return
 			}

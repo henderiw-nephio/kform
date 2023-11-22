@@ -2,9 +2,13 @@ package pullcmd
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -34,16 +38,20 @@ type Runner struct {
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
-
-	/*
-		client, err := registry.NewClient()
-		if err != nil {
-			return err
-		}
-	*/
-	if err := oras.Pull(c.Context(), args[0], nil); err != nil {
-		return err
+	rootPath := args[1]
+	f, err := os.Stat(rootPath)
+	if err != nil {
+		return fmt.Errorf("cannot create a pkg, rootpath %s does not exist", rootPath)
 	}
+	if !f.IsDir() {
+		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
+	}
+
+	pkg, err := address.GetPackageFromRef(args[0])
+	if err != nil {
+		return errors.Wrap(err, "cannot get package from ref")
+	}
+
 
 	//fmt.Println(result)
 

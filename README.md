@@ -143,3 +143,8 @@ manifest
     digest
 - []layers
     - digest
+
+
+```
+go run tools/cmd/kform/main.go pkg pull ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 ./build/provider-resourcebackend
+```

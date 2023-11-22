@@ -25,7 +25,6 @@ func TestPackage(t *testing.T) {
 		}
 	}
 	cases := map[string]struct {
-		Type      string
 		hostName  string
 		namespace string
 		name      string
@@ -37,31 +36,28 @@ func TestPackage(t *testing.T) {
 		path  string
 	}{
 		"Remote": {
-			Type:      "provider",
 			hostName:  "github.com",
 			namespace: "henderiw-nephio/kform",
 			name:      "kubernetes",
 			version:   "0.0.1",
 			local:     false,
-			url:       fmt.Sprintf("https://github.com/henderiw-nephio/kform/releases/download/0.0.1/provider-kubernetes_0.0.1_%s", getPlatform().String()),
+			url:       fmt.Sprintf("https://github.com/henderiw-nephio/kform/releases/download/0.0.1/kubernetes_0.0.1_%s", getPlatform().String()),
 			csurl:     "https://github.com/henderiw-nephio/kform/releases/download/0.0.1/kform_0.0.1_checksums.txt",
-			path:      fmt.Sprintf("github.com/henderiw-nephio_kform/kubernetes/0.0.1/%s/provider-kubernetes_0.0.1_%s", getPlatform().String(), getPlatform().String()),
+			path:      fmt.Sprintf("github.com/henderiw-nephio_kform/kubernetes/0.0.1/%s/kubernetes_0.0.1_%s", getPlatform().String(), getPlatform().String()),
 		},
 		"Local": {
-			Type:      "provider",
 			hostName:  "",
 			namespace: "",
 			name:      "kubernetes",
 			version:   "",
 			local:     true,
-			path:      "kubernetes/provider-kubernetes",
+			path:      "kubernetes/kubernetes",
 			// url is not relevant since the path is local
 		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			p := &Package{
-				Type: PackageTypeProvider,
 				Address: &Address{
 					HostName:  tc.hostName,
 					Namespace: tc.namespace,
