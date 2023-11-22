@@ -86,7 +86,7 @@ func (r *Package) checksumFilename(version string) string {
 }
 
 func (r *Package) GetRef() string {
-	if r.Platform.OS == "" || r.Platform.Arch == "" {
+	if r.Platform == nil || r.Platform.OS == "" || r.Platform.Arch == "" {
 		return fmt.Sprintf("%s/%s/%s:%s", r.Address.HostName, r.Address.Namespace, r.Address.Name, r.SelectedVersion)
 	}
 	// this includes the version, os.Arch and os.OS in the name
