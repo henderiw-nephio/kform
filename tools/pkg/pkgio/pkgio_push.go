@@ -105,7 +105,8 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetRef())
 			}
 			for _, image := range images {
-				pkg := r.pkg
+				var pkg *address.Package
+				*pkg = *r.pkg
 				pkg.Platform = &address.Platform{
 					OS:   runtime.GOOS,
 					Arch: runtime.GOARCH,
