@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw/logger/log"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -68,6 +70,7 @@ type pkgPushWriter struct {
 
 func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 	log := log.FromContext(ctx).With("ref", r.pkg.GetRef())
+	log.Info("write")
 	// get the kform file to determine is this a provider or a module
 	// if there is no kformfile or we cannot find the provider/module
 	// information we fail
@@ -76,7 +79,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 		return err
 	}
 	kformFile := v1alpha1.KformFile{}
-	if err := yaml.Unmarshal([]byte(d), &kformFile); err != nil {
+	if err := yaml.Unmarshal(d, &kformFile); err != nil {
 		return err
 	}
 	if err := kformFile.Spec.Kind.Validate(); err != nil {
@@ -108,20 +111,27 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetRef())
 			}
 			for _, image := range images {
+				image := image
 				// copy the package content
-				pkg := &address.Package{
-					Address: &address.Address{
-						HostName:  r.pkg.Address.HostName,
-						Namespace: r.pkg.Address.Namespace,
-						Name:      r.pkg.Address.Name,
-					},
-					Platform: &address.Platform{
-						OS:   image.OS,
-						Arch: image.Arch,
-					},
-					SelectedVersion: r.pkg.SelectedVersion,
+				r.pkg.Platform = &address.Platform{
+					OS:   image.OS,
+					Arch: image.Arch,
 				}
-				log.Info("push package", "ref", pkg.GetRef())
+				/*
+					pkg := &address.Package{
+						Address: &address.Address{
+							HostName:  r.pkg.Address.HostName,
+							Namespace: r.pkg.Address.Namespace,
+							Name:      r.pkg.Address.Name,
+						},
+						Platform: &address.Platform{
+							OS:   image.OS,
+							Arch: image.Arch,
+						},
+						SelectedVersion: r.pkg.SelectedVersion,
+					}
+				*/
+				log.Info("push package", "ref", r.pkg.GetRef())
 
 				fsys := fsys.NewDiskFS(".")
 				img, err := fsys.ReadFile(image.Name)
@@ -129,7 +139,20 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 					log.Error("cannot read file, just downloaded", "fileName", image.Name, "error", err.Error())
 					continue
 				}
-				if err := r.pushPackage(ctx, kformFile.Spec.Kind, pkg.GetRef(), data, img); err != nil {
+
+				if _, err := oci.ReadTgz(img); err != nil {
+					return errors.Wrap(err, "cannot read tag image")
+				}
+				// delete the image data
+				for path := range data.List() {
+					if strings.Contains(path, "image") {
+						data.Delete(path)
+					}
+				}
+
+				data.Add(filepath.Join("image", image.Name), img)
+				//log.Info("push package", "ref", pkg.GetRef(), "imageName", image.Name, "img", len(img))
+				if err := r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data); err != nil {
 					return err
 				}
 			}
@@ -137,17 +160,26 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 		} else {
 			// the os and arch are determined locally for local pushed provider packages
 			// the image data need to be split from the other package data
-			var img []byte
+			//var img []byte
 			images := 0
 			for path, b := range data.List() {
-				// if the data is an image we delete the
+				// if the data is an image we delete the current file
 				if strings.HasPrefix(path, "image") {
 					if images > 0 {
 						log.Error("a provider pkg can only have 1 image")
 						return fmt.Errorf("a locally pushed package can only have 1 image")
 					}
-					img = []byte(b)
-					data.Delete(path)
+					// tgz the file if it is not a tgz file
+					if !strings.HasSuffix(path, ".tar.gz") {
+						tgzb, err := oci.BuildTgz(map[string]string{path: string(b)})
+						if err != nil {
+							return err
+						}
+						// add the tgz
+						data.Add(fmt.Sprintf("%s.tar.gz", path), tgzb)
+						// delete the non tgz file
+						data.Delete(path)
+					}
 					images++
 				}
 			}
@@ -155,15 +187,15 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 				OS:   runtime.GOOS,
 				Arch: runtime.GOARCH,
 			}
-			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, img)
+			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data)
 		}
 	}
 	// this is a module
 	// the runtime OS and ARCH does not matter for a module -> we supply the simple ref
-	return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, nil)
+	return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data)
 }
 
-func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKind, ref string, pkgData *data.Data, imgByte []byte) error {
+func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKind, ref string, pkgData *data.Data) error {
 	log := log.FromContext(ctx).With("pkgKind", pkgKind, "pkgName", ref)
 	// build a zipped tar bal from the pkgData in the pkg
 	pkgByte, err := oci.BuildTgz(pkgData.List())
@@ -171,8 +203,7 @@ func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKin
 		log.Error("failed to build zipped tarbal from pkg", "error", err)
 		return err
 	}
-	// the image is already zipped
-	if err := oras.Push(ctx, pkgKind, ref, pkgByte, imgByte); err != nil {
+	if err := oras.Push(ctx, pkgKind, ref, pkgByte); err != nil {
 		log.Error("failed to push pkg", "error", err)
 		return err
 	}

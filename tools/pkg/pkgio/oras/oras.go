@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	PackageMetaLayerMediaType  = "application/vnd.cncf.kform.package.meta.v1.tar+gzip"
-	PackageImageLayerMediaType = "application/vnd.cncf.kform.package.image.v1.tar+gzip"
-	ModuleMediaType            = "application/vnd.cncf.kform.module.v1+json"
-	ProviderMediaType          = "application/vnd.cncf.kform.provider.v1+json"
+	//PackageMetaLayerMediaType  = "application/vnd.cncf.kform.package.meta.v1.tar+gzip"
+	//PackageImageLayerMediaType = "application/vnd.cncf.kform.package.image.v1.tar+gzip"
+	PackageLayerMediaType = "application/vnd.cncf.kform.package.v1.tar+gzip"
+	ModuleMediaType       = "application/vnd.cncf.kform.module.v1+json"
+	ProviderMediaType     = "application/vnd.cncf.kform.provider.v1+json"
 )
 
 func EmptyCredential(ctx context.Context, hostport string) (auth.Credential, error) {
@@ -51,7 +52,7 @@ func DefaultCredential(registry string) auth.CredentialFunc {
 	}
 }
 
-func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) error {
+func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte) error {
 	log := log.FromContext(ctx).With("ref", ref)
 	log.Info("pushing package")
 	// parse the reference
@@ -73,28 +74,32 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 			"User-Agent": {"kform"},
 		},
 	}
-
 	dst, err := reg.Repository(ctx, parsedRef.Repository)
 	if err != nil {
 		return errors.Wrap(err, "cannot get repository")
 	}
+
 	// collect layer descriptors and artifact type based on package type (provider/module)
 	layerDescriptors := []ocispecv1.Descriptor{}
 	artifactType := ModuleMediaType
-	pkgMetaDescriptor, err := pushBlob(ctx, PackageMetaLayerMediaType, pkgData, src)
+	pkgDescriptor, err := pushBlob(ctx, PackageLayerMediaType, pkgData, src)
 	if err != nil {
 		return err
 	}
-	layerDescriptors = append(layerDescriptors, pkgMetaDescriptor)
-	if kind == v1alpha1.PkgKindProvider {
-		artifactType = ProviderMediaType
-		imageDescriptor, err := pushBlob(ctx, PackageImageLayerMediaType, imgData, src)
-		if err != nil {
-			return err
+	log.Info("pkg descriptor", "data", len(pkgDescriptor.Data))
+	layerDescriptors = append(layerDescriptors, pkgDescriptor)
+	/*
+		if kind == v1alpha1.PkgKindProvider {
+			artifactType = ProviderMediaType
+			//log.Info("image add layer", "data", len(imgData))
+			imageDescriptor, err := pushBlobReader(ctx, PackageImageLayerMediaType, img, src)
+			if err != nil {
+				return err
+			}
+			log.Info("image descriptor", "data", len(imageDescriptor.Data))
+			layerDescriptors = append(layerDescriptors, imageDescriptor)
 		}
-		layerDescriptors = append(layerDescriptors, imageDescriptor)
-
-	}
+	*/
 	// generate manifest and push from src (memory store) to dst (remote registry)
 	manifestDesc, err := oras.PackManifest(
 		ctx,
@@ -113,14 +118,14 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 	if err != nil {
 		panic(err)
 	}
+	log.Info("pushed package before", "digest", manifestDesc.Digest)
 
 	desc, err := oras.Copy(ctx, src, parsedRef.Reference, dst, "", oras.DefaultCopyOptions)
 	if err != nil {
 		return err
 	}
-	//fmt.Fprintf(c.out, "Pushed: %s\n", parsedRef.String())
-	//fmt.Fprintf(c.out, "Digest: %s\n", desc.Digest)
 	log.Info("pushed package succeeded", "digest", desc.Digest)
+
 	return nil
 }
 
@@ -129,9 +134,16 @@ func pushBlob(ctx context.Context, mediaType string, blob []byte, target oras.Ta
 	return desc, target.Push(ctx, desc, bytes.NewReader(blob)) // Push the blob to the registry target
 }
 
+/*
+func pushBlobReader(ctx context.Context, mediaType string, blob io.Reader, target oras.Target) (ocispecv1.Descriptor, error) {
+	desc := content.NewDescriptorFromBytes(mediaType, []byte{})
+	return desc, target.Push(ctx, desc, blob) // Push the blob to the registry target
+}
+*/
+
 func Pull(ctx context.Context, ref string, data *data.Data) error {
 	log := log.FromContext(ctx).With("ref", ref)
-	log.Info("pushing package")
+	log.Info("pulling package")
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return err
@@ -160,8 +172,15 @@ func Pull(ctx context.Context, ref string, data *data.Data) error {
 	if err != nil {
 		return errors.Wrap(err, "cannot copy")
 	}
-	log.Info("pull package", "digest", desc.Digest)
+	if err := mem2file(ctx, ref, dst, desc, data); err != nil {
+		return errors.Wrap(err, "cannot copy memrfile")
+	}
+	log.Info("pulled package successfully", "digest", desc.Digest)
+	return nil
+}
 
+func mem2file(ctx context.Context, ref string, dst *memory.Store, desc ocispecv1.Descriptor, data *data.Data) error {
+	log := log.FromContext(ctx).With("ref", ref)
 	rc, err := dst.Fetch(ctx, desc)
 	if err != nil {
 		return errors.Wrap(err, "cannot fetch package from memory")
@@ -176,7 +195,6 @@ func Pull(ctx context.Context, ref string, data *data.Data) error {
 
 	for _, layer := range manifest.Layers {
 		log.Info("layer", "mediaType", layer.MediaType, "artifactType", layer.ArtifactType)
-
 		rc, err := dst.Fetch(ctx, layer)
 		if err != nil {
 			return errors.Wrap(err, "cannot fetch layer")
@@ -186,7 +204,10 @@ func Pull(ctx context.Context, ref string, data *data.Data) error {
 			continue
 			//return errors.Wrap(err, "cannot read tar.gz")
 		}
-		defer rc.Close()
+		if err := rc.Close(); err != nil {
+			log.Error("cannot close rc", "err", err.Error())
+			continue
+		}
 	}
 	return nil
 }

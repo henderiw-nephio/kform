@@ -68,9 +68,6 @@ func BuildTgz(files map[string]string) ([]byte, error) {
 			Mode: int64(0o644),
 			Size: int64(len(data)),
 		}
-		//fmt.Println("filename", fileName)
-		//fmt.Println("fileContents:")
-		//fmt.Println(data)
 
 		// Write the header to the tar archive
 		if err := tarWriter.WriteHeader(header); err != nil {
@@ -196,8 +193,8 @@ func ReadTgz(tgzData []byte) ([]byte, error) {
 			if _, err := io.Copy(fileContent, tarReader); err != nil {
 				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
 			}
-			fmt.Println("File Content:")
-			fmt.Println(fileContent.String())
+			//fmt.Println("File Content:")
+			//fmt.Println(fileContent.String())
 
 		default:
 			fmt.Println("unknown:", header.Name, header.Typeflag)

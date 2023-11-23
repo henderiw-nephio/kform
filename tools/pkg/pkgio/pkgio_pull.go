@@ -4,10 +4,12 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oci"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw/logger/log"
@@ -86,10 +88,25 @@ type pkgPullWriter struct {
 func (r *pkgPullWriter) write(ctx context.Context, data *data.Data) error {
 	log := log.FromContext(ctx)
 	for path, b := range data.List() {
+		if strings.HasSuffix(path, ".tar.gz") {
+			b, err := oci.ReadTgz([]byte(b))
+			if err != nil {
+				return err
+			}
+			// add the plain file
+			data.Add(strings.TrimSuffix(path, ".tar.gz"), b)
+			// delete the tgz file
+			data.Delete(path)
+		}
+	}
+
+	// write files to fsys
+	for path, b := range data.List() {
 		if err := r.fsys.MkdirAll(filepath.Dir(path)); err != nil {
 			log.Error("cannot create dir", "path", filepath.Dir(path), "err", err.Error())
 			continue
 		}
+
 		if err := r.fsys.WriteFile(path, []byte(b)); err != nil {
 			log.Error("cannot create file", "path", path, "err", err.Error())
 			continue
