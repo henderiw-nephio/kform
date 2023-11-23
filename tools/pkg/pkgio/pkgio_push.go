@@ -121,8 +121,11 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 					log.Error("cannot read file, just downloaded", "fileName", image.Name, "error", err.Error())
 					continue
 				}
-				return r.pushPackage(ctx, kformFile.Spec.Kind, pkg.GetRef(), data, img)
+				if err := r.pushPackage(ctx, kformFile.Spec.Kind, pkg.GetRef(), data, img); err != nil {
+					return err
+				}
 			}
+			return nil
 		} else {
 			// the os and arch are determined locally for local pushed provider packages
 			// the image data need to be split from the other package data

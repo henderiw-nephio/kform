@@ -29,6 +29,7 @@ func (r *Release) GetImageData(ctx context.Context) Images {
 	log := log.FromContext(ctx)
 	images := Images{}
 	for _, asset := range r.Assets {
+		log.Info("asset info", "name", asset.Name, "contentType", asset.ContentType, "state", asset.State)
 		if asset.ContentType == "application/octet-stream" && asset.State == "uploaded" {
 			split := strings.Split(asset.Name, "_")
 			if len(split) != 4 {
