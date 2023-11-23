@@ -103,7 +103,6 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 			// TODO optimize in memory store -> we store in the local dir for now
 			fileLocs := map[string][]string{}
 			for _, image := range images {
-
 				fileLocs[image.Name] = []string{image.URL}
 			}
 			log.Info("file locations", "fileLocs", fileLocs)
