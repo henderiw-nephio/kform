@@ -30,7 +30,7 @@ func (r *Release) GetImageData(ctx context.Context) Images {
 	images := Images{}
 	for _, asset := range r.Assets {
 		log.Info("asset info", "name", asset.Name, "contentType", asset.ContentType, "state", asset.State)
-		if asset.ContentType == "application/octet-stream" && asset.State == "uploaded" {
+		if asset.ContentType == "application/gzip" && asset.State == "uploaded" {
 			split := strings.Split(asset.Name, "_")
 			if len(split) != 4 {
 				log.Error("wrong release name: expecting <name>_<version>_<os>_<arch>", "got", asset.Name)
