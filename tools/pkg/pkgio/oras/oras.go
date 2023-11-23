@@ -201,6 +201,7 @@ type descriptorSummary struct {
 
 func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) error {
 	log := log.FromContext(ctx).With("ref", ref)
+	log.Info("pushing package")
 	// parse the reference
 	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
@@ -266,11 +267,13 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 		panic(err)
 	}
 
-	if _, err := oras.Copy(ctx, src, parsedRef.Reference, dst, "", oras.DefaultCopyOptions); err != nil {
+	desc, err := oras.Copy(ctx, src, parsedRef.Reference, dst, "", oras.DefaultCopyOptions)
+	if err != nil {
 		return err
 	}
 	//fmt.Fprintf(c.out, "Pushed: %s\n", parsedRef.String())
 	//fmt.Fprintf(c.out, "Digest: %s\n", desc.Digest)
+	log.Info("pushed package succeeded", "digest", desc.Digest)
 	return nil
 }
 
