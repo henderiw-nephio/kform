@@ -21,6 +21,8 @@ europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-xxxx
 github.com/henderiw-nephio/kform/provider-xxxx
 */
 
+//ghcr.io/kform-tools/kformpkg-action/kformpkg-action:main
+
 func GetPackageFromRef(ref string) (*Package, error) {
 	pkg := &Package{}
 	versionSplit := strings.Split(ref, ":")
@@ -35,7 +37,7 @@ func GetPackageFromRef(ref string) (*Package, error) {
 	}
 	pkg.Address = &Address{
 		HostName:  split[0],
-		Namespace: filepath.Join(split[1:(len(split) - 2)]...),
+		Namespace: filepath.Join(split[1:(len(split) - 1)]...),
 		Name:      split[len(split)-1],
 	}
 	return pkg, nil
