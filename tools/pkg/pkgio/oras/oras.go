@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
+	"github.com/henderiw/logger/log"
 	ocispecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	credentials "github.com/oras-project/oras-credentials-go"
 	"github.com/pkg/errors"
@@ -198,9 +199,10 @@ type descriptorSummary struct {
 }
 */
 
-func Push(ctx context.Context, kind v1alpha1.PkgKind, fullRef string, pkgData []byte, imgData []byte) error {
+func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte, imgData []byte) error {
+	log := log.FromContext(ctx).With("ref", ref)
 	// parse the reference
-	parsedRef, err := registry.ParseReference(fullRef)
+	parsedRef, err := registry.ParseReference(ref)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse reference")
 	}
@@ -211,6 +213,12 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, fullRef string, pkgData []
 	if err != nil {
 		return errors.Wrap(err, "cannot create registry")
 	}
+
+	cred, err := DefaultCredential(parsedRef.Registry)(ctx, parsedRef.Registry)
+	if err != nil {
+		log.Info("credential", "error", err)
+	}
+	log.Info("credential", "cred", cred)
 	reg.Client = &auth.Client{
 		Credential: DefaultCredential(parsedRef.Registry),
 		Header: http.Header{
