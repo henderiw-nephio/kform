@@ -29,7 +29,7 @@ func GetPackageFromRef(ref string) (*Package, error) {
 	if len(versionSplit) != 2 {
 		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>:<version>, got: %s", ref)
 	}
-	pkg.SelectedVersion = versionSplit[1]
+	pkg.SelectedVersion = strings.ReplaceAll(versionSplit[1], "v", "")
 
 	split := strings.Split(versionSplit[0], "/")
 	if len(split) < 3 {
