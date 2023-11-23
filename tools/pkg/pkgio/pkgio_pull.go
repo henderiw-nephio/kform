@@ -64,14 +64,15 @@ type pkgPullReader struct {
 }
 
 func (r *pkgPullReader) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
-	// add the runtime environment
+	// add the runtime environment in case the package is a provider
+	// for module the os/arch is not required
 	if r.pkgKind == kformpkgmetav1alpha1.PkgKindProvider {
 		r.pkg.Platform = &address.Platform{
 			OS:   runtime.GOOS,
 			Arch: runtime.GOARCH,
 		}
 	}
-	if err := oras.Pull(ctx, r.pkg.GetRef(), data); err != nil {
+	if err := oras.Pull(ctx, r.pkg.GetVersionRef(), data); err != nil {
 		return data, err
 	}
 	return data, nil

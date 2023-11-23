@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
@@ -52,6 +53,43 @@ func DefaultCredential(registry string) auth.CredentialFunc {
 	}
 }
 
+type Tags []string
+
+func GetTags(ctx context.Context, ref string) (Tags, error) {
+	tags := Tags{}
+	fmt.Println("ref", ref)
+	target, err := GetRepository(ctx, ref)
+	if err != nil {
+		return tags, errors.Wrap(err, "cannot get repository")
+	}
+	fmt.Println("got target", target)
+	target.Tags(ctx, "", func(t []string) error {
+		fmt.Println("got tags", t)
+		tags = append(tags, t...)
+		return nil
+	})
+	return tags, nil
+}
+
+func GetRepository(ctx context.Context, ref string) (registry.Repository, error) {
+	parsedRef, err := registry.ParseReference(ref)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot parse reference")
+	}
+	reg, err := remote.NewRegistry(parsedRef.Registry)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot create registry")
+	}
+
+	reg.Client = &auth.Client{
+		Credential: DefaultCredential(parsedRef.Registry),
+		Header: http.Header{
+			"User-Agent": {"kform"},
+		},
+	}
+	return reg.Repository(ctx, parsedRef.Repository)
+}
+
 func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte) error {
 	log := log.FromContext(ctx).With("ref", ref)
 	log.Info("pushing package")
@@ -63,20 +101,9 @@ func Push(ctx context.Context, kind v1alpha1.PkgKind, ref string, pkgData []byte
 	// src -> memory
 	src := memory.New()
 	// dst -> registry
-	reg, err := remote.NewRegistry(parsedRef.Registry)
+	dst, err := GetRepository(ctx, ref)
 	if err != nil {
-		return errors.Wrap(err, "cannot create registry")
-	}
-
-	reg.Client = &auth.Client{
-		Credential: DefaultCredential(parsedRef.Registry),
-		Header: http.Header{
-			"User-Agent": {"kform"},
-		},
-	}
-	dst, err := reg.Repository(ctx, parsedRef.Repository)
-	if err != nil {
-		return errors.Wrap(err, "cannot get repository")
+		return errors.Wrap(err, "cannot get remote registry")
 	}
 
 	// collect layer descriptors and artifact type based on package type (provider/module)
@@ -144,31 +171,15 @@ func pushBlobReader(ctx context.Context, mediaType string, blob io.Reader, targe
 func Pull(ctx context.Context, ref string, data *data.Data) error {
 	log := log.FromContext(ctx).With("ref", ref)
 	log.Info("pulling package")
-	parsedRef, err := registry.ParseReference(ref)
-	if err != nil {
-		return err
-	}
 	// dst -> memory
 	dst := memory.New()
 	// src -> registry
-	reg, err := remote.NewRegistry(parsedRef.Registry)
+	src, err := GetRepository(ctx, ref)
 	if err != nil {
-		return errors.Wrap(err, "cannot get registry")
+		return errors.Wrap(err, "cannot get remote repo")
 	}
-	reg.Client = &auth.Client{
-		Credential: DefaultCredential(parsedRef.Registry),
-		Header: http.Header{
-			"User-Agent": {"kform"},
-		},
-	}
-	if err := reg.Ping(ctx); err != nil {
-		return errors.Wrap(err, "registry v2 not implemented")
-	}
-	src, err := reg.Repository(ctx, parsedRef.Repository)
-	if err != nil {
-		return errors.Wrap(err, "cannot get repository")
-	}
-	desc, err := oras.Copy(ctx, src, parsedRef.String(), dst, "", oras.DefaultCopyOptions)
+
+	desc, err := oras.Copy(ctx, src, ref, dst, "", oras.DefaultCopyOptions)
 	if err != nil {
 		return errors.Wrap(err, "cannot copy")
 	}

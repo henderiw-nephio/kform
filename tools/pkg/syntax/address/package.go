@@ -155,8 +155,8 @@ func (r *Package) GetRemoteChecksum(ctx context.Context, version string) (string
 	s := bufio.NewScanner(resp.Body)
 	for s.Scan() {
 		line := s.Text()
-		if strings.HasSuffix(line, r.Filename(version)) {
-			return strings.TrimSpace(strings.TrimSuffix(line, r.Filename(version))), nil
+		if strings.HasSuffix(line, r.Filename()) {
+			return strings.TrimSpace(strings.TrimSuffix(line, r.Filename())), nil
 		}
 	}
 	if err := s.Err(); err != nil {

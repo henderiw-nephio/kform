@@ -145,6 +145,10 @@ manifest
     - digest
 
 
-```
-go run tools/cmd/kform/main.go pkg pull ghcr.io/kformdev/provider-resourcebackend/provider-resourcebackend:v0.0.1 ./build/provider-resourcebackend
+
+
+```shell
+go run tools/cmd/kform/main.go pkg push ghcr.io/kform-providers/resourcebackend/resourcebackend:v0.0.1 ./build/provider-resourcebackend --releaser
+
+go run tools/cmd/kform/main.go pkg pull ghcr.io/kform-providers/resourcebackend/resourcebackend:0.0.1 ./build/pull-test --kind provider          
 ```

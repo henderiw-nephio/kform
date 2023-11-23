@@ -2,9 +2,12 @@ package parser
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 )
 
@@ -22,6 +25,12 @@ func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bo
 		}
 		// retrieve the available releases/versions for this provider
 		if !pkg.IsLocal() {
+			tags, err := oras.GetTags(ctx, pkg.GetRef())
+			if err != nil {
+				return
+			}
+			fmt.Println(tags)
+			os.Exit(1)
 			if _, err := pkg.GetReleases(ctx); err != nil {
 				r.recorder.Record(diag.DiagFromErr(err))
 				return

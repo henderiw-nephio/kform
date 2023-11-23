@@ -69,7 +69,7 @@ type pkgPushWriter struct {
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
-	log := log.FromContext(ctx).With("ref", r.pkg.GetRef())
+	log := log.FromContext(ctx).With("ref", r.pkg.GetVersionRef())
 	log.Info("write")
 	// get the kform file to determine is this a provider or a module
 	// if there is no kformfile or we cannot find the provider/module
@@ -91,12 +91,12 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 			// get image from the release github page
 			releases, err := r.pkg.GetReleases(ctx)
 			if err != nil {
-				return fmt.Errorf("cannot get releases for pkg: %s, err: %s", r.pkg.GetRef(), err.Error())
+				return fmt.Errorf("cannot get releases for pkg: %s, err: %s", r.pkg.GetVersionRef(), err.Error())
 			}
 			// find the release, matching the version supplied
 			release := releases.GetRelease(r.pkg.SelectedVersion)
 			if release == nil {
-				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetRef())
+				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetVersionRef())
 			}
 			images := release.GetImageData(ctx)
 			// download images
@@ -108,7 +108,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 			}
 			log.Info("file locations", "fileLocs", fileLocs)
 			if err := r.downloadImages(ctx, fileLocs); err != nil {
-				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetRef())
+				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetVersionRef())
 			}
 			for _, image := range images {
 				image := image
@@ -131,7 +131,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 						SelectedVersion: r.pkg.SelectedVersion,
 					}
 				*/
-				log.Info("push package", "ref", r.pkg.GetRef())
+				log.Info("push package", "ref", r.pkg.GetVersionRef())
 
 				fsys := fsys.NewDiskFS(".")
 				img, err := fsys.ReadFile(image.Name)
@@ -152,7 +152,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 
 				data.Add(filepath.Join("image", image.Name), img)
 				//log.Info("push package", "ref", pkg.GetRef(), "imageName", image.Name, "img", len(img))
-				if err := r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data); err != nil {
+				if err := r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetVersionRef(), data); err != nil {
 					return err
 				}
 			}
@@ -187,12 +187,12 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 				OS:   runtime.GOOS,
 				Arch: runtime.GOARCH,
 			}
-			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data)
+			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetVersionRef(), data)
 		}
 	}
 	// this is a module
 	// the runtime OS and ARCH does not matter for a module -> we supply the simple ref
-	return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data)
+	return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetVersionRef(), data)
 }
 
 func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKind, ref string, pkgData *data.Data) error {
