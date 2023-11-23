@@ -10,6 +10,7 @@ import (
 
 	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/grabber"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oci"
@@ -50,11 +51,11 @@ type pkgPushReadWriter struct {
 	writer *pkgPushWriter
 }
 
-func (r *pkgPushReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgPushReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgPushReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.write(ctx, data)
 }
 
@@ -65,7 +66,7 @@ type pkgPushWriter struct {
 	releaser bool
 }
 
-func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
+func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 	log := log.FromContext(ctx).With("ref", r.pkg.GetRef())
 	// get the kform file to determine is this a provider or a module
 	// if there is no kformfile or we cannot find the provider/module
@@ -162,7 +163,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 	return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, nil)
 }
 
-func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKind, ref string, pkgData *Data, imgByte []byte) error {
+func (r *pkgPushWriter) pushPackage(ctx context.Context, pkgKind v1alpha1.PkgKind, ref string, pkgData *data.Data, imgByte []byte) error {
 	log := log.FromContext(ctx).With("pkgKind", pkgKind, "pkgName", ref)
 	// build a zipped tar bal from the pkgData in the pkg
 	pkgByte, err := oci.BuildTgz(pkgData.List())

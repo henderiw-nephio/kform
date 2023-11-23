@@ -9,6 +9,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/types"
 	"github.com/henderiw/logger/log"
@@ -46,7 +47,7 @@ func (r *moduleparser) getKforms(ctx context.Context) (*kformpkgmetav1alpha1.Kfo
 		IgnoreRules:    ignoreRules,
 		SkipDir:        true,
 	}
-	d, err := reader.Read(ctx, pkgio.NewData())
+	d, err := reader.Read(ctx, data.New())
 	if err != nil {
 		return kfile, kforms, err
 	}

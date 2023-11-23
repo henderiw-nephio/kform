@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/grabber"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
@@ -56,15 +57,15 @@ type pkgProviderReadWriter struct {
 	writer            *pkgProviderWriter
 }
 
-func (r *pkgProviderReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgProviderReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgProviderReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgProviderReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.Write(ctx, data)
 }
 
-func (r *pkgProviderReadWriter) Process(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgProviderReadWriter) Process(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.processProviderRequirements(ctx, data)
 }
 
@@ -73,7 +74,7 @@ func (r *pkgProviderReadWriter) Process(ctx context.Context, data *Data) (*Data,
 // if not -> delete path/done; if yes -> check chechsum; if nok -> delete it
 //
 
-func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context, data *data.Data) (*data.Data, error) {
 	log := log.FromContext(ctx)
 	// walk over the paths and delete the once that are not relevant
 	// based on the provider requirements/packages
@@ -139,7 +140,7 @@ type pkgProviderWriter struct {
 	rootPath   string
 }
 
-func (r *pkgProviderWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgProviderWriter) Write(ctx context.Context, data *data.Data) error {
 	providerPath := filepath.Join(r.rootPath, ".kform", "providers")
 	if !r.PathExists {
 		os.MkdirAll(providerPath, 0755|os.ModeDir)
@@ -215,7 +216,7 @@ func NewPkgValidator() PkgValidator {
 
 type pkgValidator struct{}
 
-func (r *pkgValidator) Write(ctx context.Context, data *Data) error {
+func (r *pkgValidator) Write(ctx context.Context, data *data.Data) error {
 	providers := []string{}
 	for path := range data.List() {
 		providers = append(providers, path)

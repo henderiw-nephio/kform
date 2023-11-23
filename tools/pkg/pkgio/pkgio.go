@@ -2,6 +2,8 @@ package pkgio
 
 import (
 	"context"
+
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 )
 
 const kformOciPkgExt = "kformpkg"
@@ -17,15 +19,15 @@ var MatchAll = []string{"*"}
 //var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
 type Reader interface {
-	Read(context.Context, *Data) (*Data, error)
+	Read(context.Context, *data.Data) (*data.Data, error)
 }
 
 type Writer interface {
-	Write(context.Context, *Data) error
+	Write(context.Context, *data.Data) error
 }
 
 type Process interface {
-	Process(context.Context, *Data) (*Data, error)
+	Process(context.Context, *data.Data) (*data.Data, error)
 }
 
 type Pipeline struct {
@@ -35,7 +37,7 @@ type Pipeline struct {
 }
 
 func (r Pipeline) Execute(ctx context.Context) error {
-	data := NewData()
+	data := data.New()
 	var err error
 	// read from the inputs
 	for _, i := range r.Inputs {

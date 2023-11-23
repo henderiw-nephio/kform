@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestPkgProviderRead(t *testing.T) {
 			}
 
 			rw := NewPkgProviderReadWriter(tc.rootPath, providers)
-			data := NewData()
+			data := data.New()
 			data, err := rw.Read(ctx, data)
 			assert.NoError(t, err)
 			//data.Print()

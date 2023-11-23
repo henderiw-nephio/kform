@@ -114,6 +114,7 @@ func (r *fsys) ReadFile(path string) ([]byte, error) {
 			return nil, err
 		}
 		buf.Write(buffer[:n])
+		fmt.Println("readfile", "n", n)
 	}
 	return buf.Bytes(), nil
 }

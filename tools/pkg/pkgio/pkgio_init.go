@@ -9,6 +9,7 @@ import (
 
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	ko "github.com/nephio-project/nephio/krm-functions/lib/kubeobject"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,11 +48,11 @@ type pkgInitReadWriter struct {
 	writer *pkgInitWriter
 }
 
-func (r *pkgInitReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgInitReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgInitReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgInitReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.Write(ctx, data)
 }
 
@@ -64,7 +65,7 @@ type pkgInitWriter struct {
 	dirs          []string
 }
 
-func (r *pkgInitWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgInitWriter) Write(ctx context.Context, data *data.Data) error {
 	filesToWrite := map[string]func() error{
 		ReadmeFileMatch[0]: r.WriteReadmeFile,
 		PkgFileMatch[0]:    r.WriteKformFile,
