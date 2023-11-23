@@ -66,7 +66,7 @@ type pkgPushWriter struct {
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
-	log := log.FromContext(ctx)
+	log := log.FromContext(ctx).With("ref", r.pkg.GetRef())
 	// get the kform file to determine is this a provider or a module
 	// if there is no kformfile or we cannot find the provider/module
 	// information we fail
@@ -99,8 +99,10 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 			// TODO optimize in memory store -> we store in the local dir for now
 			fileLocs := map[string][]string{}
 			for _, image := range images {
+
 				fileLocs[image.Name] = []string{image.URL}
 			}
+			log.Info("file locations", "fileLocs", fileLocs)
 			if err := r.downloadImages(ctx, fileLocs); err != nil {
 				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetRef())
 			}
@@ -111,6 +113,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 					OS:   runtime.GOOS,
 					Arch: runtime.GOARCH,
 				}
+				log.Info("push package", "ref", pkg.GetRef())
 
 				fsys := fsys.NewDiskFS(".")
 				img, err := fsys.ReadFile(image.Name)
