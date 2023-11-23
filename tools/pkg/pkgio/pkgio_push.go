@@ -118,6 +118,7 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 						OS:   image.OS,
 						Arch: image.Arch,
 					},
+					SelectedVersion: r.pkg.SelectedVersion,
 				}
 				log.Info("push package", "ref", pkg.GetRef())
 
