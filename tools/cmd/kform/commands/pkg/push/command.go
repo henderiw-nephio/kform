@@ -26,9 +26,7 @@ func NewRunner(ctx context.Context, version string) *Runner {
 
 	r.Command = cmd
 
-	//r.Command.Flags().StringVarP(&r.packageRoot, "PackageRoot", "f", ".", "Path to package directory.")
-	//r.Command.Flags().StringVarP(&r.packageName, "packageName", "n", "package", "name of the package to be built")
-	//r.Command.Flags().BoolVarP(&r.local, "local", "", false, "save image to tarball.")
+	r.Command.Flags().BoolVarP(&r.releaser, "releaser", "", false, "push command is used as a releaser e.g. as a github action")
 	return r
 }
 
@@ -37,9 +35,8 @@ func NewCommand(ctx context.Context, version string) *cobra.Command {
 }
 
 type Runner struct {
-	Command *cobra.Command
-	//rootPath string
-	//local    bool
+	Command  *cobra.Command
+	releaser bool
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
@@ -57,7 +54,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 		return errors.Wrap(err, "cannot get package from ref")
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, pkg, true)
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, pkg, r.releaser)
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

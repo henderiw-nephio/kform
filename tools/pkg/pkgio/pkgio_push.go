@@ -24,7 +24,7 @@ type PkgPushReadWriter interface {
 	Writer
 }
 
-func NewPkgPushReadWriter(srcPath string, pkg *address.Package, local bool) PkgPushReadWriter {
+func NewPkgPushReadWriter(srcPath string, pkg *address.Package, releaser bool) PkgPushReadWriter {
 	// TBD do we add validation here
 	// Ignore file processing should be done here
 	fs := fsys.NewDiskFS(srcPath)
@@ -39,9 +39,8 @@ func NewPkgPushReadWriter(srcPath string, pkg *address.Package, local bool) PkgP
 		writer: &pkgPushWriter{
 			fsys:     fs,
 			rootPath: srcPath,
-			//pkgName:  filepath.Base(srcPath),
-			pkg:   pkg,
-			local: local,
+			pkg:      pkg,
+			releaser: releaser,
 		},
 	}
 }
@@ -62,9 +61,8 @@ func (r *pkgPushReadWriter) Write(ctx context.Context, data *Data) error {
 type pkgPushWriter struct {
 	fsys     fsys.FS
 	rootPath string
-	//pkgName  string
-	pkg   *address.Package
-	local bool
+	pkg      *address.Package
+	releaser bool
 }
 
 func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
@@ -85,31 +83,8 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 	}
 
 	if kformFile.Spec.Kind == v1alpha1.PkgKindProvider {
-		if r.local {
-			// the os and arch are determined locally for local pushed provider packages
-			// the image data need to be split from the other package data
-			var img []byte
-			images := 0
-			for path, b := range data.List() {
-				// if the data is an image we delete the
-				if strings.HasPrefix(path, "image") {
-					if images > 0 {
-						log.Error("a provider pkg can only have 1 image")
-						return fmt.Errorf("a locally pushed package can only have 1 image")
-					}
-					img = []byte(b)
-					data.Delete(path)
-					images++
-				}
-			}
-			r.pkg.Platform = &address.Platform{
-				OS:   runtime.GOOS,
-				Arch: runtime.GOARCH,
-			}
-
-			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, img)
-		} else {
-			// get image from the network
+		if r.releaser {
+			// get image from the release github page
 			releases, err := r.pkg.GetReleases(ctx)
 			if err != nil {
 				return fmt.Errorf("cannot get releases for pkg: %s, err: %s", r.pkg.GetRef(), err.Error())
@@ -144,6 +119,28 @@ func (r *pkgPushWriter) write(ctx context.Context, data *Data) error {
 				}
 				return r.pushPackage(ctx, kformFile.Spec.Kind, pkg.GetRef(), data, img)
 			}
+		} else {
+			// the os and arch are determined locally for local pushed provider packages
+			// the image data need to be split from the other package data
+			var img []byte
+			images := 0
+			for path, b := range data.List() {
+				// if the data is an image we delete the
+				if strings.HasPrefix(path, "image") {
+					if images > 0 {
+						log.Error("a provider pkg can only have 1 image")
+						return fmt.Errorf("a locally pushed package can only have 1 image")
+					}
+					img = []byte(b)
+					data.Delete(path)
+					images++
+				}
+			}
+			r.pkg.Platform = &address.Platform{
+				OS:   runtime.GOOS,
+				Arch: runtime.GOARCH,
+			}
+			return r.pushPackage(ctx, kformFile.Spec.Kind, r.pkg.GetRef(), data, img)
 		}
 	}
 	// this is a module
