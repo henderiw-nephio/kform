@@ -98,7 +98,10 @@ func (r *pkgPushWriter) write(ctx context.Context, data *data.Data) error {
 			if release == nil {
 				return fmt.Errorf("cannot find release for pkg: %s", r.pkg.GetVersionRef())
 			}
-			images := release.GetImageData(ctx)
+			images, err := release.GetImageData(ctx)
+			if err != nil {
+				return errors.Wrap(err, "cannot get image data")
+			}
 			// download images
 			// TODO optimize in memory store -> we store in the local dir for now
 			fileLocs := map[string][]string{}

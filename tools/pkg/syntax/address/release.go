@@ -2,6 +2,7 @@ package address
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/henderiw/logger/log"
@@ -25,7 +26,7 @@ type Image struct {
 	URL string
 }
 
-func (r *Release) GetImageData(ctx context.Context) Images {
+func (r *Release) GetImageData(ctx context.Context) (Images, error) {
 	log := log.FromContext(ctx)
 	images := Images{}
 	for _, asset := range r.Assets {
@@ -35,20 +36,20 @@ func (r *Release) GetImageData(ctx context.Context) Images {
 			split := strings.Split(rawAssetName, "_")
 			if len(split) != 3 {
 				log.Error("wrong release name: expecting <name>_<os>_<arch>", "got", rawAssetName)
-				continue
+				return images, fmt.Errorf("wrong release name: expecting <name>_<os>_<arch>, got: %s", rawAssetName)
 			}
 			images = append(images, Image{
-				Name:    asset.Name,
+				Name: asset.Name,
 				//Version: split[1],
 				Platform: Platform{
-					OS:   split[2],
-					Arch: split[3],
+					OS:   split[1],
+					Arch: split[2],
 				},
 				URL: asset.BrowserDownloadURL,
 			})
 		}
 	}
-	return images
+	return images, nil
 }
 
 //"content_type": "application/octet-stream",
