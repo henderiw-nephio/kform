@@ -8,7 +8,6 @@ import (
 	"github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 	kfplugin "github.com/henderiw-nephio/kform/kform-plugin/plugin"
 	"github.com/henderiw-nephio/kform/plugin"
-	"github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/exec/providers/logging"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/sets"
@@ -26,8 +25,9 @@ type Provider struct {
 
 type Initializer func() (kfplugin.Provider, error)
 
-func (r *Provider) Init(ctx context.Context, execpath string, nsn cache.NSN, reqs []v1alpha1.Provider) error {
+func (r *Provider) Init(ctx context.Context, execpath string, nsn cache.NSN) error {
 	log := log.FromContext(ctx)
+	log.Info("init provider", "execpath", execpath)
 	r.NSN = nsn
 	r.Initializer = ProviderInitializer(execpath)
 	r.Resources = sets.New[string]()

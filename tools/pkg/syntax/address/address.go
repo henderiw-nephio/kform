@@ -101,6 +101,10 @@ func (r *Package) GetRef() string {
 	return fmt.Sprintf("%s/%s/%s", r.Address.HostName, r.Address.Namespace, r.Filename())
 }
 
+func (r *Package) GetRawRefWithVersion(version string) string {
+	return fmt.Sprintf("%s/%s/%s:%s", r.Address.HostName, r.Address.Namespace, r.Address.Name, version)
+}
+
 func (r *Package) URL(version string) string {
 	u := url.URL{
 		Scheme: "https",
@@ -130,6 +134,10 @@ func (r *Package) ReleasesURL() string {
 
 func (r *Package) BasePath() string {
 	return r.Address.Path()
+}
+
+func (r *Package) ExecPath() string {
+	return filepath.Join(r.Address.Path(), r.SelectedVersion, r.Platform.String(), r.Filename(), "image", r.Address.Name)
 }
 
 func (r *Package) FilePath(version string) string {

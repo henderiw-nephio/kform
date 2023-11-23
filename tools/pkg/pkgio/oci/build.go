@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path/filepath"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
@@ -221,4 +222,49 @@ func ReadTgz(tgzData []byte) ([]byte, error) {
 		*/
 	}
 	return nil, nil
+}
+
+func UnzipTgz(basepath string, tgzData []byte, data *data.Data) error {
+	// Create a reader for the in-memory .tgz data
+	tgzReader := bytes.NewReader(tgzData)
+
+	// Create a gzip reader
+	gzipReader, err := gzip.NewReader(tgzReader)
+	if err != nil {
+		return errors.Wrap(err, "cannot create gzip reader")
+	}
+	defer gzipReader.Close()
+
+	// Create a tar reader
+	tarReader := tar.NewReader(gzipReader)
+
+	// Iterate through the contents of the tar file
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return errors.Wrap(err, "error reading tar header")
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			fmt.Println("dir:", header.Name)
+			// TBD need to make dir?
+		case tar.TypeReg:
+			// Create a buffer to hold the file content in memory
+			fmt.Println("Extracting:", header.Name)
+			fileContent := new(bytes.Buffer)
+			if err != nil {
+				log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+			}
+			if _, err := io.Copy(fileContent, tarReader); err != nil {
+				log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+			}
+			data.Add(filepath.Join(basepath, header.Name), fileContent.Bytes())
+		default:
+			return fmt.Errorf("unknown type: %s, %b", header.Name, header.Typeflag)
+		}
+	}
+	return nil
 }

@@ -2,9 +2,9 @@ package parser
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"strings"
 
+	"github.com/apparentlymart/go-versions/versions"
 	"github.com/henderiw-nephio/kform/kform-sdk-go/pkg/diag"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oras"
@@ -29,12 +29,20 @@ func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bo
 			if err != nil {
 				return
 			}
-			fmt.Println(tags)
-			os.Exit(1)
-			if _, err := pkg.GetReleases(ctx); err != nil {
-				r.recorder.Record(diag.DiagFromErr(err))
-				return
+			for _, tag := range tags {
+				v, err := versions.ParseVersion(strings.ReplaceAll(tag, "v", ""))
+				if err != nil {
+					r.recorder.Record(diag.DiagFromErr(err))
+					continue
+				}
+				pkg.AvailableVersions = append(pkg.AvailableVersions, v)
 			}
+			/*
+				if _, err := pkg.GetReleases(ctx); err != nil {
+					r.recorder.Record(diag.DiagFromErr(err))
+					return
+				}
+			*/
 			// append the requirements together
 			for _, req := range reqs {
 				pkg.AddConstraints(req.Version)

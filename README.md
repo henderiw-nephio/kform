@@ -150,5 +150,8 @@ manifest
 ```shell
 go run tools/cmd/kform/main.go pkg push ghcr.io/kform-providers/resourcebackend/resourcebackend:v0.0.1 ./build/provider-resourcebackend --releaser
 
-go run tools/cmd/kform/main.go pkg pull ghcr.io/kform-providers/resourcebackend/resourcebackend:0.0.1 ./build/pull-test --kind provider          
+go run tools/cmd/kform/main.go pkg pull ghcr.io/kform-providers/resourcebackend/resourcebackend:0.0.1 ./build/pull-test --kind provider   
+
+
+go run tools/cmd/kform/main.go init examples
 ```

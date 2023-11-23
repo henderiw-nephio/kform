@@ -25,7 +25,7 @@ type FS interface {
 
 	// WriteFile writes the data to a file at the given path,
 	// it overwrites existing content
-	WriteFile(path string, data []byte) error
+	WriteFile(path string, data []byte, perm fs.FileMode) error
 
 	// Calculate a sha256 cheksum on the file
 	Sha256(path string) (string, error)
@@ -141,7 +141,7 @@ func (r *fsys) Sha256(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (r *fsys) WriteFile(path string, data []byte) error {
+func (r *fsys) WriteFile(path string, data []byte, perm fs.FileMode) error {
 	if r.kind == "mem" {
 		mapFS, ok := r.fsys.(fstest.MapFS)
 		if !ok {
@@ -157,15 +157,7 @@ func (r *fsys) WriteFile(path string, data []byte) error {
 	if filepath.Dir(path) != "" {
 		r.MkdirAll(filepath.Dir(path))
 	}
-	f, err := os.Create(filepath.Join(r.rootPath, path))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if _, err := f.Write([]byte(data)); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filepath.Join(r.rootPath, path), data, perm)
 }
 
 func (r *fsys) Glob(pattern string) ([]string, error) {

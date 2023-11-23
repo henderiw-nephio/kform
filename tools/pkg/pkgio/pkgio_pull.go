@@ -2,6 +2,8 @@ package pkgio
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -89,13 +91,15 @@ type pkgPullWriter struct {
 func (r *pkgPullWriter) write(ctx context.Context, data *data.Data) error {
 	log := log.FromContext(ctx)
 	for path, b := range data.List() {
+		// we replace the tar.gz with a untarred file
 		if strings.HasSuffix(path, ".tar.gz") {
-			b, err := oci.ReadTgz([]byte(b))
-			if err != nil {
+			fmt.Println("gunzip", path, len(b))
+			if err := oci.UnzipTgz(filepath.Dir(path), []byte(b), data); err != nil {
 				return err
 			}
 			// add the plain file
-			data.Add(strings.TrimSuffix(path, ".tar.gz"), b)
+			//fmt.Println("gunzip", strings.TrimSuffix(path, ".tar.gz"), len(newb))
+			//data.Add(strings.TrimSuffix(path, ".tar.gz"), newb)
 			// delete the tgz file
 			data.Delete(path)
 		}
@@ -108,7 +112,13 @@ func (r *pkgPullWriter) write(ctx context.Context, data *data.Data) error {
 			continue
 		}
 
-		if err := r.fsys.WriteFile(path, []byte(b)); err != nil {
+		
+		var perm fs.FileMode
+		perm = 0644
+		if strings.Contains(path, "image") {
+			perm = 0755
+		}
+		if err := r.fsys.WriteFile(path, []byte(b), perm); err != nil {
 			log.Error("cannot create file", "path", path, "err", err.Error())
 			continue
 		}

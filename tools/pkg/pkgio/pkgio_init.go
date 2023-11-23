@@ -100,7 +100,7 @@ func (r *pkgInitWriter) WriteKformFile() error {
 	if err != nil {
 		return err
 	}
-	return r.fsys.WriteFile(PkgFileMatch[0], []byte(koe.String()))
+	return r.fsys.WriteFile(PkgFileMatch[0], []byte(koe.String()), 0644)
 }
 
 func (r *pkgInitWriter) WriteReadmeFile() error {
@@ -122,12 +122,12 @@ func (r *pkgInitWriter) WriteReadmeFile() error {
 	// Replace single quotes with backticks.
 	b := strings.ReplaceAll(buff.String(), "'", "`")
 
-	return r.fsys.WriteFile(ReadmeFileMatch[0], []byte(b))
+	return r.fsys.WriteFile(ReadmeFileMatch[0], []byte(b), 0644)
 
 }
 
 func (r *pkgInitWriter) WriteIgnoreFile() error {
-	return r.fsys.WriteFile(IgnoreFileMatch[0], []byte{})
+	return r.fsys.WriteFile(IgnoreFileMatch[0], []byte{}, 0644)
 }
 
 // readmeTemplate is the content for the automatically generated README.md file.

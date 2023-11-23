@@ -188,9 +188,11 @@ func (r *kformparser) GetProviderConfigs(ctx context.Context) map[cache.NSN]*typ
 func (r *kformparser) InitProviderInventory(ctx context.Context) (cache.Cache[types.Provider], error) {
 	inventory := cache.New[types.Provider]()
 
-	for nsn, reqs := range r.GetProviderRequirements(ctx) {
+	for nsn, pkg := range r.providers.List() {
+		execPath := filepath.Join(r.rootModulePath, ".kform", "providers", pkg.ExecPath())
+
 		p := types.Provider{}
-		if err := p.Init(ctx, r.rootModulePath, nsn, reqs); err != nil {
+		if err := p.Init(ctx, execPath, nsn); err != nil {
 			return nil, err
 		}
 		inventory.Add(ctx, nsn, p)
