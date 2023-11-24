@@ -6,13 +6,15 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"github.com/henderiw-nephio/kform/tools/cmd/kform/commands/apply"
 	"github.com/henderiw-nephio/kform/tools/cmd/kform/commands/auth"
 	initcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/init"
 	"github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/henderiw-nephio/kform/tools/pkg/store"
 )
 
 const (
@@ -20,6 +22,7 @@ const (
 	defaultConfigFileName    = "kform"
 	defaultConfigFileNameExt = "yaml"
 	defaultConfigEnvPrefix   = "KFORM"
+	defaultDBPath            = "plugins_db"
 )
 
 var (
@@ -36,6 +39,12 @@ func GetMain(ctx context.Context) *cobra.Command {
 		// We handle all errors in main after return from cobra so we can
 		// adjust the error message coming from libraries
 		SilenceErrors: true,
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// create plugin store if it does not exist
+			_, err := store.New(cmd.Context(),
+				filepath.Join(xdg.ConfigHome, defaultConfigFileSubDir, defaultDBPath))
+			return err
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			h, err := cmd.Flags().GetBool("help")
 			if err != nil {
