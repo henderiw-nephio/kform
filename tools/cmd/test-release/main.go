@@ -41,8 +41,8 @@ func main() {
 		log.Error("cannot create new pkg", "err", err.Error())
 		os.Exit(1)
 	}
-	if err := pkg.GetReleases(); err != nil {
+	if _, err := pkg.GetReleases(ctx); err != nil {
 		log.Error("cannot get available releases", "err", err.Error())
-		os.Exit(1) 
+		os.Exit(1)
 	}
 }

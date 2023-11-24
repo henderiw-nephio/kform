@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 )
 
@@ -37,6 +38,6 @@ type pkgKformInitReader struct {
 	reader *PkgReader
 }
 
-func (r *pkgKformInitReader) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgKformInitReader) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }

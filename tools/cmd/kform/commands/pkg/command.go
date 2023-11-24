@@ -6,8 +6,8 @@ import (
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
 	buildcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/build"
 	initcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/init"
-	pushcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/push"
 	pullcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/pull"
+	pushcmd "github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/push"
 	"github.com/henderiw-nephio/kform/tools/cmd/kform/commands/pkg/tree"
 	"github.com/spf13/cobra"
 )

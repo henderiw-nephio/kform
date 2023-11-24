@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 )
 
@@ -19,7 +20,7 @@ type PkgReader struct {
 	Checksum       bool
 }
 
-func (r *PkgReader) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *PkgReader) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	if !r.PathExists {
 		return data, nil
 	}
@@ -66,7 +67,7 @@ func (r *PkgReader) getPaths() ([]string, error) {
 	return paths, nil
 }
 
-func (r *PkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
+func (r *PkgReader) readFileContent(paths []string, data *data.Data) (*data.Data, error) {
 	var wg sync.WaitGroup
 	for _, path := range paths {
 		path := path
@@ -98,7 +99,7 @@ func (r *PkgReader) readFileContent(paths []string, data *Data) (*Data, error) {
 	return data, nil
 }
 
-func (r *PkgReader) Write(*Data) error {
+func (r *PkgReader) Write(*data.Data) error {
 	return nil
 }
 

@@ -2,9 +2,11 @@ package address
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -19,6 +21,28 @@ europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-xxxx
 github.com/henderiw-nephio/kform/provider-xxxx
 */
 
+//ghcr.io/kform-tools/kformpkg-action/kformpkg-action:main
+
+func GetPackageFromRef(ref string) (*Package, error) {
+	pkg := &Package{}
+	versionSplit := strings.Split(ref, ":")
+	if len(versionSplit) != 2 {
+		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>:<version>, got: %s", ref)
+	}
+	pkg.SelectedVersion = strings.ReplaceAll(versionSplit[1], "v", "")
+
+	split := strings.Split(versionSplit[0], "/")
+	if len(split) < 3 {
+		return nil, fmt.Errorf("unexpected ref semantics, want: <hostname>/<namespace>/<name>, got: %s", versionSplit[0])
+	}
+	pkg.Address = &Address{
+		HostName:  split[0],
+		Namespace: filepath.Join(split[1:(len(split) - 1)]...),
+		Name:      split[len(split)-1],
+	}
+	return pkg, nil
+}
+
 // address -> hostname, namespace, name
 func GetPackage(nsn cache.NSN, source string) (*Package, error) {
 	// TODO handle multiple requirements
@@ -27,7 +51,6 @@ func GetPackage(nsn cache.NSN, source string) (*Package, error) {
 		return nil, err
 	}
 	pkg := &Package{
-		Type: PackageTypeProvider,
 		Address: &Address{
 			HostName:  hostname,
 			Namespace: namespace,
@@ -43,26 +66,26 @@ func GetPackage(nsn cache.NSN, source string) (*Package, error) {
 }
 
 // GetReleases returns the avilable releases/versions of the package
-func (r *Package) GetReleases() error {
+func (r *Package) GetReleases(ctx context.Context) (Releases, error) {
 	url := r.ReleasesURL()
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get versions url %s, status code: %d", url, resp.StatusCode)
+		return nil, fmt.Errorf("failed to get versions url %s, status code: %d", url, resp.StatusCode)
 	}
 
-	availableReleases := []Release{}
+	availableReleases := Releases{}
 	if err := json.NewDecoder(resp.Body).Decode(&availableReleases); err != nil {
-		return err
+		return nil, err
 	}
 	for _, availableRelease := range availableReleases {
 		v, err := versions.ParseVersion(strings.ReplaceAll(availableRelease.TagName, "v", ""))
 		if err != nil {
-			return fmt.Errorf("cannot parse version: %s, err %s", availableRelease.TagName, err.Error())
+			return nil, fmt.Errorf("cannot parse version: %s, err %s", availableRelease.TagName, err.Error())
 		}
 		r.AvailableVersions = append(r.AvailableVersions, v)
 	}
@@ -70,14 +93,14 @@ func (r *Package) GetReleases() error {
 	for _, availableRelease := range availableReleases {
 		fmt.Println("availableRelease", availableRelease.TagName)
 		for _, asset := range availableRelease.Assets {
-			fmt.Printf("  Name: %s, State: %s, type: %s DownloadURL: %s\n", asset.Name, asset.State, asset.ContentType ,asset.BrowserDownloadURL)
+			fmt.Printf("  Name: %s, State: %s, type: %s DownloadURL: %s\n", asset.Name, asset.State, asset.ContentType, asset.BrowserDownloadURL)
 
 		}
 	}
-	
-
-	return nil
+	return availableReleases, nil
 }
+
+type Releases []Release
 
 type Release struct {
 	Name    string  `json:"name"`
@@ -119,7 +142,7 @@ func (r *Package) GenerateCandidates() error {
 	return nil
 }
 
-func (r *Package) GetRemoteChecksum(version string) (string, error) {
+func (r *Package) GetRemoteChecksum(ctx context.Context, version string) (string, error) {
 	resp, err := http.Get(r.ChecksumURL(version))
 	if err != nil {
 		return "", err
@@ -132,8 +155,8 @@ func (r *Package) GetRemoteChecksum(version string) (string, error) {
 	s := bufio.NewScanner(resp.Body)
 	for s.Scan() {
 		line := s.Text()
-		if strings.HasSuffix(line, r.Filename(version)) {
-			return strings.TrimSpace(strings.TrimSuffix(line, r.Filename(version))), nil
+		if strings.HasSuffix(line, r.Filename()) {
+			return strings.TrimSpace(strings.TrimSuffix(line, r.Filename())), nil
 		}
 	}
 	if err := s.Err(); err != nil {

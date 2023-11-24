@@ -1,4 +1,4 @@
-package pkgio
+package data
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ type Data struct {
 	m sync.RWMutex
 }
 
-func NewData() *Data {
+func New() *Data {
 	return &Data{
 		d: map[string][]byte{},
 	}

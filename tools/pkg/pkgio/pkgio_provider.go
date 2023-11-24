@@ -6,14 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
-	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/grabber"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
 	"github.com/henderiw-nephio/kform/tools/pkg/util/cache"
-	"github.com/henderiw/logger/log"
+	"github.com/pkg/errors"
 )
 
 type PkgProviderReadWriter interface {
@@ -22,6 +22,9 @@ type PkgProviderReadWriter interface {
 	Process
 	//ProcessProviderRequirements(context.Context, *Data) (*Data, error)
 }
+
+// read the directory for the installed providers -> regular reader that reads checksums
+// processing: 
 
 func NewPkgProviderReadWriter(rootPath string, providers cache.Cache[*address.Package]) PkgProviderReadWriter {
 	path := filepath.Join(rootPath, ".kform", "providers")
@@ -56,52 +59,57 @@ type pkgProviderReadWriter struct {
 	writer            *pkgProviderWriter
 }
 
-func (r *pkgProviderReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgProviderReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgProviderReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgProviderReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.Write(ctx, data)
 }
 
-func (r *pkgProviderReadWriter) Process(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgProviderReadWriter) Process(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.processProviderRequirements(ctx, data)
 }
 
 // get versions from the installed providers -> right now we assume 1 provider has 1 version
 // check if it is part of the candidates
-// if not -> delete path/done; if yes -> check chechsum; if nok -> delete it
+// if not -> delete path/done; if yes -> check checksum; if nok -> delete it
 //
 
-func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context, data *Data) (*Data, error) {
-	log := log.FromContext(ctx)
+func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context, data *data.Data) (*data.Data, error) {
+	//log := log.FromContext(ctx)
 	// walk over the paths and delete the once that are not relevant
 	// based on the provider requirements/packages
-	for path, hash := range data.List() {
+	for path := range data.List() {
 		for _, pkg := range r.providers.List() {
 			if strings.HasPrefix(path, pkg.BasePath()) {
 				installedVersion := address.GetVersionFromPath(path)
-				log.Info("processProviderRequirements", "installedVersion", installedVersion)
+				//log.Info("processProviderRequirements", "installedVersion", installedVersion)
 				if pkg.HasVersion(installedVersion) {
-					remoteHash, err := pkg.GetRemoteChecksum(installedVersion)
-					if err != nil {
-						return data, err
-					}
-					if string(hash) == remoteHash {
-						// found and valid
-						pkg.UpdateSelectedVersion(installedVersion)
-						data.Delete(path)
-					} else {
-						// remove the files from the fsys
-						if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
+					// TODO we should reinstall from the safe place here
+					pkg.UpdateSelectedVersion(installedVersion)
+					data.Delete(path)
+					/*
+						remoteHash, err := pkg.GetRemoteChecksum(ctx, installedVersion)
+						if err != nil {
 							return data, err
 						}
-						data.Delete(path)
-						// update the path to install the latest
-						toBeInstalledVersion := pkg.Newest()
-						pkg.UpdateSelectedVersion(toBeInstalledVersion)
-						data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
-					}
+						if string(hash) == remoteHash {
+							// found and valid
+							pkg.UpdateSelectedVersion(installedVersion)
+							data.Delete(path)
+						} else {
+							// remove the files from the fsys
+							if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
+								return data, err
+							}
+							data.Delete(path)
+							// update the path to install the latest
+							toBeInstalledVersion := pkg.Newest()
+							pkg.UpdateSelectedVersion(toBeInstalledVersion)
+							data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.GetRefWithVersion(toBeInstalledVersion)))
+						}
+					*/
 				} else {
 					// remove the files from the fsys
 					if err := r.writer.fsys.RemoveAll(pkg.BasePath()); err != nil {
@@ -111,7 +119,7 @@ func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context,
 					// update the path to install the latest
 					toBeInstalledVersion := pkg.Newest()
 					pkg.UpdateSelectedVersion(toBeInstalledVersion)
-					data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
+					data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.GetRawRefWithVersion(toBeInstalledVersion)))
 				}
 				break
 			}
@@ -126,7 +134,7 @@ func (r *pkgProviderReadWriter) processProviderRequirements(ctx context.Context,
 			}
 			toBeInstalledVersion := pkg.Newest()
 			pkg.UpdateSelectedVersion(toBeInstalledVersion)
-			data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.URL(toBeInstalledVersion)))
+			data.Add(pkg.FilePath(toBeInstalledVersion), []byte(pkg.GetRawRefWithVersion(toBeInstalledVersion)))
 		}
 	}
 
@@ -139,69 +147,93 @@ type pkgProviderWriter struct {
 	rootPath   string
 }
 
-func (r *pkgProviderWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgProviderWriter) Write(ctx context.Context, data *data.Data) error {
 	providerPath := filepath.Join(r.rootPath, ".kform", "providers")
 	if !r.PathExists {
 		os.MkdirAll(providerPath, 0755|os.ModeDir)
 		r.fsys = fsys.NewDiskFS(providerPath)
 	}
 
-	fileLocs := map[string][]string{}
-	for path, url := range data.List() {
-		// create a dir for all the paths
+	for path, ref := range data.List() {
+		fmt.Println("download", path, ref)
 		r.fsys.MkdirAll(filepath.Dir(path))
-		fileLocs[filepath.Join(providerPath, path)] = []string{url}
+
+		//
+		pkg, err := address.GetPackageFromRef(ref)
+		if err != nil {
+			return errors.Wrap(err, "cannot get package from ref")
+		}
+
+		path = filepath.Join(r.rootPath, ".kform", "providers", path)
+
+		pkgrw := NewPkgPullReadWriter(path, pkg, kformpkgmetav1alpha1.PkgKindProvider)
+		p := Pipeline{
+			Inputs:  []Reader{pkgrw},
+			Outputs: []Writer{pkgrw},
+		}
+		if err := p.Execute(ctx); err != nil {
+			return errors.Wrap(err, "cannot install pkg")
+		}
 	}
 
-	respch, err := grabber.GetBatch(ctx, 3, fileLocs)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return err
-	}
+	/*
+		fileLocs := map[string][]string{}
+		for path, url := range data.List() {
+			// create a dir for all the paths
+			r.fsys.MkdirAll(filepath.Dir(path))
+			fileLocs[filepath.Join(providerPath, path)] = []string{url}
+		}
 
-	// start a ticker to update progress every 200ms
-	t := time.NewTicker(200 * time.Millisecond)
+		respch, err := grabber.GetBatch(ctx, 3, fileLocs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			return err
+		}
 
-	// monitor downloads
-	completed := 0
-	inProgress := 0
-	responses := make([]*grabber.Response, 0)
-	for completed < grabber.GetTotalURLs(fileLocs) {
-		select {
-		case resp := <-respch:
-			// a new response has been received and has started downloading
-			// (nil is received once, when the channel is closed by grab)
-			if resp != nil {
-				responses = append(responses, resp)
-			}
+		// start a ticker to update progress every 200ms
+		t := time.NewTicker(200 * time.Millisecond)
 
-		case <-t.C:
-			// update completed downloads
-			for i, resp := range responses {
-				if resp != nil && resp.IsComplete() {
-					// print final result
-					if resp.Err() != nil {
-						fmt.Fprintf(os.Stderr, "Error downloading %s: %v\n", resp.Request.URL(), resp.Err())
-					} else {
-						fmt.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
-					}
-					// mark completed
-					responses[i] = nil
-					completed++
-				}
-			}
-
-			// update downloads in progress
-			inProgress = 0
-			for _, resp := range responses {
+		// monitor downloads
+		completed := 0
+		inProgress := 0
+		responses := make([]*grabber.Response, 0)
+		for completed < grabber.GetTotalURLs(fileLocs) {
+			select {
+			case resp := <-respch:
+				// a new response has been received and has started downloading
+				// (nil is received once, when the channel is closed by grab)
 				if resp != nil {
-					inProgress++
-					fmt.Printf("Downloading %s %d / %d bytes (%d%%)\033[K\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
+					responses = append(responses, resp)
+				}
+
+			case <-t.C:
+				// update completed downloads
+				for i, resp := range responses {
+					if resp != nil && resp.IsComplete() {
+						// print final result
+						if resp.Err() != nil {
+							fmt.Fprintf(os.Stderr, "Error downloading %s: %v\n", resp.Request.URL(), resp.Err())
+						} else {
+							fmt.Printf("Finished %s %d / %d bytes (%d%%)\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
+						}
+						// mark completed
+						responses[i] = nil
+						completed++
+					}
+				}
+
+				// update downloads in progress
+				inProgress = 0
+				for _, resp := range responses {
+					if resp != nil {
+						inProgress++
+						fmt.Printf("Downloading %s %d / %d bytes (%d%%)\033[K\n", resp.Filename, resp.BytesComplete(), resp.Size, int(100*resp.Progress()))
+					}
 				}
 			}
 		}
-	}
-	t.Stop()
+		t.Stop()
+	*/
 	return nil
 }
 
@@ -215,7 +247,7 @@ func NewPkgValidator() PkgValidator {
 
 type pkgValidator struct{}
 
-func (r *pkgValidator) Write(ctx context.Context, data *Data) error {
+func (r *pkgValidator) Write(ctx context.Context, data *data.Data) error {
 	providers := []string{}
 	for path := range data.List() {
 		providers = append(providers, path)

@@ -39,7 +39,7 @@ func makeInitialDiskFs(td fstest.MapFS) FS {
 	path, _ := os.MkdirTemp("", "test")
 	fsys := NewDiskFS(path)
 	for path, mapFile := range td {
-		if err := fsys.WriteFile(path, mapFile.Data); err != nil {
+		if err := fsys.WriteFile(path, mapFile.Data, 0644); err != nil {
 			fmt.Println("err", err)
 		}
 	}

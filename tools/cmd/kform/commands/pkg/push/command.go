@@ -3,10 +3,12 @@ package pushcmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	docs "github.com/henderiw-nephio/kform/internal/docs/generated/pkgdocs"
-	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio"
+	"github.com/henderiw-nephio/kform/tools/pkg/syntax/address"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +26,7 @@ func NewRunner(ctx context.Context, version string) *Runner {
 
 	r.Command = cmd
 
-	//r.Command.Flags().StringVarP(&r.packageRoot, "PackageRoot", "f", ".", "Path to package directory.")
-	//r.Command.Flags().StringVarP(&r.packageName, "packageName", "n", "package", "name of the package to be built")
-	//r.Command.Flags().BoolVarP(&r.local, "local", "", false, "save image to tarball.")
+	r.Command.Flags().BoolVarP(&r.releaser, "releaser", "", false, "push command is used as a releaser e.g. as a github action")
 	return r
 }
 
@@ -36,25 +36,25 @@ func NewCommand(ctx context.Context, version string) *cobra.Command {
 
 type Runner struct {
 	Command  *cobra.Command
-	//rootPath string
-	//local    bool
+	releaser bool
 }
 
 func (r *Runner) runE(c *cobra.Command, args []string) error {
-	
 	rootPath := args[1]
-	if err := fsys.ValidateDirPath(rootPath); err != nil {
-		return err
-	}
-	fs := fsys.NewDiskFS(".")
-	f, err := fs.Stat(rootPath)
+	f, err := os.Stat(rootPath)
 	if err != nil {
-		fs.MkdirAll(rootPath)
-	} else if !f.IsDir() {
+		return fmt.Errorf("cannot create a pkg, rootpath %s does not exist", rootPath)
+	}
+	if !f.IsDir() {
 		return fmt.Errorf("cannot initialize a pkg on a file, please provide a directory instead, file: %s", rootPath)
 	}
 
-	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, args[0])
+	pkg, err := address.GetPackageFromRef(args[0])
+	if err != nil {
+		return errors.Wrap(err, "cannot get package from ref")
+	}
+
+	pkgrw := pkgio.NewPkgPushReadWriter(rootPath, pkg, r.releaser)
 	p := pkgio.Pipeline{
 		Inputs:  []pkgio.Reader{pkgrw},
 		Outputs: []pkgio.Writer{pkgrw},

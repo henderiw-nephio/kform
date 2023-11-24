@@ -52,7 +52,6 @@ func (r Platform) String() string {
 }
 
 type Package struct {
-	Type               PackageType
 	Address            *Address
 	Platform           *Platform
 	AvailableVersions  versions.List
@@ -61,49 +60,20 @@ type Package struct {
 	SelectedVersion    string
 }
 
-type PackageType string
-
-const (
-	PackageTypeProvider PackageType = "provider"
-	PackageTypeModule   PackageType = "module"
-)
-
-/*
-func (r *Package) GetVersion() string {
-	if len(r.Version) == 0 {
-		return ""
-	}
-	if r.Version[0] == 'v' {
-		return r.Version
-	}
-	return fmt.Sprintf("v%s", r.Version)
-}
-
-func (r *Package) GetRawVersion() string {
-	if len(r.Version) == 0 {
-		return ""
-	}
-	if r.Version[0] == 'v' {
-		return string(r.Version[1:])
-	}
-	return r.Version
-}
-*/
-
 func (r *Package) githubDownloadPath(version string) string {
-	return filepath.Join(r.Address.Namespace, "releases", "download", fmt.Sprintf("v%s", version), r.Filename(version))
+	return filepath.Join(r.Address.Namespace, "releases", "download", fmt.Sprintf("v%s", version), r.Filename())
 }
 
 // filename is aligned with go releaser
-func (r *Package) Filename(version string) string {
+func (r *Package) Filename() string {
 	if r.IsLocal() {
-		return fmt.Sprintf("%s-%s", r.Type, r.Address.Name)
+		return r.Address.Name
 	}
-	return fmt.Sprintf("%s-%s_%s_%s", r.Type, r.Address.Name, version, r.Platform.String())
+	return fmt.Sprintf("%s_%s", r.Address.Name, r.Platform.String())
 }
 
 func (r *Package) githubChecksumPath(version string) string {
-	return filepath.Join(r.Address.Namespace, "releases", "download", fmt.Sprintf("v%s", version), r.checksumFilename(version))
+	return filepath.Join(r.Address.Namespace, "releases", "download", fmt.Sprintf("v%s", version), r.checksumFilename())
 }
 
 func (r *Package) githubReleasesPath() string {
@@ -111,8 +81,28 @@ func (r *Package) githubReleasesPath() string {
 }
 
 // filename is aligned with go releaser
-func (r *Package) checksumFilename(version string) string {
-	return fmt.Sprintf("%s_%s_checksums.txt", r.Address.ProjectName(), version)
+func (r *Package) checksumFilename() string {
+	return fmt.Sprintf("%s_checksums.txt", r.Address.ProjectName())
+}
+
+func (r *Package) GetVersionRef() string {
+	if r.Platform == nil || r.Platform.OS == "" || r.Platform.Arch == "" {
+		return fmt.Sprintf("%s/%s/%s:%s", r.Address.HostName, r.Address.Namespace, r.Address.Name, r.SelectedVersion)
+	}
+	// this includes the version, os.Arch and os.OS in the name
+	return fmt.Sprintf("%s/%s/%s:%s", r.Address.HostName, r.Address.Namespace, r.Filename(), r.SelectedVersion)
+}
+
+func (r *Package) GetRef() string {
+	if r.Platform == nil || r.Platform.OS == "" || r.Platform.Arch == "" {
+		return fmt.Sprintf("%s/%s/%s", r.Address.HostName, r.Address.Namespace, r.Address.Name)
+	}
+	// this includes the, os.Arch and os.OS in the name
+	return fmt.Sprintf("%s/%s/%s", r.Address.HostName, r.Address.Namespace, r.Filename())
+}
+
+func (r *Package) GetRawRefWithVersion(version string) string {
+	return fmt.Sprintf("%s/%s/%s:%s", r.Address.HostName, r.Address.Namespace, r.Address.Name, version)
 }
 
 func (r *Package) URL(version string) string {
@@ -146,11 +136,15 @@ func (r *Package) BasePath() string {
 	return r.Address.Path()
 }
 
+func (r *Package) ExecPath() string {
+	return filepath.Join(r.Address.Path(), r.SelectedVersion, r.Platform.String(), r.Filename(), "image", r.Address.Name)
+}
+
 func (r *Package) FilePath(version string) string {
 	if r.Address.IsLocal() {
-		return filepath.Join(r.Address.Path(), r.Filename(version))
+		return filepath.Join(r.Address.Path(), r.Filename())
 	}
-	return filepath.Join(r.Address.Path(), version, r.Platform.String(), r.Filename(version))
+	return filepath.Join(r.Address.Path(), version, r.Platform.String(), r.Filename())
 }
 
 func (r *Package) FilePathWithSelectedVersion() string {

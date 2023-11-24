@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/oci"
 )
@@ -48,11 +49,11 @@ type pkgBuildReadWriter struct {
 	writer *pkgBuildWriter
 }
 
-func (r *pkgBuildReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgBuildReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgBuildReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgBuildReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.Write(ctx, data)
 }
 
@@ -62,7 +63,7 @@ type pkgBuildWriter struct {
 	pkgName  string
 }
 
-func (r *pkgBuildWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgBuildWriter) Write(ctx context.Context, data *data.Data) error {
 	img, err := oci.Build(data.List())
 	if err != nil {
 		return err

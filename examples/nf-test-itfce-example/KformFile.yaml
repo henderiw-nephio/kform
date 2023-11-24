@@ -6,10 +6,12 @@ spec:
   kind: module
   providerRequirements:
     kubernetes:
-      source: github.com/henderiw-nephio/kform
+      #source: github.com/henderiw-nephio/kform
+      source: ghcr.io/kform-providers/kubernetes
       version: "0.0.1"
     resourcebackend:
-      source: github.com/henderiw-nephio/kform
+      #source: github.com/henderiw-nephio/kform
+      source: ghcr.io/kform-providers/resourcebackend
       version: "0.0.1"
     test:
       source: .

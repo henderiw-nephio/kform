@@ -7,9 +7,8 @@ before:
     #- go generate ./...
 
 builds:
-- id: provider-kubernetes
-  main: providers/provider-kubernetes/main.go
-  binary: 'provider-kubernetes'
+- id: kform
+  main: tools/cmd/kform/main.go
   env:
     - CGO_ENABLED=0
   goos:
@@ -33,43 +32,24 @@ builds:
     - goarch: arm64
       goos: openbsd
   mod_timestamp: '{{ .CommitTimestamp }}'
-- id: provider-resourcebackend
-  main: providers/provider-resourcebackend/main.go
-  binary: 'provider-resourcebackend'
-  env:
-    - CGO_ENABLED=0
-  goos:
-    - darwin
-    #- freebsd
-    - linux
-    #- openbsd
-    #- windows
-  goarch:
-    #- '386'
-    - amd64
-    #- arm
-    - arm64
-  ignore:
-    - goarch: arm
-      goos: windows
-    - goarch: arm64
-      goos: freebsd
-    - goarch: arm64
-      goos: windows
-    - goarch: arm64
-      goos: openbsd
-  mod_timestamp: '{{ .CommitTimestamp }}'
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
 archives:
-- #format: tar.gz
-  format: binary
-  # this name template makes the OS and Arch compatible with the results of `uname`.
-  #name_template: '{{ .Id }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}'
-  files:
-  - none*
-  # use zip for windows archives
+- name_template: >-
+    {{- .ProjectName }}_
+    {{- title .Os }}_
+    {{- if eq .Arch "amd64" }}x86_64
+    {{- else if eq .Arch "386" }}i386
+    {{- else }}{{ .Arch }}{{ end }}
+    {{- if .Arm }}v{{ .Arm }}{{ end -}}
   format_overrides:
   - goos: windows
     format: zip
+  builds_info:
+    group: root
+    owner: root
+  files:
+  - none*
 
 changelog:
   sort: asc

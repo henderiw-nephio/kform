@@ -12,6 +12,7 @@ import (
 	"github.com/GoogleContainerTools/kpt-functions-sdk/go/fn"
 	kformpkgmetav1alpha1 "github.com/henderiw-nephio/kform/tools/apis/kform/pkg/meta/v1alpha1"
 	"github.com/henderiw-nephio/kform/tools/pkg/fsys"
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/ignore"
 	"github.com/xlab/treeprint"
 	"sigs.k8s.io/kustomize/kyaml/kio/kioutil"
@@ -54,11 +55,11 @@ type pkgTreeReadWriter struct {
 	writer *pkgTreeWriter
 }
 
-func (r *pkgTreeReadWriter) Read(ctx context.Context, data *Data) (*Data, error) {
+func (r *pkgTreeReadWriter) Read(ctx context.Context, data *data.Data) (*data.Data, error) {
 	return r.reader.Read(ctx, data)
 }
 
-func (r *pkgTreeReadWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgTreeReadWriter) Write(ctx context.Context, data *data.Data) error {
 	return r.writer.Write(ctx, data)
 }
 
@@ -76,7 +77,7 @@ type pkgTreeWriter struct {
 	rootPath string
 }
 
-func (r *pkgTreeWriter) Write(ctx context.Context, data *Data) error {
+func (r *pkgTreeWriter) Write(ctx context.Context, data *data.Data) error {
 	indexByPkgDir := r.index(data)
 
 	// create the new tree
@@ -142,7 +143,7 @@ func branchName(fs fsys.FS, dirRelPath string) string {
 }
 
 // index indexes the Resources by their package
-func (p pkgTreeWriter) index(data *Data) map[string][]*fn.KubeObject {
+func (p pkgTreeWriter) index(data *data.Data) map[string][]*fn.KubeObject {
 	indexByPkgDir := map[string][]*fn.KubeObject{}
 	for path, data := range data.List() {
 		ko, err := fn.ParseKubeObject([]byte(data))

@@ -2,6 +2,8 @@ package pkgio
 
 import (
 	"context"
+
+	"github.com/henderiw-nephio/kform/tools/pkg/pkgio/data"
 )
 
 const kformOciPkgExt = "kformpkg"
@@ -13,19 +15,19 @@ var MarkdownMatch = []string{"*.md"}
 var YAMLMatch = []string{"*.yaml", "*.yml"}
 var JSONMatch = []string{"*.json"}
 var MatchAll = []string{"*"}
+
 //var PkgMatch = []string{fmt.Sprintf("*.%s", kformOciPkgExt)}
 
-
 type Reader interface {
-	Read(context.Context, *Data) (*Data, error)
+	Read(context.Context, *data.Data) (*data.Data, error)
 }
 
 type Writer interface {
-	Write(context.Context, *Data) error
+	Write(context.Context, *data.Data) error
 }
 
 type Process interface {
-	Process(context.Context, *Data) (*Data, error)
+	Process(context.Context, *data.Data) (*data.Data, error)
 }
 
 type Pipeline struct {
@@ -35,7 +37,7 @@ type Pipeline struct {
 }
 
 func (r Pipeline) Execute(ctx context.Context) error {
-	data := NewData()
+	data := data.New()
 	var err error
 	// read from the inputs
 	for _, i := range r.Inputs {
@@ -44,14 +46,14 @@ func (r Pipeline) Execute(ctx context.Context) error {
 			return err
 		}
 	}
-	data.Print()
+	//data.Print()
 	for _, p := range r.Processors {
 		data, err = p.Process(ctx, data)
 		if err != nil {
 			return err
 		}
 	}
-	data.Print()
+	//data.Print()
 	// write to the outputs
 	for _, o := range r.Outputs {
 		if err := o.Write(ctx, data); err != nil {

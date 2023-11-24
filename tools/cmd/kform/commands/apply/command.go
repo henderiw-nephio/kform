@@ -183,7 +183,7 @@ func (r *Runner) runE(c *cobra.Command, args []string) error {
 						errCh <- err
 						return
 					}
-					fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b)
+					fsys.WriteFile(filepath.Join("out", fmt.Sprintf("%s%d.yaml", outputVarName, idx)), b, 0644)
 				}
 			}
 		}
