@@ -40,7 +40,6 @@ func (r *Release) GetImageData(ctx context.Context) (Images, error) {
 			}
 			images = append(images, Image{
 				Name: asset.Name,
-				//Version: split[1],
 				Platform: Platform{
 					OS:   split[1],
 					Arch: split[2],
@@ -51,6 +50,3 @@ func (r *Release) GetImageData(ctx context.Context) (Images, error) {
 	}
 	return images, nil
 }
-
-//"content_type": "application/octet-stream",
-// "state": "uploaded",

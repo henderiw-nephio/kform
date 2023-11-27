@@ -10,14 +10,14 @@ import (
 )
 
 /*
-https://github.com/henderiw-nephio/kform/releases/download/v0.0.1/provider-kubernetes_0.0.1_darwin_amd64
+https://github.com/henderiw-nephio/kform/releases/download/v0.0.1/kubernetes_darwin_amd64
 europe-docker.pkg.dev/srlinux/eu.gcr.io/provider-xxxx
 github.com/henderiw-nephio/kform/provider-xxxx
 */
 
-// .kform/providers/github.com/henderiw-nephio_kform/kubernetes/0.0.1/darwin_arm64/<binary>
-// .kform/providers/kubernetes/<binary>
-// .kform/providers/<hostname>/<namespace>/<provider-name>/<version>/<platform>/<binary>
+// .kform/providers/github.com/henderiw-nephio_kform/kubernetes/0.0.1/darwin_arm64/<package>
+// .kform/providers/local/kubernetes/<binary>
+// .kform/providers/<hostname>/<namespace>/<provider-name>/<version>/<platform>/<package>
 //
 
 type Address struct {
@@ -137,14 +137,14 @@ func (r *Package) BasePath() string {
 }
 
 func (r *Package) ExecPath() string {
-	return filepath.Join(r.Address.Path(), r.SelectedVersion, r.Platform.String(), r.Filename(), "image", r.Address.Name)
+	return filepath.Join(r.Address.Path(), r.SelectedVersion, r.Platform.String(), "image", r.Address.Name)
 }
 
 func (r *Package) FilePath(version string) string {
 	if r.Address.IsLocal() {
-		return filepath.Join(r.Address.Path(), r.Filename())
+		return filepath.Join(r.Address.Path())
 	}
-	return filepath.Join(r.Address.Path(), version, r.Platform.String(), r.Filename())
+	return filepath.Join(r.Address.Path(), version, r.Platform.String())
 }
 
 func (r *Package) FilePathWithSelectedVersion() string {

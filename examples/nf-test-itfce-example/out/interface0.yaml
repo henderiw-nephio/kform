@@ -5,14 +5,12 @@ metadata:
 spec:
   attachmentType: vlan
   cniType: sriov
-  ipFamilyPolicy: dualstack
+  ipFamilyPolicy: ipv4Only
   networkInstance:
     name: vpc-ran
 status:
   ipClaimStatus:
   - gateway: 10.0.0.1
     prefix: 10.0.0.10/24
-  - gateway: 1000::1
-    prefix: 1000::2/64
   vlanClaimStatus:
     vlanID: 10

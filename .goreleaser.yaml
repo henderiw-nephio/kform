@@ -57,3 +57,19 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+
+nfpms:
+  - id: kform-nfpms
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    package_name: kform
+    maintainer: Wim Henderickx <wim.henderickx@gmail.com>
+    homepage: https://kform.dev
+    description: |
+      Kform is an KRM as code/data tool.
+    vendor: Nokia
+    license: GNU GPLv3
+    formats:
+      - rpm
+      - deb
+      - apk
+    bindir: /usr/bin

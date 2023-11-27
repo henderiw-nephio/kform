@@ -25,7 +25,7 @@ func ValidateDirPath(path string) error {
 func EnsureDir(ctx context.Context, elems ...string) error {
 	log := log.FromContext(ctx)
 	fp := filepath.Join(elems...)
-	log.Info("ensure dir", "path", fp)
+	//log.Info("ensure dir", "path", fp)
 	fpInfo, err := os.Stat(fp)
 	if err != nil {
 		if err := os.MkdirAll(fp, 0755); err != nil {

@@ -22,7 +22,7 @@ const (
 	defaultConfigFileName    = "kform"
 	defaultConfigFileNameExt = "yaml"
 	defaultConfigEnvPrefix   = "KFORM"
-	defaultDBPath            = "plugins_db"
+	defaultDBPath            = "package_db"
 )
 
 var (
@@ -40,7 +40,12 @@ func GetMain(ctx context.Context) *cobra.Command {
 		// adjust the error message coming from libraries
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			// create plugin store if it does not exist
+			// initialize viper
+			// ensure the viper config directory exists
+			cobra.CheckErr(fsys.EnsureDir(ctx, xdg.ConfigHome, defaultConfigFileSubDir))
+			// initialize viper settings
+			initConfig()
+			// create package store if it does not exist
 			_, err := store.New(cmd.Context(),
 				filepath.Join(xdg.ConfigHome, defaultConfigFileSubDir, defaultDBPath))
 			return err
@@ -56,11 +61,6 @@ func GetMain(ctx context.Context) *cobra.Command {
 			return cmd.Usage()
 		},
 	}
-	// ensure the viper config directory exists
-
-	cobra.CheckErr(fsys.EnsureDir(ctx, xdg.ConfigHome, defaultConfigFileSubDir))
-	// initialize viper settings
-	cobra.OnInitialize(initConfig)
 
 	cmd.AddCommand(initcmd.NewCommand(ctx, version))
 	cmd.AddCommand(apply.NewCommand(ctx, version))
@@ -73,7 +73,7 @@ func GetMain(ctx context.Context) *cobra.Command {
 
 type Runner struct {
 	Command *cobra.Command
-	Ctx     context.Context
+	//Ctx     context.Context
 }
 
 // initConfig reads in config file and ENV variables if set.

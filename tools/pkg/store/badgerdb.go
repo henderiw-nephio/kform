@@ -31,7 +31,7 @@ func (d *badgerDBStore) Get(ctx context.Context, p Plugin) ([]byte, error) {
 		return nil, err
 	}
 	p.Tags = nil // Get ignores tags (for now)
-	k := d.buildKey(p)
+	k := buildKey(p)
 	var v []byte
 
 	err = d.db.View(func(txn *badger.Txn) error {
@@ -58,7 +58,7 @@ func (d *badgerDBStore) Save(ctx context.Context, p Plugin, v []byte) error {
 	if err != nil {
 		return err
 	}
-	k := d.buildKey(p)
+	k := buildKey(p)
 	return d.db.Update(func(txn *badger.Txn) error {
 		return txn.Set(k, v)
 	})
@@ -69,7 +69,7 @@ func (d *badgerDBStore) Delete(ctx context.Context, p Plugin) error {
 	if err != nil {
 		return err
 	}
-	k := d.buildKey(p)
+	k := buildKey(p)
 	return d.db.Update(func(txn *badger.Txn) error {
 		return txn.Delete(k)
 	})
@@ -198,7 +198,7 @@ func (d *badgerDBStore) listProjects() ([]string, error) {
 //		| | l | project | l | name | l | version | l | os | l | arch | l | tag1 | l | tag1 | ....
 //		| +-------------+----------+-------------+--------+----------+----------+----------+-----
 //		+----------------------------------------------------------------------------------------
-func (d *badgerDBStore) buildKey(p Plugin) []byte {
+func buildKey(p Plugin) []byte {
 	b := new(bytes.Buffer)
 	// project
 	b.Write(buildKeyItem(p.Project))
