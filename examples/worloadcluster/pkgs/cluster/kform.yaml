@@ -1,0 +1,177 @@
+## selection of the implementation should happen at this stage !!!!!
+apiVersion: pkg.kform.io/v1alpha1  
+kind: Pipeline
+metadata:
+  name: cluster
+spec:
+- input:
+    context: ## this is a user defined name
+      default:
+      - apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: context
+        data:
+          namespace: $namespace
+          clusterName: $clusterName # this could be a cell function based on labels/annotations/etc
+- input:
+    workloadCluster:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: WorkloadCluster
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+          nodepool: xxx
+- input:
+    repo:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Repository
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- input:
+    storage:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Storage
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- input:
+    cni:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: CNI
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- input:
+    gitops:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Gitops
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- resource: ## kform need to something special for this to validate the input parameters
+    kubernetes_manifest:
+      workloadcluster:
+        config:
+          apiVersion: config.pm.kform.dev/v1alpha1
+          kind: PackageVariant
+          metadata:
+            name: $input.context[0].data.clusterName-workloadcluster
+            namespace: $input.context[0].data.namespace
+          upstream:
+            repository: example-packages
+            package: workloadcluster
+            revision: $input.workloadcluster[0].spec.revision
+          downstream:
+            repository: mgmt
+            package: $input.context[0].data.clusterName-workloadcluster
+          input:
+            context: $input.context ## you could remap this to a specific input
+            workloadcluster: $input.workloadcluster ## you could remap this to a specific input
+- resource: ## the provider behind this is the pvar
+    kubernetes_manifest:
+      repo:
+        config:
+          apiVersion: config.pm.kform.dev/v1alpha1
+          kind: PackageVariant
+          metadata:
+            name: $input.context[0].data.clusterName-repo
+            namespace: $input.context[0].data.namespace
+          upstream:
+            repository: example-packages
+            package: repo
+            revision: $input.repo[0].spec.revision
+          downstream:
+            repository: mgmt
+            package: $input.context[0].data.clusterName-repo
+          input:
+            context: $input.context ## you could remap this to a specific input
+            repo: $input.repo ## you could remap this to a specific input
+- resource: ## the provider behind this is the pvar
+    kubernetes_manifest:
+      gitops:
+        config:
+          apiVersion: config.pm.kform.dev/v1alpha1
+          kind: PackageVariant
+          metadata:
+            name: $input.context[0].data.clusterName-gitops
+            namespace: $input.context[0].data.namespace
+          upstream:
+            repository: example-packages
+            package: gitops
+            revision: $input.gitops[0].spec.revision
+          downstream:
+            repository: mgmt
+            package: $input.context[0].data.clusterName-gitops
+          input:
+            context: $input.context ## you could remap this to a specific input
+            gitops: $input.gitops ## you could remap this to a specific input
+- resource: ## the provider behind this is the pvar
+    kubernetes_manifest:
+      storage:
+        config:
+          apiVersion: config.pm.kform.dev/v1alpha1
+          kind: PackageVariant
+          metadata:
+            name: $input.context[0].data.clusterName-storage
+            namespace: $input.context[0].data.namespace
+          upstream:
+            repository: example-packages
+            package: storage
+            revision: $input.storage[0].spec.revision
+          downstream:
+            repository: mgmt
+            package: $input.context[0].data.clusterName-storage
+          input:
+            context: $input.context ## you could remap this to a specific input
+            storage: $input.storage ## you could remap this to a specific input
+- resource: ## the provider behind this is the pvar
+    kubernetes_manifest:
+      cni:
+        config:
+          apiVersion: config.pm.kform.dev/v1alpha1
+          kind: PackageVariant
+          metadata:
+            name: $input.context[0].data.clusterName-cni
+            namespace: $input.context[0].data.namespace
+          upstream:
+            repository: example-packages
+            package: cni
+            revision: $input.cni[0].spec.revision
+          downstream:
+            repository: mgmt
+            package: $input.context[0].data.clusterName-cni
+          inputParams:
+            context: $input.context ## you could remap this to a specific input
+            cni: $input.cni ## you could remap this to a specific input
+- output: # output is determined by the PRR as the package runs in the pr pipeline controller
+    pvar-workloadcluster:   
+      value: $kubernetes_manifest.workloadcluster
+- output:
+    pvar-repo:   
+      value: $kubernetes_manifest.repo
+- output:
+    pvar-repo:   
+      value: $kubernetes_manifest.repo   
+
+
+# package implementation??
+# option1:
+# - pvar controller in which the resource is statically injected
+# 

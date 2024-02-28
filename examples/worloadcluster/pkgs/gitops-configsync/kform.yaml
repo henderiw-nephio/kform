@@ -1,0 +1,66 @@
+## this triggers the installation of config-sync in the mgmt cluster
+## all of this happens for a single package destination (mgmt-staging in this case)
+apiVersion: pkg.kform.io/v1alpha1 
+kind: Pipeline
+metadata:
+  name: gitops
+spec:
+- input:
+    context: ## this is a user defined name
+      default:
+      - apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: context
+        data:
+          namespace: $namespace
+          clusterName: $clusterName # this could be a cell function based on labels/annotations/etc
+- input:
+    gitops:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Gitops
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- resource:
+    kubernetes_manifest: 
+      sync:
+        config:
+          apiVersion: configsync.gke.io/v1beta1
+          kind: RootSync
+          metadata: 
+            name: $input.context[0].data.clusterName
+            namespace: config-management-system
+          spec:
+            sourceFormat: unstructured
+            git:
+              repo: http://172.18.0.200:3000/nephio/$input.context[0].data.clusterName.git  ## url could be provided by config
+              branch: main
+              auth: token
+              secretRef:
+                name: $input.context[0].data.clusterName-access-token-configsync
+- local:
+    configsync-token:
+      config:
+        apiVersion: req.nephio.org/v1alpha1
+        kind: Token
+        metadata:
+          name: $input.context[0].data.clusterName-access-token-configsync
+          namespace: $input.context[0].data.namespace
+- module:
+    configsync-token:
+      attributes:
+        upstream: # determines the source of the module
+          repository:
+          package:
+          revision:
+        providers:
+          kubernetes: kubernetes ## provider should be cluster api
+      input:
+        token: $local.configsync-token
+- output: # output is determined by the PRR as the package runs in the pr pipeline controller
+    configsync-token: $module.configsync-token
+    sync: $kubernetes_manifest.sync # the config sync sw installation is a consequence of this

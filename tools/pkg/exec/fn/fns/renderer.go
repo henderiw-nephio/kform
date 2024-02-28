@@ -32,26 +32,6 @@ func (r *Renderer) RenderConfigOrValue(ctx context.Context, blockName string, x 
 	return d, nil
 }
 
-func (r *Renderer) RenderValue(ctx context.Context, blockName string, d any, localVars map[string]any) error {
-	renderer := render.Renderer{
-		Vars:      r.Vars,
-		LocalVars: localVars,
-	}
-	d, err := renderer.Render(ctx, d)
-	if err != nil {
-		return fmt.Errorf("render value failed for blockName %s, err: %s", blockName, err.Error())
-	}
-	d, err = AddTypeMeta(ctx, r.Schema, d)
-	if err != nil {
-		return fmt.Errorf("render value failed to add metadata for blockName %s, err: %s", blockName, err.Error())
-	}
-	if err := r.updateVars(ctx, blockName, d, localVars); err != nil {
-		return fmt.Errorf("update vars failed failed for blockName %s, err: %s", blockName, err.Error())
-	}
-
-	return nil
-}
-
 func (r *Renderer) updateVars(ctx context.Context, blockName string, d any, localVars map[string]any) error {
 	total, ok := localVars[render.LoopKeyItemsTotal]
 	if !ok {

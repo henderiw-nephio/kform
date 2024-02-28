@@ -1,0 +1,42 @@
+apiVersion: pkg.kform.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: metallb-service
+spec:
+- input:
+    metallb:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Metallb
+        metadata:
+          name: xxxxxxxxxx
+          namespace: default
+        spec:
+          addressPool: 
+          - 172.18.0.0/20
+- resource:
+    kubernetes_manifest:
+      service:
+        config:
+          apiVersion: metallb.io/v1beta1
+          kind: IPAddressPool
+          metadata:
+            name: $input.metallb[0].metadata.name
+            namespace: metallb-system
+          spec:
+            addresses: $input.metallb[0].spec.addressPool
+- resource:
+    kubernetes_manifest:
+      service:
+        config:
+          apiVersion: metallb.io/v1beta1
+          kind: L2Advertisement
+          metadata:
+            name: $input.metallb[0].metadata.name
+            namespace: metallb-system
+- output:
+    service:
+      value: $kubernetes_manifest.service
+
+
+

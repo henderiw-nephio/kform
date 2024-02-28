@@ -1,0 +1,29 @@
+# indicate if this mgmt or workload and based on this 
+# determine the parameters to be used for installation
+apiVersion: pkg.kform.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: wirer-sw
+spec:
+- input:
+    context: ## this is a user defined name
+      default:
+      - apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: context
+        data:
+          namespace: $namespace
+          clusterName: $clusterName # this could be a cell function based on labels/annotations/etc
+- input:
+    config:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Wirer
+        metadata:
+          name: xxxxxxxxxx
+          namespace: default
+          service-annotations: xxxx # allows to make it implementation specific e.g. use metallb ip
+
+# todo if workloadcluster allocate an IP -> provide it in the service
+- resources: xxx ## todo

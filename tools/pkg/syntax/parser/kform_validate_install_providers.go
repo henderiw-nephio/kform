@@ -13,7 +13,7 @@ import (
 
 // validateAndOrInstallProviders looks at the provider requirements
 // 1. convert provider requirements to packages
-// 2. get the releases per provider (based in source <hostanme>/<namespace>)
+// 2. get the releases per provider (based in source <hostname>/<namespace>)
 func (r *kformparser) validateAndOrInstallProviders(ctx context.Context, init bool) {
 	for nsn, reqs := range r.GetProviderRequirements(ctx) {
 		// convert provider requirements to a package

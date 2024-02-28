@@ -1,0 +1,47 @@
+apiVersion: pkg.kform.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: wirer
+spec:
+- input:
+    token:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Token
+        metadata:
+          name: xxxxxxxxxx
+          namespace: default
+- data:
+    kubernetes_manifest:
+      git-provider:
+        config:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: git-porvider-decision
+- resource:
+    kubernetes_manifest:
+      token:
+        attributes:
+          # depending on the git-porvider-decision this might be a different api
+        config:
+          apiVersion: infra.nephio.org/v1alpha1
+          kind: Token
+          metadata:
+            name: $input.token[0].metadata.name
+            namespace: $input.token[0].metadata.namespace
+- output:
+    token:
+      value: $kubernetes_manifest.token
+
+
+# flow
+# data: get all workload clusters
+# per workload cluster
+# - check if configmap clustername is there (in the package)
+# - metallb config for the IP address (allocate an IP from backend) (pvar)
+# - install wirer sw (pvar)
+# - allocate vxlan block
+# per mgmt cluster
+# - install wirer sw (pvar)
+# - allocate vxlan block

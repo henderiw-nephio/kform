@@ -1,0 +1,54 @@
+apiVersion: config.pm.kform.dev/v1alpha1
+kind: PackageVariant
+metadata:
+  name: edge
+  namespace: default
+upstream:
+  repository: example-packages
+  package: cluster
+  revision: v1
+downstream:
+  repository: mgmt
+  package: $metadata.name
+input:
+  context:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: context
+    data:
+      namespace: $metadata.namespace
+      clusterName: $metadata.name 
+  workloadCluster:
+  - apiVersion: req.nephio.org/v1alpha1
+    kind: WorkloadCluster
+    metadata:
+      name: workloadCluster
+    spec:
+      revision: v1
+      selector: xxx
+      nodepool: xxx
+  repo:
+  - apiVersion: req.nephio.org/v1alpha1
+    kind: Repository
+    metadata:
+      name: repo
+    spec:
+      revision: v1
+      selector: xxx
+  storage:
+  - apiVersion: req.nephio.org/v1alpha1
+    kind: Storage
+    metadata:
+      name: storage
+    spec:
+      revision: v1
+      selector: xxx
+  cni:
+  - apiVersion: req.nephio.org/v1alpha1
+    kind: CNI
+    metadata:
+      name: sni
+    spec:
+      revision: v1
+      selector: xxx

@@ -1,0 +1,91 @@
+apiVersion: pkg.kform.io/v1alpha1 ## For is PR (condition) that also determines the location
+kind: Pipeline
+metadata:
+  name: repo
+spec:
+- input:
+    context: ## this is a user defined name
+      default:
+      - apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: context
+        data:
+          namespace: $namespace
+          clusterName: $clusterName # this could be a cell function based on labels/annotations/etc
+- input:
+    repo:
+      default:
+      - apiVersion: req.nephio.org/v1alpha1
+        kind: Repository
+        metadata:
+          name: 
+        spec:
+          revision: v1
+          selector: xxx
+- resource:
+    kubernetes_manifest:
+      repo:
+        attributes:
+        config:
+          apiVersion: infra.nephio.org/v1alpha1
+          kind: Repository
+          metadata:
+            name: $input.context[0].data.clusterName
+            namespace: $input.context[0].data.namespace
+          spec:
+            description: $input.context[0].data.clusterName repository
+            defaultBranch: main
+- resource:
+    kubernetes_manifest:
+      porch-repo:
+        attributes:
+        config:
+          apiVersion: config.porch.kpt.dev/v1alpha1
+          kind: Repository
+          metadata:
+            name: $input.context[0].data.clusterName
+            namespace: default
+          spec:
+            content: Package
+            deployment: true
+            git:
+              branch: main
+              directory: /
+              repo: http://172.18.0.200:3000/nephio/$input.context[0].data.clusterName  ## todo making this dynamic -> dns name???
+              secretRef:
+                name: $module.token[0].metadata.name
+            type: git
+- local:
+    porch-token:
+      config:
+        apiVersion: req.nephio.org/v1alpha1
+        kind: Token
+        metadata:
+          name: $input.context[0].data.clusterName-access-token-porch
+          namespace: $input.context[0].data.namespace
+- module: # a runtime package that does not result in an output directly
+    porch-token:
+      attributes:
+        upstream: # determines the source of the module
+          repository: 
+          package:
+          revision:
+        providers:
+          kubernetes: kubernetes
+      input:
+        token: $local.porch-token
+- output: # output is determined by the PRR as the package runs in the pr pipeline controller
+    repo:
+      value: $kubernetes_manifest.repo
+- output:
+    porch-repo:
+      value: $kubernetes_manifest.porch-repo
+- output:
+    porch-token:
+      value: $module.porch-token.token
+
+
+# the advantage of having a fixed api is that the wacth implementation becomes predictable
+# e.g. i have 3 providers -> only 1 is installed -> i can only wacth the one installed
+# so this becomes a runtime thing
