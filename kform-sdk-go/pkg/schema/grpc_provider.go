@@ -173,7 +173,7 @@ func (r *GRPCProviderServer) CreateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	d, diags := res.ReadContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	d, diags := res.CreateContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
 
 	log.Info("createResource done")
 
