@@ -182,3 +182,58 @@ func (r *GRPCProviderServer) CreateResource(ctx context.Context, req *kfplugin1.
 		Data:        d,
 	}, nil
 }
+
+func (r *GRPCProviderServer) UpdateResource(ctx context.Context, req *kfplugin1.UpdateResource_Request) (*kfplugin1.UpdateResource_Response, error) {
+	// todo add ctx + tracing
+	log := log.FromContext(ctx)
+	log.Info("updateResource...")
+
+	res, ok := r.provider.ResourceMap[req.GetName()]
+	if !ok {
+		return &kfplugin1.UpdateResource_Response{
+			Diagnostics: diag.Errorf("cannot update resource, resourceType not found, got: %s", req.GetName()),
+		}, nil
+	}
+
+	if res.CreateContext == nil {
+		return &kfplugin1.UpdateResource_Response{
+			Diagnostics: diag.Errorf("cannot update resource, updateContext not initialized, for: %s", req.GetName()),
+		}, nil
+	}
+
+	d, diags := res.UpdateContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+
+	log.Info("updateResource done")
+
+	return &kfplugin1.UpdateResource_Response{
+		Diagnostics: diags,
+		Data:        d,
+	}, nil
+}
+
+func (r *GRPCProviderServer) DeleteResource(ctx context.Context, req *kfplugin1.DeleteResource_Request) (*kfplugin1.DeleteResource_Response, error) {
+	// todo add ctx + tracing
+	log := log.FromContext(ctx)
+	log.Info("deleteResource...")
+
+	res, ok := r.provider.ResourceMap[req.GetName()]
+	if !ok {
+		return &kfplugin1.DeleteResource_Response{
+			Diagnostics: diag.Errorf("cannot delete resource, resourceType not found, got: %s", req.GetName()),
+		}, nil
+	}
+
+	if res.DeleteContext == nil {
+		return &kfplugin1.DeleteResource_Response{
+			Diagnostics: diag.Errorf("cannot delete resource, createContext not initialized, for: %s", req.GetName()),
+		}, nil
+	}
+
+	diags := res.DeleteContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+
+	log.Info("deleteResource done")
+
+	return &kfplugin1.DeleteResource_Response{
+		Diagnostics: diags,
+	}, nil
+}

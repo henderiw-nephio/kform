@@ -172,3 +172,33 @@ func (s *server) CreateResource(ctx context.Context, in *kfplugin1.CreateResourc
 	}
 	return resp, nil
 }
+
+func (s *server) UpdateResource(ctx context.Context, in *kfplugin1.UpdateResource_Request) (*kfplugin1.UpdateResource_Response, error) {
+	// todo add ctx + tracing
+	rpc := "updateDataSource"
+	ctx = s.cancelContext(ctx)
+	log := s.l
+	log.Info(rpc)
+
+	resp, err := s.provider.UpdateResource(ctx, in)
+	if err != nil {
+		log.Error(rpc, "error", err)
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (s *server) DeleteResource(ctx context.Context, in *kfplugin1.DeleteResource_Request) (*kfplugin1.DeleteResource_Response, error) {
+	// todo add ctx + tracing
+	rpc := "deleteDataSource"
+	ctx = s.cancelContext(ctx)
+	log := s.l
+	log.Info(rpc)
+
+	resp, err := s.provider.DeleteResource(ctx, in)
+	if err != nil {
+		log.Error(rpc, "error", err)
+		return nil, err
+	}
+	return resp, nil
+}

@@ -23,4 +23,6 @@ type DataSourceServer interface {
 type ResourceServer interface {
 	ReadResource(ctx context.Context, in *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error)
 	CreateResource(ctx context.Context, in *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error)
+	UpdateResource(ctx context.Context, in *kfplugin1.UpdateResource_Request) (*kfplugin1.UpdateResource_Response, error)
+	DeleteResource(ctx context.Context, in *kfplugin1.DeleteResource_Request) (*kfplugin1.DeleteResource_Response, error)
 }

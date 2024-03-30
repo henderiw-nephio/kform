@@ -28,6 +28,8 @@ type ProviderClient interface {
 	ListDataSource(ctx context.Context, in *ListDataSource_Request, opts ...grpc.CallOption) (*ListDataSource_Response, error)
 	ReadResource(ctx context.Context, in *ReadResource_Request, opts ...grpc.CallOption) (*ReadResource_Response, error)
 	CreateResource(ctx context.Context, in *CreateResource_Request, opts ...grpc.CallOption) (*CreateResource_Response, error)
+	UpdateResource(ctx context.Context, in *UpdateResource_Request, opts ...grpc.CallOption) (*UpdateResource_Response, error)
+	DeleteResource(ctx context.Context, in *DeleteResource_Request, opts ...grpc.CallOption) (*DeleteResource_Response, error)
 	StopProvider(ctx context.Context, in *StopProvider_Request, opts ...grpc.CallOption) (*StopProvider_Response, error)
 }
 
@@ -93,6 +95,24 @@ func (c *providerClient) CreateResource(ctx context.Context, in *CreateResource_
 	return out, nil
 }
 
+func (c *providerClient) UpdateResource(ctx context.Context, in *UpdateResource_Request, opts ...grpc.CallOption) (*UpdateResource_Response, error) {
+	out := new(UpdateResource_Response)
+	err := c.cc.Invoke(ctx, "/kfplugin1.Provider/UpdateResource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *providerClient) DeleteResource(ctx context.Context, in *DeleteResource_Request, opts ...grpc.CallOption) (*DeleteResource_Response, error) {
+	out := new(DeleteResource_Response)
+	err := c.cc.Invoke(ctx, "/kfplugin1.Provider/DeleteResource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *providerClient) StopProvider(ctx context.Context, in *StopProvider_Request, opts ...grpc.CallOption) (*StopProvider_Response, error) {
 	out := new(StopProvider_Response)
 	err := c.cc.Invoke(ctx, "/kfplugin1.Provider/StopProvider", in, out, opts...)
@@ -112,6 +132,8 @@ type ProviderServer interface {
 	ListDataSource(context.Context, *ListDataSource_Request) (*ListDataSource_Response, error)
 	ReadResource(context.Context, *ReadResource_Request) (*ReadResource_Response, error)
 	CreateResource(context.Context, *CreateResource_Request) (*CreateResource_Response, error)
+	UpdateResource(context.Context, *UpdateResource_Request) (*UpdateResource_Response, error)
+	DeleteResource(context.Context, *DeleteResource_Request) (*DeleteResource_Response, error)
 	StopProvider(context.Context, *StopProvider_Request) (*StopProvider_Response, error)
 	mustEmbedUnimplementedProviderServer()
 }
@@ -137,6 +159,12 @@ func (UnimplementedProviderServer) ReadResource(context.Context, *ReadResource_R
 }
 func (UnimplementedProviderServer) CreateResource(context.Context, *CreateResource_Request) (*CreateResource_Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateResource not implemented")
+}
+func (UnimplementedProviderServer) UpdateResource(context.Context, *UpdateResource_Request) (*UpdateResource_Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateResource not implemented")
+}
+func (UnimplementedProviderServer) DeleteResource(context.Context, *DeleteResource_Request) (*DeleteResource_Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteResource not implemented")
 }
 func (UnimplementedProviderServer) StopProvider(context.Context, *StopProvider_Request) (*StopProvider_Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopProvider not implemented")
@@ -262,6 +290,42 @@ func _Provider_CreateResource_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Provider_UpdateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateResource_Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderServer).UpdateResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kfplugin1.Provider/UpdateResource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderServer).UpdateResource(ctx, req.(*UpdateResource_Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Provider_DeleteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteResource_Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderServer).DeleteResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kfplugin1.Provider/DeleteResource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderServer).DeleteResource(ctx, req.(*DeleteResource_Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Provider_StopProvider_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StopProvider_Request)
 	if err := dec(in); err != nil {
@@ -310,6 +374,14 @@ var Provider_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateResource",
 			Handler:    _Provider_CreateResource_Handler,
+		},
+		{
+			MethodName: "UpdateResource",
+			Handler:    _Provider_UpdateResource_Handler,
+		},
+		{
+			MethodName: "DeleteResource",
+			Handler:    _Provider_DeleteResource_Handler,
 		},
 		{
 			MethodName: "StopProvider",

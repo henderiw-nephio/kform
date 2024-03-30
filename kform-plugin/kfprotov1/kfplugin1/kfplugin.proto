@@ -11,6 +11,8 @@ service Provider {
 
     rpc ReadResource(ReadResource.Request) returns (ReadResource.Response);
     rpc CreateResource(CreateResource.Request) returns (CreateResource.Response);
+    rpc UpdateResource(UpdateResource.Request) returns (UpdateResource.Response);
+    rpc DeleteResource(DeleteResource.Request) returns (DeleteResource.Response);
 
     // rpc ApplyResource -> 
 
@@ -90,6 +92,31 @@ message CreateResource {
     message Response {
         repeated Diagnostic diagnostics = 1;
         bytes data = 2;
+    }
+}
+
+message UpdateResource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
+        bytes data = 2;
+    }
+}
+
+message DeleteResource {
+    message Request {
+        string name = 1;
+        Scope scope = 2;
+        bytes data = 3;
+    }
+
+    message Response {
+        repeated Diagnostic diagnostics = 1;
     }
 }
 

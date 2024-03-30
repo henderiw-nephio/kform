@@ -11,9 +11,10 @@ type Resource struct {
 	//SchemaFunc func() *apiext.JSONSchemaProps
 
 	CreateContext CreateContextFunc
-	//DeleteContext DeleteContextFunc
-	ReadContext ReadContextFunc
-	ListContext ListContextFunc
+	UpdateContext UpdateContextFunc
+	DeleteContext DeleteContextFunc
+	ReadContext   ReadContextFunc
+	ListContext   ListContextFunc
 	//CreateWithoutTimeout CreateContextFunc
 	//ReadWithoutTimeout   ReadContextFunc
 
@@ -22,7 +23,9 @@ type Resource struct {
 
 type CreateContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
 
-//type DeleteContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
+type UpdateContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
+
+type DeleteContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
 
 type ReadContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
 
