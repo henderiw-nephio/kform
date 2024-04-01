@@ -144,7 +144,6 @@ func (s *server) ListDataSource(ctx context.Context, in *kfplugin1.ListDataSourc
 	return resp, nil
 }
 
-/*
 func (s *server) ReadResource(ctx context.Context, in *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error) {
 	// todo add ctx + tracing
 	rpc := "readDataSource"
@@ -159,7 +158,7 @@ func (s *server) ReadResource(ctx context.Context, in *kfplugin1.ReadResource_Re
 	}
 	return resp, nil
 }
-*/
+
 func (s *server) CreateResource(ctx context.Context, in *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error) {
 	// todo add ctx + tracing
 	rpc := "createDataSource"

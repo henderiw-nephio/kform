@@ -89,11 +89,10 @@ func (r *GRPCProvider) ListDataSource(ctx context.Context, req *kfplugin1.ListDa
 	return r.client.ListDataSource(ctx, req)
 }
 
-/*
 func (r *GRPCProvider) ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error) {
 	return r.client.ReadResource(ctx, req)
 }
-*/
+
 func (r *GRPCProvider) CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error) {
 	return r.client.CreateResource(ctx, req)
 }

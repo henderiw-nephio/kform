@@ -26,7 +26,7 @@ type ProviderClient interface {
 	Configure(ctx context.Context, in *Configure_Request, opts ...grpc.CallOption) (*Configure_Response, error)
 	ReadDataSource(ctx context.Context, in *ReadDataSource_Request, opts ...grpc.CallOption) (*ReadDataSource_Response, error)
 	ListDataSource(ctx context.Context, in *ListDataSource_Request, opts ...grpc.CallOption) (*ListDataSource_Response, error)
-	// rpc ReadResource(ReadResource.Request) returns (ReadResource.Response);
+	ReadResource(ctx context.Context, in *ReadResource_Request, opts ...grpc.CallOption) (*ReadResource_Response, error)
 	CreateResource(ctx context.Context, in *CreateResource_Request, opts ...grpc.CallOption) (*CreateResource_Response, error)
 	UpdateResource(ctx context.Context, in *UpdateResource_Request, opts ...grpc.CallOption) (*UpdateResource_Response, error)
 	DeleteResource(ctx context.Context, in *DeleteResource_Request, opts ...grpc.CallOption) (*DeleteResource_Response, error)
@@ -77,6 +77,15 @@ func (c *providerClient) ListDataSource(ctx context.Context, in *ListDataSource_
 	return out, nil
 }
 
+func (c *providerClient) ReadResource(ctx context.Context, in *ReadResource_Request, opts ...grpc.CallOption) (*ReadResource_Response, error) {
+	out := new(ReadResource_Response)
+	err := c.cc.Invoke(ctx, "/kfplugin1.Provider/ReadResource", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *providerClient) CreateResource(ctx context.Context, in *CreateResource_Request, opts ...grpc.CallOption) (*CreateResource_Response, error) {
 	out := new(CreateResource_Response)
 	err := c.cc.Invoke(ctx, "/kfplugin1.Provider/CreateResource", in, out, opts...)
@@ -121,7 +130,7 @@ type ProviderServer interface {
 	Configure(context.Context, *Configure_Request) (*Configure_Response, error)
 	ReadDataSource(context.Context, *ReadDataSource_Request) (*ReadDataSource_Response, error)
 	ListDataSource(context.Context, *ListDataSource_Request) (*ListDataSource_Response, error)
-	// rpc ReadResource(ReadResource.Request) returns (ReadResource.Response);
+	ReadResource(context.Context, *ReadResource_Request) (*ReadResource_Response, error)
 	CreateResource(context.Context, *CreateResource_Request) (*CreateResource_Response, error)
 	UpdateResource(context.Context, *UpdateResource_Request) (*UpdateResource_Response, error)
 	DeleteResource(context.Context, *DeleteResource_Request) (*DeleteResource_Response, error)
@@ -144,6 +153,9 @@ func (UnimplementedProviderServer) ReadDataSource(context.Context, *ReadDataSour
 }
 func (UnimplementedProviderServer) ListDataSource(context.Context, *ListDataSource_Request) (*ListDataSource_Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDataSource not implemented")
+}
+func (UnimplementedProviderServer) ReadResource(context.Context, *ReadResource_Request) (*ReadResource_Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReadResource not implemented")
 }
 func (UnimplementedProviderServer) CreateResource(context.Context, *CreateResource_Request) (*CreateResource_Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateResource not implemented")
@@ -242,6 +254,24 @@ func _Provider_ListDataSource_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Provider_ReadResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadResource_Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderServer).ReadResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/kfplugin1.Provider/ReadResource",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderServer).ReadResource(ctx, req.(*ReadResource_Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Provider_CreateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateResource_Request)
 	if err := dec(in); err != nil {
@@ -336,6 +366,10 @@ var Provider_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListDataSource",
 			Handler:    _Provider_ListDataSource_Handler,
+		},
+		{
+			MethodName: "ReadResource",
+			Handler:    _Provider_ReadResource_Handler,
 		},
 		{
 			MethodName: "CreateResource",

@@ -87,7 +87,7 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 	case types.BlockTypeData:
 		resp, err := provider.ReadDataSource(ctx, &kfplugin1.ReadDataSource_Request{
 			Name: strings.Split(vCtx.BlockName, ".")[0],
-			Data: b,
+			Obj: b,
 		})
 		if err != nil {
 			log.Error("cannot read resource", "error", err.Error())
@@ -97,11 +97,11 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
 			return err
 		}
-		b = resp.Data
+		b = resp.Obj
 	case types.BlockTypeResource:
 		resp, err := provider.CreateResource(ctx, &kfplugin1.CreateResource_Request{
 			Name: strings.Split(vCtx.BlockName, ".")[0],
-			Data: b,
+			Obj: b,
 		})
 		if err != nil {
 			log.Error("cannot read resource", "error", err.Error())
@@ -111,12 +111,12 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
 			return err
 		}
-		b = resp.Data
+		b = resp.Obj
 	case types.BlockTypeList:
 		// TBD how do we deal with a list
 		resp, err := provider.ListDataSource(ctx, &kfplugin1.ListDataSource_Request{
 			Name: strings.Split(vCtx.BlockName, ".")[0],
-			Data: b,
+			Obj: b,
 		})
 		if err != nil {
 			log.Error("cannot read resource", "error", err.Error())
@@ -126,7 +126,7 @@ func (r *resource) Run(ctx context.Context, vCtx *types.VertexContext, localVars
 			log.Error("request failed", "error", diag.Diagnostics(resp.Diagnostics).Error())
 			return err
 		}
-		b = resp.Data
+		b = resp.Obj
 	default:
 		return fmt.Errorf("unexpected blockType, expected %v, got %s", types.ResourceBlockTypes, vCtx.BlockType)
 	}
