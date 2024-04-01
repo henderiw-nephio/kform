@@ -90,13 +90,13 @@ func (r *GRPCProviderServer) ReadDataSource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	d, diags := res.ReadContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	d, diags := res.ReadContext(ctx, &ResourceObject{scope: req.Scope, obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("readDataSource done")
 
 	return &kfplugin1.ReadDataSource_Response{
 		Diagnostics: diags,
-		Data:        d,
+		Obj:        d,
 	}, nil
 }
 
@@ -118,16 +118,17 @@ func (r *GRPCProviderServer) ListDataSource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	d, diags := res.ListContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	obj, diags := res.ListContext(ctx, &ResourceObject{scope: req.Scope, obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("listDataSource done")
 
 	return &kfplugin1.ListDataSource_Response{
 		Diagnostics: diags,
-		Data:        d,
+		Obj:        obj,
 	}, nil
 }
 
+/*
 func (r *GRPCProviderServer) ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error) {
 	// todo add ctx + tracing
 	log := log.FromContext(ctx)
@@ -155,6 +156,8 @@ func (r *GRPCProviderServer) ReadResource(ctx context.Context, req *kfplugin1.Re
 		Data:        d,
 	}, nil
 }
+*/
+
 func (r *GRPCProviderServer) CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error) {
 	// todo add ctx + tracing
 	log := log.FromContext(ctx)
@@ -173,13 +176,13 @@ func (r *GRPCProviderServer) CreateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	d, diags := res.CreateContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	obj, diags := res.CreateContext(ctx, &ResourceObject{scope: req.Scope, obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("createResource done")
 
 	return &kfplugin1.CreateResource_Response{
 		Diagnostics: diags,
-		Data:        d,
+		Obj:        obj,
 	}, nil
 }
 
@@ -195,19 +198,19 @@ func (r *GRPCProviderServer) UpdateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	if res.CreateContext == nil {
+	if res.UpdateContext == nil {
 		return &kfplugin1.UpdateResource_Response{
 			Diagnostics: diag.Errorf("cannot update resource, updateContext not initialized, for: %s", req.GetName()),
 		}, nil
 	}
 
-	d, diags := res.UpdateContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	obj, diags := res.UpdateContext(ctx, &ResourceObject{scope: req.Scope, obj: req.NewObj},  &ResourceObject{scope: req.Scope, obj: req.OldObj}, r.provider.providerMetaConfig)
 
 	log.Info("updateResource done")
 
 	return &kfplugin1.UpdateResource_Response{
 		Diagnostics: diags,
-		Data:        d,
+		Obj:        obj,
 	}, nil
 }
 
@@ -229,7 +232,7 @@ func (r *GRPCProviderServer) DeleteResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	diags := res.DeleteContext(ctx, &ResourceData{scope: req.Scope, data: req.Data}, r.provider.providerMetaConfig)
+	diags := res.DeleteContext(ctx, &ResourceObject{scope: req.Scope, obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("deleteResource done")
 

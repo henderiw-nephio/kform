@@ -23,7 +23,7 @@ func dataSourcesKubernetesManifest() *schema.Resource {
 	}
 }
 
-func dataSourcesKubernetesManifestList(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func dataSourcesKubernetesManifestList(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(client.Client)
 	log := log.FromContext(ctx)
 	log.Info("list resources")
@@ -31,7 +31,7 @@ func dataSourcesKubernetesManifestList(ctx context.Context, d *schema.ResourceDa
 	//return d.GetData(), nil
 
 	ul := unstructured.UnstructuredList{}
-	if err := json.Unmarshal(d.GetData(), &ul); err != nil {
+	if err := json.Unmarshal(d.GetObject(), &ul); err != nil {
 		return nil, diag.FromErr(err)
 	}
 

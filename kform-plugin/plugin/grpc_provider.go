@@ -15,8 +15,10 @@ type Provider interface {
 	StopProvider(ctx context.Context, req *kfplugin1.StopProvider_Request) (*kfplugin1.StopProvider_Response, error)
 	ReadDataSource(ctx context.Context, req *kfplugin1.ReadDataSource_Request) (*kfplugin1.ReadDataSource_Response, error)
 	ListDataSource(ctx context.Context, req *kfplugin1.ListDataSource_Request) (*kfplugin1.ListDataSource_Response, error)
-	ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error)
+	//ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error)
 	CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error)
+	UpdateResource(ctx context.Context, req *kfplugin1.UpdateResource_Request) (*kfplugin1.UpdateResource_Response, error)
+	DeleteResource(ctx context.Context, req *kfplugin1.DeleteResource_Request) (*kfplugin1.DeleteResource_Response, error)
 	Close(ctx context.Context)
 }
 
@@ -87,12 +89,23 @@ func (r *GRPCProvider) ListDataSource(ctx context.Context, req *kfplugin1.ListDa
 	return r.client.ListDataSource(ctx, req)
 }
 
+/*
 func (r *GRPCProvider) ReadResource(ctx context.Context, req *kfplugin1.ReadResource_Request) (*kfplugin1.ReadResource_Response, error) {
 	return r.client.ReadResource(ctx, req)
 }
+*/
 func (r *GRPCProvider) CreateResource(ctx context.Context, req *kfplugin1.CreateResource_Request) (*kfplugin1.CreateResource_Response, error) {
 	return r.client.CreateResource(ctx, req)
 }
+
+func (r *GRPCProvider) UpdateResource(ctx context.Context, req *kfplugin1.UpdateResource_Request) (*kfplugin1.UpdateResource_Response, error) {
+	return r.client.UpdateResource(ctx, req)
+}
+
+func (r *GRPCProvider) DeleteResource(ctx context.Context, req *kfplugin1.DeleteResource_Request) (*kfplugin1.DeleteResource_Response, error) {
+	return r.client.DeleteResource(ctx, req)
+}
+
 
 func (r *GRPCProvider) Close(ctx context.Context) {
 	log := log.FromContext(ctx)

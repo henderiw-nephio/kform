@@ -90,7 +90,7 @@ func (r *Resource) GetBlockName() string {
 	return fmt.Sprintf("%s.%s", r.resourceType, r.resourceID)
 }
 
-func (r *Resource) getProvider(ctx context.Context) {
+func (r *Resource) getProvider(_ context.Context) {
 	// the provider is the first element in the resourceType of the resource
 	r.provider = strings.Split(r.resourceType, "_")[0]
 	if r.KformBlockContext.Attributes != nil && r.KformBlockContext.Attributes.Provider != nil {

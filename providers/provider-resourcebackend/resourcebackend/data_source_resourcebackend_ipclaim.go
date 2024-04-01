@@ -22,11 +22,11 @@ func dataSourceResourceBackendIPClaim() *schema.Resource {
 	}
 }
 
-func dataSourceResourceBackendIPClaimRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func dataSourceResourceBackendIPClaimRead(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
 	u := &unstructured.Unstructured{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	newu, err := client.GetClaim(ctx, u, nil)

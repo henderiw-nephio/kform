@@ -24,11 +24,11 @@ func resourceResourceBackendIPClaim() *schema.Resource {
 	}
 }
 
-func resourceResourceBackendIPClaimCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceResourceBackendIPClaimCreate(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
 	u := &ipamv1alpha1.IPClaim{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
@@ -44,11 +44,11 @@ func resourceResourceBackendIPClaimCreate(ctx context.Context, d *schema.Resourc
 	return b, nil
 }
 
-func resourceResourceBackendIPClaimRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceResourceBackendIPClaimRead(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
 	u := &ipamv1alpha1.IPClaim{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	newu, err := client.GetClaim(ctx, u, nil)

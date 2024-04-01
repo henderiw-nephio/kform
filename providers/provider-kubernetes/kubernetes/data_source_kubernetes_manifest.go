@@ -24,11 +24,11 @@ func dataSourceKubernetesManifest() *schema.Resource {
 	}
 }
 
-func dataSourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func dataSourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	nsn := types.NamespacedName{Namespace: u.GetNamespace(), Name: u.GetName()}

@@ -21,12 +21,12 @@ type Resource struct {
 	Timeouts *ResourceTimeout
 }
 
-type CreateContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
+type CreateContextFunc func(context.Context, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
 
-type UpdateContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
+type UpdateContextFunc func(context.Context, *ResourceObject, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
 
-type DeleteContextFunc func(context.Context, *ResourceData, interface{}) diag.Diagnostics
+type DeleteContextFunc func(context.Context, *ResourceObject, interface{}) diag.Diagnostics
 
-type ReadContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
+type ReadContextFunc func(context.Context, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
 
-type ListContextFunc func(context.Context, *ResourceData, interface{}) ([]byte, diag.Diagnostics)
+type ListContextFunc func(context.Context, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)

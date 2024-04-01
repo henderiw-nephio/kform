@@ -31,7 +31,7 @@ func Provider() *schema.Provider {
 	return p
 }
 
-func providerConfigure(ctx context.Context, d []byte, version string) (any, diag.Diagnostics) {
+func providerConfigure(ctx context.Context, d []byte, _ string) (any, diag.Diagnostics) {
 	providerConfig := &v1alpha1.ProviderConfig{}
 	if err := json.Unmarshal(d, providerConfig); err != nil {
 		return nil, diag.FromErr(err)

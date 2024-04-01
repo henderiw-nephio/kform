@@ -24,11 +24,11 @@ func resourceResourceBackendVLANClaim() *schema.Resource {
 	}
 }
 
-func resourceResourceBackendVLANClaimCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceResourceBackendVLANClaimCreate(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
 	u := &vlanv1alpha1.VLANClaim{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
@@ -44,11 +44,11 @@ func resourceResourceBackendVLANClaimCreate(ctx context.Context, d *schema.Resou
 	return b, nil
 }
 
-func resourceResourceBackendVLANClaimRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceResourceBackendVLANClaimRead(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(beclient.Client)
 
 	u := &vlanv1alpha1.VLANClaim{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	newu, err := client.GetClaim(ctx, u, nil)

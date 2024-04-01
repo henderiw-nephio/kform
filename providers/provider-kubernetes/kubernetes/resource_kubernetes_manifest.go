@@ -26,12 +26,12 @@ func resourceKubernetesManifest() *schema.Resource {
 	}
 }
 
-func resourceKubernetesManifestCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceKubernetesManifestCreate(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	// TODO distinguish between offline and api
 	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 
@@ -71,11 +71,11 @@ func resourceKubernetesManifestCreate(ctx context.Context, d *schema.ResourceDat
 	return resourceKubernetesManifestRead(ctx, d, meta)
 }
 
-func resourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]byte, diag.Diagnostics) {
+func resourceKubernetesManifestRead(ctx context.Context, d *schema.ResourceObject, meta interface{}) ([]byte, diag.Diagnostics) {
 	client := meta.(client.Client)
 
 	u := &unstructured.Unstructured{}
-	if err := json.Unmarshal(d.GetData(), u); err != nil {
+	if err := json.Unmarshal(d.GetObject(), u); err != nil {
 		return nil, diag.FromErr(err)
 	}
 	nsn := types.NamespacedName{Namespace: u.GetNamespace(), Name: u.GetName()}

@@ -2,15 +2,15 @@ package schema
 
 import "github.com/henderiw-nephio/kform/kform-plugin/kfprotov1/kfplugin1"
 
-type ResourceData struct {
+type ResourceObject struct {
 	scope kfplugin1.Scope
-	data  []byte // resource data in json format
+	obj   []byte // new resource obj in json format
 }
 
-func (r *ResourceData) GetScope() kfplugin1.Scope {
+func (r *ResourceObject) GetScope() kfplugin1.Scope {
 	return r.scope
 }
 
-func (r *ResourceData) GetData() []byte {
-	return r.data
+func (r *ResourceObject) GetObject() []byte {
+	return r.obj
 }

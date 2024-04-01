@@ -116,7 +116,7 @@ func providerConfigure(ctx context.Context, d []byte, version string) (any, diag
 	return c, diag.Diagnostics{}
 }
 
-func initializeConfiguration(ctx context.Context, providerConfig *v1alpha1.ProviderConfig) (*rest.Config, error) {
+func initializeConfiguration(_ context.Context, providerConfig *v1alpha1.ProviderConfig) (*rest.Config, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 

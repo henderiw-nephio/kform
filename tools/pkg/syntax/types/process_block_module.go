@@ -76,13 +76,13 @@ func (r *ModuleCall) GetBlockName() string {
 	return fmt.Sprintf("%s.%s", r.blockType, r.name)
 }
 
-func (r *ModuleCall) getSource(ctx context.Context) {
+func (r *ModuleCall) getSource(_ context.Context) {
 	if r.KformBlockContext.Attributes != nil && r.KformBlockContext.Attributes.Source != nil {
 		r.source = *r.KformBlockContext.Attributes.Source
 	}
 }
 
-func (r *ModuleCall) getProviders(ctx context.Context) {
+func (r *ModuleCall) getProviders(_ context.Context) {
 	if r.KformBlockContext.Attributes != nil && r.KformBlockContext.Attributes.Providers != nil {
 		r.providers = r.KformBlockContext.Attributes.Providers
 	} else {
