@@ -747,9 +747,9 @@ func (c *Client) Start() (addr net.Addr, err error) {
 		// Trim the line and split by "|" in order to get the parts of
 		// the output.
 		line = strings.TrimSpace(line)
-		fmt.Println("line", line)
+		//fmt.Println("line", line)
 		parts := strings.SplitN(line, "|", 6)
-		fmt.Println("line", parts)
+		//fmt.Println("line", parts)
 		/*
 			if len(parts) < 4 {
 				errText := fmt.Sprintf("Unrecognized remote plugin message: %s", line)
