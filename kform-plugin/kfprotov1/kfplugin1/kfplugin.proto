@@ -86,7 +86,8 @@ message CreateResource {
     message Request {
         string name = 1;
         Scope scope = 2;
-        bytes obj = 3;
+        bool dryRun = 3;
+        bytes obj = 4;
     }
 
     message Response {
@@ -99,8 +100,9 @@ message UpdateResource {
     message Request {
         string name = 1;
         Scope scope = 2;
-        bytes newObj = 3;
-        bytes oldObj = 4;
+        bool dryRun = 3;
+        bytes newObj = 4;
+        bytes oldObj = 5;
     }
 
     message Response {
@@ -113,7 +115,8 @@ message DeleteResource {
     message Request {
         string name = 1;
         Scope scope = 2;
-        bytes obj = 3;
+        bool dryRun = 3;
+        bytes obj = 4;
     }
 
     message Response {
