@@ -101,9 +101,9 @@ func Serve(opts *ServeConfig) {
 		exitCode = 1
 		return
 	}
-	fmt.Printf("magic cookie key: %s\n", opts.MagicCookieKey)
-	fmt.Printf("magic cookie value: %s\n", opts.MagicCookieValue)
-	fmt.Printf("magic cookie env: %s\n", os.Getenv(opts.MagicCookieKey))
+	//fmt.Printf("magic cookie key: %s\n", opts.MagicCookieKey)
+	//fmt.Printf("magic cookie value: %s\n", opts.MagicCookieValue)
+	//fmt.Printf("magic cookie env: %s\n", os.Getenv(opts.MagicCookieKey))
 	if os.Getenv(opts.MagicCookieKey) != opts.MagicCookieValue {
 		fmt.Fprintf(os.Stderr,
 			`cannot execute this plugin direct, execute the plugin via the plugin loader`)
@@ -116,7 +116,7 @@ func Serve(opts *ServeConfig) {
 		// internal logger to os.Stderr
 		l = log.NewLogger(&log.HandlerOptions{Name: "plugin", AddSource: false})
 	}
-
+	fmt.Println("opts", opts.VersionedPlugins)
 	// negotiate the version and plugins
 	// start with default version in the handshake config
 	protoVersion, pluginSet, err := protocolVersion(opts)
@@ -124,8 +124,6 @@ func Serve(opts *ServeConfig) {
 		l.Error("cannot initialize plugin", "error", err)
 		return
 	}
-	fmt.Println("protolVersion", protoVersion)
-	fmt.Println("pluginSet", pluginSet)
 
 	// Register a listener so we can accept a connection
 	listener, err := serverListener(unixSocketConfigFromEnv())
