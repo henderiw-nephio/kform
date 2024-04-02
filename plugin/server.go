@@ -123,7 +123,6 @@ func Serve(opts *ServeConfig) {
 		l.Error("cannot initialize plugin", "error", err)
 		return
 	}
-	fmt.Printf("protoVersion: %d\n", protoVersion)
 
 	// Register a listener so we can accept a connection
 	listener, err := serverListener(unixSocketConfigFromEnv())
@@ -296,8 +295,6 @@ func protocolVersion(opts *ServeConfig) (int, PluginSet, error) {
 			}
 		}
 	}
-	fmt.Printf("clientVersions: %v\n", clientVersions)
-	fmt.Printf("versions: %v\n", versions)
 
 	return 0, nil, fmt.Errorf("no matching protocol version found, clientVersions %v, version: %v", clientVersions, versions)
 }
