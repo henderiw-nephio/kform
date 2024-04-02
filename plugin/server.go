@@ -216,7 +216,7 @@ func Serve(opts *ServeConfig) {
 		return
 	}
 
-	l.Info("plugin address",
+	l.Debug("plugin address",
 		"network", listener.Addr().Network(),
 		"address", listener.Addr().String(),
 	)
