@@ -96,7 +96,7 @@ func (r *GRPCProviderServer) ReadDataSource(ctx context.Context, req *kfplugin1.
 
 	return &kfplugin1.ReadDataSource_Response{
 		Diagnostics: diags,
-		Obj:        d,
+		Obj:         d,
 	}, nil
 }
 
@@ -124,7 +124,7 @@ func (r *GRPCProviderServer) ListDataSource(ctx context.Context, req *kfplugin1.
 
 	return &kfplugin1.ListDataSource_Response{
 		Diagnostics: diags,
-		Obj:        obj,
+		Obj:         obj,
 	}, nil
 }
 
@@ -152,7 +152,7 @@ func (r *GRPCProviderServer) ReadResource(ctx context.Context, req *kfplugin1.Re
 
 	return &kfplugin1.ReadResource_Response{
 		Diagnostics: diags,
-		Obj:        obj,
+		Obj:         obj,
 	}, nil
 }
 
@@ -174,13 +174,13 @@ func (r *GRPCProviderServer) CreateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	obj, diags := res.CreateContext(ctx, &ResourceObject{Scope: req.Scope, Obj: req.Obj}, r.provider.providerMetaConfig)
+	obj, diags := res.CreateContext(ctx, &ResourceObject{Scope: req.Scope, DryRun: req.DryRun, Obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("createResource done")
 
 	return &kfplugin1.CreateResource_Response{
 		Diagnostics: diags,
-		Obj:        obj,
+		Obj:         obj,
 	}, nil
 }
 
@@ -202,13 +202,13 @@ func (r *GRPCProviderServer) UpdateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	obj, diags := res.UpdateContext(ctx, &ResourceObject{Scope: req.Scope, Obj: req.NewObj, OldObj: req.OldObj}, r.provider.providerMetaConfig)
+	obj, diags := res.UpdateContext(ctx, &ResourceObject{Scope: req.Scope, DryRun: req.DryRun, Obj: req.NewObj, OldObj: req.OldObj}, r.provider.providerMetaConfig)
 
 	log.Info("updateResource done")
 
 	return &kfplugin1.UpdateResource_Response{
 		Diagnostics: diags,
-		Obj:        obj,
+		Obj:         obj,
 	}, nil
 }
 
@@ -230,7 +230,7 @@ func (r *GRPCProviderServer) DeleteResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	diags := res.DeleteContext(ctx, &ResourceObject{Scope: req.Scope, Obj: req.Obj}, r.provider.providerMetaConfig)
+	diags := res.DeleteContext(ctx, &ResourceObject{Scope: req.Scope, DryRun: req.DryRun, Obj: req.Obj}, r.provider.providerMetaConfig)
 
 	log.Info("deleteResource done")
 
