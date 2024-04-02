@@ -804,10 +804,16 @@ func (c *Client) Start() (addr net.Addr, err error) {
 		switch network {
 		case "tcp":
 			addr, err = net.ResolveTCPAddr("tcp", address)
+			if err != nil {
+				return nil, fmt.Errorf("tcp address error: %s", err)
+			}
 		case "unix":
 			addr, err = net.ResolveUnixAddr("unix", address)
+			if err != nil {
+				return nil, fmt.Errorf("unix address error: %s", err)
+			}
 		default:
-			err = fmt.Errorf("Unknown address type: %s", address)
+			return nil, fmt.Errorf("unknown address type: %s", address)
 		}
 
 		// See if we have a TLS certificate from the server.
@@ -851,7 +857,7 @@ func (c *Client) loadServerCert(cert string) error {
 func (c *Client) checkProtoVersion(protoVersion string) (int, PluginSet, error) {
 	serverVersion, err := strconv.Atoi(protoVersion)
 	if err != nil {
-		return 0, nil, fmt.Errorf("Error parsing protocol version %q: %s", protoVersion, err)
+		return 0, nil, fmt.Errorf("error parsing protocol version %q: %s", protoVersion, err)
 	}
 
 	// record these for the error message
@@ -868,7 +874,7 @@ func (c *Client) checkProtoVersion(protoVersion string) (int, PluginSet, error) 
 		return version, plugins, nil
 	}
 
-	return 0, nil, fmt.Errorf("Incompatible API version with plugin. "+
+	return 0, nil, fmt.Errorf("incompatible API version with plugin. "+
 		"Plugin version: %d, Client versions: %d", serverVersion, clientVersions)
 }
 
