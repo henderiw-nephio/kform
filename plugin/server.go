@@ -297,6 +297,8 @@ func protocolVersion(opts *ServeConfig) (int, PluginSet, error) {
 			}
 		}
 	}
+	fmt.Println("clientVersions", clientVersions)
+	fmt.Println("versions", versions)
 
 	return 0, nil, fmt.Errorf("no matching protocol version found, clientVersions %v, version: %v", clientVersions, versions)
 }
