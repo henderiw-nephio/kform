@@ -124,6 +124,7 @@ func Serve(opts *ServeConfig) {
 		l.Error("cannot initialize plugin", "error", err)
 		return
 	}
+	fmt.Println("protoVersion", protoVersion)
 
 	// Register a listener so we can accept a connection
 	listener, err := serverListener(unixSocketConfigFromEnv())
