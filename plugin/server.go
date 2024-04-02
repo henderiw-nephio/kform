@@ -116,7 +116,6 @@ func Serve(opts *ServeConfig) {
 		// internal logger to os.Stderr
 		l = log.NewLogger(&log.HandlerOptions{Name: "plugin", AddSource: false})
 	}
-	fmt.Println("opts", opts.VersionedPlugins)
 	// negotiate the version and plugins
 	// start with default version in the handshake config
 	protoVersion, pluginSet, err := protocolVersion(opts)
@@ -124,7 +123,7 @@ func Serve(opts *ServeConfig) {
 		l.Error("cannot initialize plugin", "error", err)
 		return
 	}
-	fmt.Println("protoVersion", protoVersion)
+	fmt.Printf("protoVersion: %d\n", protoVersion)
 
 	// Register a listener so we can accept a connection
 	listener, err := serverListener(unixSocketConfigFromEnv())
@@ -297,8 +296,8 @@ func protocolVersion(opts *ServeConfig) (int, PluginSet, error) {
 			}
 		}
 	}
-	fmt.Println("clientVersions", clientVersions)
-	fmt.Println("versions", versions)
+	fmt.Printf("clientVersions: %v\n", clientVersions)
+	fmt.Printf("versions: %v\n", versions)
 
 	return 0, nil, fmt.Errorf("no matching protocol version found, clientVersions %v, version: %v", clientVersions, versions)
 }
