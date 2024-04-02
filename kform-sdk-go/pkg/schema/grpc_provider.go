@@ -202,7 +202,7 @@ func (r *GRPCProviderServer) UpdateResource(ctx context.Context, req *kfplugin1.
 		}, nil
 	}
 
-	obj, diags := res.UpdateContext(ctx, &ResourceObject{Scope: req.Scope, Obj: req.NewObj},  &ResourceObject{Scope: req.Scope, Obj: req.OldObj}, r.provider.providerMetaConfig)
+	obj, diags := res.UpdateContext(ctx, &ResourceObject{Scope: req.Scope, Obj: req.NewObj, OldObj: req.OldObj}, r.provider.providerMetaConfig)
 
 	log.Info("updateResource done")
 

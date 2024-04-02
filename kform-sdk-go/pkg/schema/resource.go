@@ -23,7 +23,7 @@ type Resource struct {
 
 type CreateContextFunc func(context.Context, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
 
-type UpdateContextFunc func(context.Context, *ResourceObject, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
+type UpdateContextFunc func(context.Context, *ResourceObject, interface{}) ([]byte, diag.Diagnostics)
 
 type DeleteContextFunc func(context.Context, *ResourceObject, interface{}) diag.Diagnostics
 
